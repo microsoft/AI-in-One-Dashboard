@@ -366,10 +366,10 @@ Review the dashboard, customize visualizations, and share with stakeholders.
 
 ## 📸 Dashboard Preview
 
-### Microsoft 365 Copilot Usage Analysis
-Track M365 Copilot adoption patterns and engagement levels across your organization.
+### Copilot Chat Usage Analysis
+Track Copilot Chat adoption patterns and engagement levels across your organization.
 
-![M365 Copilot Scatterplot](Images/M365%20Copilot%20-%20Scatterplot.png)
+![Copilot Chat Scatterplot](Images/Copilot%20Chat%20-%20Scatterplot.png)
 
 ### Copilot Chat Engagement
 Monitor unlicensed Copilot Chat usage and user habit formation over time.
