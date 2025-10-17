@@ -411,16 +411,7 @@ Current version: **v1.0** (Initial release)
 
 ---
 
-## 📞 Support & Contributing
-
-For questions, issues, or suggestions:
-- Open an issue in this repository
-- Review the [Detailed Steps](#-detailed-steps) section for troubleshooting guidance
-- Check the [SETUP-GUIDE.md](SETUP-GUIDE.md) for quick reference
-
----
-
-## 📄 License
+##  License
 
 This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
 
