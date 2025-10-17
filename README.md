@@ -1,7 +1,7 @@
 # 🤖 AI-in-One Dashboard
 
 <p style="font-size:small; font-weight:normal;">
-This repository contains the <strong>AI-in-One Dashboard</strong> Power BI template. This report provides comprehensive insights into licensed M365 Copilot, unlicensed Copilot Chat and Agent adoption, empowering AI and business leaders to make informed decisions regarding AI implementation, licensing and enablement strategies.
+This repository contains the <strong>AI-in-One Dashboard</strong> Power BI template. This report provides comprehensive insights into Microsoft Copilot and AI Agent adoption and usage, empowering IT and business leaders to make informed decisions regarding AI implementation, licensing, and enablement strategies across M365 Copilot, unlicensed Copilot Chat, and Agent experiences.
 </p>
 
 ---
@@ -268,7 +268,7 @@ Connect the Power BI template to your data sources using Direct Query (Viva Insi
 2. **Get Viva Insights connection parameters**
    - Go back to your Person Query in Viva Insights: [https://analysis.insights.viva.office.com/Analysis](https://analysis.insights.viva.office.com/Analysis)
    - Find your completed query in the list
-   - Click the **link icon** in the row to copy the connection link
+   - Click the **link icon** (🔗) in the row to copy the connection link
    
    ![Query row showing link icon](https://raw.githubusercontent.com/microsoft/DecodingSuperUsage/refs/heads/DecodingSuperUsage/images/AnalysisResultsLink.png)
 
@@ -366,13 +366,40 @@ Review the dashboard, customize visualizations, and share with stakeholders.
 
 ## 📸 Dashboard Preview
 
-Screenshots coming soon! Add your dashboard page screenshots to the `/Images` folder and they'll appear here.
+### Microsoft 365 Copilot Usage Analysis
+Track M365 Copilot adoption patterns and engagement levels across your organization.
 
-<!--
-![Dashboard Overview](Images/dashboard-overview.png)
-![Usage Analytics](Images/usage-analytics.png)
-![Engagement Insights](Images/engagement-insights.png)
--->
+![M365 Copilot Scatterplot](Images/M365%20Copilot%20-%20Scatterplot.png)
+
+### Copilot Chat Engagement
+Monitor unlicensed Copilot Chat usage and user habit formation over time.
+
+![Copilot Chat Habit Tracking](Images/Copilot%20Chat%20-%20Habit.png)
+
+### Surface-Level Analysis
+Understand which Copilot surfaces (Chat, Teams, Edge, etc.) are driving the most engagement.
+
+![Copilot Chat Surfaces](Images/Copilot%20Chat%20-%20Surfaces.png)
+
+### Feature Usage Insights
+Deep dive into specific Copilot features and capabilities being used.
+
+![Feature Usage Dashboard](Images/Feature%20Usage.png)
+
+### Agent Adoption Tracking
+Monitor AI Agent adoption across your organization with user distribution analysis.
+
+![Agent User Distribution](Images/Agent%20User%20Distribution.png)
+
+### Agent Analytics by Group
+Segment agent usage by organizational groups to identify adoption hotspots.
+
+![Agent Active Users by Group](Images/Agent%20Active%20User%20by%20Group.png)
+
+### Agent Type and Name Analysis
+Track which specific agents are being deployed and used.
+
+![Agent Name and Type](Images/Agent%20Name%20and%20Type.png)
 
 ---
 
@@ -384,6 +411,14 @@ Current version: **v1.0** (Initial release)
 
 ---
 
+## 📞 Support & Contributing
+
+For questions, issues, or suggestions:
+- Open an issue in this repository
+- Review the [Detailed Steps](#-detailed-steps) section for troubleshooting guidance
+- Check the [SETUP-GUIDE.md](SETUP-GUIDE.md) for quick reference
+
+---
 
 ## 📄 License
 
