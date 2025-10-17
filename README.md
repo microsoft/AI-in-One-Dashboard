@@ -1,7 +1,7 @@
 # 🤖 AI-in-One Dashboard
 
 <p style="font-size:small; font-weight:normal;">
-This repository contains the <strong>AI-in-One Dashboard</strong> Power BI template. This report provides comprehensive insights into Microsoft licensed Copilot, unlicensed Copilot Chat and Agent adoption, empowering AI and business leaders to make informed decisions regarding AI implementation, licensing, and enablement strategies.
+This repository contains the <strong>AI-in-One Dashboard</strong> Power BI template. This report provides comprehensive insights into licensed M365 Copilot, unlicensed Copilot Chat and Agent adoption, empowering AI and business leaders to make informed decisions regarding AI implementation, licensing, and enablement strategies.
 </p>
 
 ---
