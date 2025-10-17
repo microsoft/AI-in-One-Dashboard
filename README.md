@@ -367,7 +367,7 @@ Review the dashboard, customize visualizations, and share with stakeholders.
 ## 📸 Dashboard Preview
 
 ### Copilot Usage Analysis
-Track Copilot Chat adoption patterns and engagement levels across your organization.
+Track Copilot adoption patterns and engagement levels across your organization.
 
 ![Copilot Chat Scatterplot](Images/Copilot%20Chat%20-%20Scatterplot.png)
 
