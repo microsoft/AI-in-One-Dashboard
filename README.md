@@ -366,40 +366,40 @@ Review the dashboard, customize visualizations, and share with stakeholders.
 
 ## 📸 Dashboard Preview
 
-### Copilot Usage Analysis
-Track Copilot adoption patterns and engagement levels across your organization.
+### M365 Copilot Overview
+Comprehensive view of M365 Copilot adoption, activity trends, and key metrics across your organization.
 
-![Copilot Chat Scatterplot](Images/Copilot%20Chat%20-%20Scatterplot.png)
+![Copilot Summary - Combined View](Images/Copilot%20Summary%20-%20Combined%20View.png)
 
-### Copilot Chat Engagement
-Monitor unlicensed Copilot Chat usage and user habit formation over time.
+### M365 Copilot Activity Trends
+Track M365 Copilot usage patterns and engagement levels over time.
 
-![Copilot Chat Habit Tracking](Images/Copilot%20Chat%20-%20Habit.png)
+![M365 Copilot Activity Trends](Images/M365%20Copilot%20Activity%20Trends.png)
 
-### Surface-Level Analysis
-Understand which Copilot surfaces (Chat, Teams, Edge, etc.) are driving the most engagement.
+### Chat Web - Activity Trends
+Monitor Copilot Chat web activity and usage patterns across different surfaces.
 
-![Copilot Chat Surfaces](Images/Copilot%20Chat%20-%20Surfaces.png)
+![Chat Web - Activity Trend](Images/Chat%20Web%20-%20Activity%20Trend.png)
 
-### Feature Usage Insights
-Deep dive into specific Copilot features and capabilities being used.
+### Chat Web - Habit Formation
+Understand user habit formation and engagement patterns with Copilot Chat web.
 
-![Feature Usage Dashboard](Images/Feature%20Usage.png)
+![Chat Web - Habit Formation](Images/Chat%20Web%20-%20Habit%20Formation.png)
 
-### Agent Adoption Tracking
-Monitor AI Agent adoption across your organization with user distribution analysis.
+### Agents - Activity Trends
+Track AI Agent activity and usage trends across your organization.
 
-![Agent User Distribution](Images/Agent%20User%20Distribution.png)
+![Agents - Activity Trend](Images/Agents%20-%20Activity%20Trend.png)
 
-### Agent Analytics by Group
-Segment agent usage by organizational groups to identify adoption hotspots.
+### Agents - Habit Formation
+Monitor how users are forming habits with AI Agents over time.
 
-![Agent Active Users by Group](Images/Agent%20Active%20User%20by%20Group.png)
+![Agents Habit Formation](Images/Agents%20Habit%20Formation.png)
 
-### Agent Type and Name Analysis
-Track which specific agents are being deployed and used.
+### Agent Leaderboard
+View the most active and popular AI Agents being used in your organization.
 
-![Agent Name and Type](Images/Agent%20Name%20and%20Type.png)
+![Agent Leaderboard](Images/Agent%20Leaderboard.png)
 
 ---
 
