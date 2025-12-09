@@ -45,9 +45,8 @@ This is an experimental template. On occasion, you may notice small deviations f
 ## ✅ What You'll Do
 
 <details open>
-<summary>📤 Step 1: Export 4 Data Sources</summary>
+<summary>📤 Step 1: Export 3 Data Sources</summary>
 
-- **Person query** from Microsoft Viva Insights  
 - **Copilot interactions audit log** from Microsoft Purview  
 - **Copilot licensed user list** from Microsoft 365 Admin Center  
 - **Org data** from Microsoft Entra Admin Center  
@@ -57,7 +56,6 @@ This is an experimental template. On occasion, you may notice small deviations f
 <details open>
 <summary>🔐 Step 2: Connect Files to Power BI Template</summary>
 
-- Set up Direct Query connection to Viva Insights
 - Paste full file paths for each CSV into the Power BI template
 
 </details>
@@ -67,54 +65,7 @@ This is an experimental template. On occasion, you may notice small deviations f
 ## 📁 Detailed Steps
 
 <details>
-<summary>📊 Step 1: Build the Person Query (Viva Insights)</summary>
-
-### What This Data Provides
-This query provides comprehensive Microsoft 365 Copilot usage metrics aggregated by person and day, enabling you to track adoption patterns and user engagement over time.
-
-### Requirements
-- Access level required: **Insights Administrator** or **Insights Analyst**
-- Portal: Microsoft Viva Insights
-- Permissions needed: Access to create and run Person Queries
-
-### Step-by-Step Instructions
-
-1. **Navigate to the portal**
-   - Go to: [https://analysis.insights.viva.office.com/Analysis/CreateAnalysis](https://analysis.insights.viva.office.com/Analysis/CreateAnalysis)
-   
-   ![Landing page showing Create Analysis](https://raw.githubusercontent.com/microsoft/DecodingSuperUsage/refs/heads/DecodingSuperUsage/images/VivaLanding1.png)
-
-2. **Select Person Query**
-   - Click **Person Query** → **Set up analysis**
-   
-   ![Person query card highlighted](https://raw.githubusercontent.com/microsoft/DecodingSuperUsage/refs/heads/DecodingSuperUsage/images/PersonQuery.png)
-
-3. **Configure query settings**
-   - **Time period**: Last 3 months (rolling)
-   - **Auto-refresh**: Enable weekly refresh (optional but recommended—this will automatically refresh in Power BI)
-   - **Group by**: Day
-   - **Metrics**: Select all **M365 Copilot** metrics
-   - **Filter**: Set `Is Active = True` (if available) to validate employee count
-   - **Attributes**: 
-     - **Required**: `Organization`
-     - **Optional**: Include any additional attributes you want for reporting (department, role, location, etc.)
-
-4. **Save and run query**
-   - Click **Save & Run**
-   - Wait until **Status = Completed** (first runs can take several hours)
-   - ⚠️ Do not export or connect until processing is complete
-
-### Expected Output
-- **File format**: Direct Query (no download needed)
-- **Refresh frequency**: Weekly (if auto-refresh enabled)
-- **Data granularity**: Daily metrics per person
-
-💡 **Tip**: The more attributes you include in Step 3, the more flexibility you'll have for segmentation and filtering in the dashboard.
-
-</details>
-
-<details>
-<summary>🔍 Step 2: Download Copilot Interactions Audit Logs (Microsoft Purview)</summary>
+<summary>🔍 Step 1: Download Copilot Interactions Audit Logs (Microsoft Purview)</summary>
 
 ### What This Data Provides
 This log provides detailed records of Copilot interactions across all surfaces (Chat, M365 apps, Agents), enabling deep analysis of usage patterns and engagement.
@@ -155,7 +106,7 @@ This log provides detailed records of Copilot interactions across all surfaces (
 </details>
 
 <details>
-<summary>👤 Step 3: Download Copilot Licensed User List (Microsoft 365 Admin Center)</summary>
+<summary>👤 Step 2: Download Copilot Licensed User List (Microsoft 365 Admin Center)</summary>
 
 ### What This Data Provides
 This data provides a list of users with Copilot licenses, enabling you to track license utilization and identify licensed vs. unlicensed usage patterns.
@@ -199,7 +150,7 @@ This data provides a list of users with Copilot licenses, enabling you to track 
 </details>
 
 <details>
-<summary>📥 Step 4: Access Org Data File (Microsoft Entra or Viva Insights)</summary>
+<summary>📥 Step 3: Access Org Data File (Microsoft Entra or Viva Insights)</summary>
 
 ### What This Data Provides
 This file provides organizational hierarchy and user attributes, enabling segmentation by department, role, location, or other organizational dimensions.
@@ -237,9 +188,11 @@ This file provides organizational hierarchy and user attributes, enabling segmen
    - Click **Download**
    - Save to a known location (e.g., `C:\Data\Org_Data_Entra.csv`)
 
-### Option B: Reuse Viva Insights Org Data (Alternative)
+### Option B: Use Custom Org Data (Alternative)
 
-If you already uploaded an org data file to Viva Insights for your Person Query, you can use the same file for consistency.
+If you have a custom org data file with organizational hierarchy and user attributes, you can use that instead. Ensure it includes:
+- **Required columns**: UserPrincipalName, Department
+- **Optional but recommended**: JobTitle, Office, Manager, any custom attributes
 
 ### Expected File Format
 - **File format**: CSV
@@ -255,38 +208,21 @@ If you already uploaded an org data file to Viva Insights for your Person Query,
 </details>
 
 <details>
-<summary>🔐 Step 5: Open and Configure the Power BI Template</summary>
+<summary>🔐 Step 4: Open and Configure the Power BI Template</summary>
 
 ### What You'll Do
-Connect the Power BI template to your data sources using Direct Query (Viva Insights) and file paths (CSV files).
+Connect the Power BI template to your data sources using file paths for the CSV files.
 
 ### Step-by-Step Instructions
 
 1. **Download the template**
-   - Download **AI-in-One Dashboard - Template.pbit** from this repository
+   - Download **AI-in-One Dashboard - Purview - Template.pbit** from this repository
 
-2. **Get Viva Insights connection parameters**
-   - Go back to your Person Query in Viva Insights: [https://analysis.insights.viva.office.com/Analysis](https://analysis.insights.viva.office.com/Analysis)
-   - Find your completed query in the list
-   - Click the **link icon** (🔗) in the row to copy the connection link
-   
-   ![Query row showing link icon](https://raw.githubusercontent.com/microsoft/DecodingSuperUsage/refs/heads/DecodingSuperUsage/images/AnalysisResultsLink.png)
-
-3. **Extract connection identifiers**
-   - From the copied URL, extract:
-     - **partitionId**: 36-character GUID (first ID in URL)
-     - **queryId**: 36-character GUID (second ID in URL)
-   - Confirm each is exactly 36 characters
-   
-   ![Partition and Query IDs highlighted](https://raw.githubusercontent.com/microsoft/DecodingSuperUsage/refs/heads/DecodingSuperUsage/images/CopyIdentifiers.png)
-
-4. **Open the template in Power BI Desktop**
+2. **Open the template in Power BI Desktop**
    - Double-click the `.pbit` file
    - A parameter dialog will appear
 
-5. **Enter connection parameters**
-   - **partitionId**: Paste the 36-character partition ID
-   - **queryId**: Paste the 36-character query ID
+3. **Enter file paths**
    - **Copilot Audit Log Path**: Full path to your audit log CSV  
      Example: `C:\Data\Copilot_Audit_Logs.csv`
    - **Licensed Users Path**: Full path to your licensed users CSV  
@@ -294,24 +230,20 @@ Connect the Power BI template to your data sources using Direct Query (Viva Insi
    - **Org Data Path**: Full path to your org data CSV  
      Example: `C:\Data\Org_Data_Entra.csv`
 
-6. **Load the data**
+4. **Load the data**
    - Click **Load**
    - Wait for all queries to refresh (may take 5–15 minutes on first load)
    - If errors occur, verify file paths are correct and files are accessible
 
-7. **Save and publish**
-   - Save as a `.pbix` file (e.g., `AI-in-One Dashboard.pbix`)
+5. **Save and publish**
+   - Save as a `.pbix` file (e.g., `AI-in-One Dashboard - Purview.pbix`)
    - Publish to your Power BI workspace
-   - ✅ **No scheduled refresh required** for Viva data (Direct Query auto-refreshes weekly if enabled)
-   - Configure scheduled refresh for CSV files in Power BI Service (optional)
+   - Configure scheduled refresh for CSV files in Power BI Service (recommended weekly or monthly)
 
 ### Troubleshooting
 
 - **Issue**: "File not found" error
   - **Solution**: Verify file paths use absolute paths (e.g., `C:\Data\file.csv`, not `.\file.csv`) and files exist at those locations
-
-- **Issue**: "Could not connect to Viva Insights"
-  - **Solution**: Verify partitionId and queryId are exactly 36 characters and copied correctly from the URL
 
 - **Issue**: Data refresh takes extremely long
   - **Solution**: Check CSV file sizes. Very large audit logs (>500 MB) may need to be filtered or split.
@@ -319,7 +251,7 @@ Connect the Power BI template to your data sources using Direct Query (Viva Insi
 </details>
 
 <details>
-<summary>📊 Step 6: Review and Customize</summary>
+<summary>📊 Step 5: Review and Customize</summary>
 
 ### What You'll Do
 Review the dashboard, customize visualizations, and share with stakeholders.
