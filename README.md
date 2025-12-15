@@ -96,29 +96,10 @@ cd scripts
 
 </details>
 
----
-
-### Detailed Steps
-
-<details>
-<summary>📤 Step 1: Export 3 Data Sources</summary>
-
-- **Copilot interactions audit log** from Microsoft Purview  
-- **Copilot licensed user list** from Microsoft 365 Admin Center  
-- **Org data** from Microsoft Entra Admin Center  
-
-</details>
-
-<details>
-<summary>🔐 Step 2: Connect Files to Power BI Template</summary>
-
-- Paste full file paths for each CSV into the Power BI template
-
-</details>
 
 ---
 
-## 📁 Detailed Steps
+## 📁 Detailed Steps for Manual Export (Option A)
 
 <details>
 <summary>🔍 Step 1: Download Copilot Interactions Audit Logs (Microsoft Purview)</summary>
