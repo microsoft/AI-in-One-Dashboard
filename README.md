@@ -44,30 +44,36 @@ This is an experimental template. On occasion, you may notice small deviations f
 
 ## ✅ What You'll Do
 
+**Quick Overview**: Export 3 data sources → Connect them to Power BI → Analyze your AI adoption
+
 ### Choose Your Method
 
 <details open>
-<summary>🖱️ Option A: Manual Export via Web Portal</summary>
+<summary>🖱️ Option A: Manual Export via Web Portal (Recommended for first-time setup)</summary>
 
-Follow the traditional workflow using browser-based portals:
-- Export Copilot audit logs from Microsoft Purview
-- Download licensed user data from Microsoft 365 Admin Center
-- Export org data from Microsoft Entra Admin Center
-- Manually connect CSV files to Power BI template
+Follow the traditional workflow using browser-based portals to export your data:
+
+1. **Export Copilot audit logs** from Microsoft Purview
+2. **Download licensed user data** from Microsoft 365 Admin Center
+3. **Export org data** from Microsoft Entra Admin Center
+4. **Connect CSV files** to Power BI template
 
 **Best for**: One-time setup, first-time users, or those who prefer GUI-based workflows
+
+👉 **See detailed instructions below** in the [Detailed Steps](#-detailed-steps) section
 
 </details>
 
 <details>
-<summary>⚡ Option B: Automated PowerShell Scripts</summary>
+<summary>⚡ Option B: Automated PowerShell Scripts (For regular refreshes)</summary>
 
-Use the PowerShell automation scripts in the [`/scripts`](scripts/) folder:
-- **Automated data export**: Scripts handle API authentication and data retrieval
-- **Streamlined workflow**: Reduces manual steps and potential errors
-- **Repeatability**: Easy to refresh data on a schedule
+Use the PowerShell automation scripts in the [`/scripts`](scripts/) folder for a faster, repeatable workflow:
 
-**Best for**: Regular refreshes, automation, or users comfortable with PowerShell
+**Advantages**:
+- ✅ Automated data export via Microsoft Graph API
+- ✅ Reduced manual steps and potential errors
+- ✅ Easy to schedule for regular data refreshes
+- ✅ Consistent results every time
 
 **Prerequisites**:
 - PowerShell 5.1 or later
@@ -79,14 +85,14 @@ Use the PowerShell automation scripts in the [`/scripts`](scripts/) folder:
 # 1. Install required modules
 Install-Module Microsoft.Graph.Beta.Security -Scope CurrentUser
 
-# 2. Run the scripts
+# 2. Navigate to scripts folder and run
 cd scripts
-.\create-query.ps1          # Creates audit log query
+.\create-query.ps1              # Creates audit log query
 .\get-copilot-interactions.ps1  # Exports query results
-.\get-copilot-users.ps1     # Exports licensed users list
+.\get-copilot-users.ps1         # Exports licensed users list
 ```
 
-📖 **Full documentation**: See [`/scripts/readme.md`](scripts/readme.md) for detailed instructions
+📖 **Full documentation**: See [`/scripts/readme.md`](scripts/readme.md) for detailed instructions and troubleshooting
 
 </details>
 
