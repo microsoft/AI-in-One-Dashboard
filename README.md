@@ -44,7 +44,57 @@ This is an experimental template. On occasion, you may notice small deviations f
 
 ## ✅ What You'll Do
 
+### Choose Your Method
+
 <details open>
+<summary>🖱️ Option A: Manual Export via Web Portal</summary>
+
+Follow the traditional workflow using browser-based portals:
+- Export Copilot audit logs from Microsoft Purview
+- Download licensed user data from Microsoft 365 Admin Center
+- Export org data from Microsoft Entra Admin Center
+- Manually connect CSV files to Power BI template
+
+**Best for**: One-time setup, first-time users, or those who prefer GUI-based workflows
+
+</details>
+
+<details>
+<summary>⚡ Option B: Automated PowerShell Scripts</summary>
+
+Use the PowerShell automation scripts in the [`/scripts`](scripts/) folder:
+- **Automated data export**: Scripts handle API authentication and data retrieval
+- **Streamlined workflow**: Reduces manual steps and potential errors
+- **Repeatability**: Easy to refresh data on a schedule
+
+**Best for**: Regular refreshes, automation, or users comfortable with PowerShell
+
+**Prerequisites**:
+- PowerShell 5.1 or later
+- Microsoft Graph PowerShell modules
+- Appropriate permissions (same as manual method)
+
+**Quick Start**:
+```powershell
+# 1. Install required modules
+Install-Module Microsoft.Graph.Beta.Security -Scope CurrentUser
+
+# 2. Run the scripts
+cd scripts
+.\create-query.ps1          # Creates audit log query
+.\get-copilot-interactions.ps1  # Exports query results
+.\get-copilot-users.ps1     # Exports licensed users list
+```
+
+📖 **Full documentation**: See [`/scripts/readme.md`](scripts/readme.md) for detailed instructions
+
+</details>
+
+---
+
+### Detailed Steps
+
+<details>
 <summary>📤 Step 1: Export 3 Data Sources</summary>
 
 - **Copilot interactions audit log** from Microsoft Purview  
@@ -53,7 +103,7 @@ This is an experimental template. On occasion, you may notice small deviations f
 
 </details>
 
-<details open>
+<details>
 <summary>🔐 Step 2: Connect Files to Power BI Template</summary>
 
 - Paste full file paths for each CSV into the Power BI template
