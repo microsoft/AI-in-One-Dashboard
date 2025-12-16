@@ -143,7 +143,7 @@ This log provides detailed records of Copilot interactions across all surfaces (
 </details>
 
 <details>
-<summary>👤 Step 2: Download Copilot Licensed User List ((skip if using 'Option B' - automated scripts): (Microsoft 365 Admin Center)</summary>
+<summary>👤 Step 2: Download Copilot Licensed User List (Microsoft 365 Admin Center) (skip if using 'Option B' - automated scripts) </summary>
 
 ### What This Data Provides
 This data provides a list of users with Copilot licenses, enabling you to track license utilization and identify licensed vs. unlicensed usage patterns.
