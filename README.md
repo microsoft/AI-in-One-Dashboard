@@ -334,41 +334,9 @@ Review the dashboard, customize visualizations, and share with stakeholders.
 ---
 
 ## 📸 Dashboard Preview
+See the dashboard in action:
 
-### M365 Copilot Overview
-Comprehensive view of M365 Copilot adoption, activity trends, and key metrics across your organization.
-
-![Copilot Summary - Combined View](Images/Copilot%20Summary%20-%20Combined%20View.png)
-
-### M365 Copilot Activity Trends
-Track M365 Copilot usage patterns and engagement levels over time.
-
-![M365 Copilot Activity Trends](Images/M365%20Copilot%20Activity%20Trends.png)
-
-### Chat Web - Activity Trends
-Monitor Copilot Chat web activity and usage patterns across different surfaces.
-
-![Chat Web - Activity Trend](Images/Chat%20Web%20-%20Activity%20Trend.png)
-
-### Chat Web - Habit Formation
-Understand user habit formation and engagement patterns with Copilot Chat web.
-
-![Chat Web - Habit Formation](Images/Chat%20Web%20-%20Habit%20Formation.png)
-
-### Agents - Activity Trends
-Track AI Agent activity and usage trends across your organization.
-
-![Agents - Activity Trend](Images/Agents%20-%20Activity%20Trend.png)
-
-### Agents - Habit Formation
-Monitor how users are forming habits with AI Agents over time.
-
-![Agents Habit Formation](Images/Agents%20Habit%20Formation.png)
-
-### Agent Leaderboard
-View the most active and popular AI Agents being used in your organization.
-
-![Agent Leaderboard](Images/Agent%20Leaderboard.png)
+![AI-in-One Dashboard animated preview](Images/aiinonegif.gif)
 
 ---
 
