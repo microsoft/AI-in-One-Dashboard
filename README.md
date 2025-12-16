@@ -99,7 +99,7 @@ cd scripts
 
 ---
 
-## 📁 Detailed Steps for Manual Export (Option A)
+## 📁 Detailed Steps (Skips steps 1 and 2 if using the Automated Powershell Scripts - Option B)
 
 <details>
 <summary>🔍 Step 1: Download Copilot Interactions Audit Logs (Microsoft Purview)</summary>
