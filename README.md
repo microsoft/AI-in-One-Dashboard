@@ -102,7 +102,7 @@ cd scripts
 ## 📁 Detailed Steps
 
 <details>
-<summary>🔍 Step 1 (skip if using 'Option B' - automated scripts): Download Copilot Interactions Audit Logs (Microsoft Purview)</summary>
+<summary>🔍 Step 1 (skip if using 'Option B'): Download Copilot Interactions Audit Logs (Microsoft Purview)</summary>
 
 ### What This Data Provides
 This log provides detailed records of Copilot interactions across all surfaces (Chat, M365 apps, Agents), enabling deep analysis of usage patterns and engagement.
@@ -143,7 +143,7 @@ This log provides detailed records of Copilot interactions across all surfaces (
 </details>
 
 <details>
-<summary>👤 Step 2: Download Copilot Licensed User List (Microsoft 365 Admin Center) (skip if using 'Option B' - automated scripts) </summary>
+<summary>👤 Step 2 (skip if using 'Option B'): Download Copilot Licensed User List (Microsoft 365 Admin Center) </summary>
 
 ### What This Data Provides
 This data provides a list of users with Copilot licenses, enabling you to track license utilization and identify licensed vs. unlicensed usage patterns.
