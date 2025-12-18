@@ -197,7 +197,7 @@ This file provides organizational hierarchy and user attributes, enabling segmen
 - Portal: Microsoft Entra Admin Center or Viva Insights
 - Permissions needed: View and export user data
 
-### Option A: Export from Microsoft Entra (Recommended)
+### Option A: Export from Microsoft Entra
 
 1. **Navigate to the portal**
    - Sign in to: [entra.microsoft.com](https://entra.microsoft.com)
@@ -225,11 +225,11 @@ This file provides organizational hierarchy and user attributes, enabling segmen
    - Click **Download**
    - Save to a known location (e.g., `C:\Data\Org_Data_Entra.csv`)
 
-### Option B: Use Custom Org Data (Alternative)
+### Option B: Use Custom Org Data (Recommended)
 
 If you have a custom org data file with organizational hierarchy and user attributes, you can use that instead. Ensure it includes:
-- **Required columns**: UserPrincipalName, Department
-- **Optional but recommended**: JobTitle, Office, Manager, any custom attributes
+- **Required columns**: UserPrincipalName or PersonID, Department or Organization
+
 
 ### Expected File Format
 - **File format**: CSV
