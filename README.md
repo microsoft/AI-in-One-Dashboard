@@ -18,7 +18,7 @@ Customers are solely responsible for ensuring that their use of the template too
 **Microsoft disclaims any and all liability** arising from or related to customers' use of the template tool.
 
 **Experimental Template Notice:**  
-This is an experimental template. On occasion, you may notice small deviations from metrics in the official Copilot and Agent Dashboards. We will continue to iterate based on your feedback. Currently available in English only.
+This is an experimental template. On occasion, you may notice small deviations from metrics in the official Copilot and Agent Dashboards. We will continue to iterate based on your feedback. For the most accurate and reliable usage insights, users are encouraged to refer to data from the Microsoft 365 Admin Center and Viva Insights. Currently available in English only. 
 
 </details>
 
