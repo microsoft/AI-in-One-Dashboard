@@ -1,5 +1,85 @@
-## Automation account
-## Storage (queue)
+#############################################################
+# Script to deploy and configure Automation Account and assign permissions
+# Contact alexgrover@microsoft.com for questions
+
+#############################################################
+# Variables
+#############################################################
+
+$siteId = "2bef5df0-2973-4edf-85d7-882f1532e0c8" # 👈 Update with actual Site ID
+$displayName = "AI in One Dashboard Automation Account"
+$resourceGroup = "AI-in-One-Dashboard-RG" # 👈 Update with actual Resource Group name
+$deploymentName = 'all-in-one-dashboard-' + (Get-Random -Minimum 1000 -Maximum 9999)
+$runbooksPath = ".\runbooks"
+
+#############################################################
+# Dependencies
+#############################################################
+
+# Check if Az.Resources module is already installed
+$module = Get-Module -ListAvailable | Where-Object { $_.Name -eq 'Az.Resources' }
+
+if ($module -eq $null) {
+    try {
+        Write-Host "Installing module..."
+        Install-Module -Name Az.Resources -Force -AllowClobber -Scope CurrentUser
+    } 
+    catch {
+        Write-Host "Failed to install module: $_"
+        exit
+    }
+}
+
+#############################################################
+# Functions
+#############################################################
+
+# Connect to Microsoft Graph
+function ConnectToGraph {
+    try {
+        Connect-MgGraph -NoWelcome -Scopes `
+            "Sites.FullControl.All", `
+            "Application.Read.All", `
+            "AppRoleAssignment.ReadWrite.All"
+        Write-Output "Connected to Microsoft Graph."
+    }
+    catch {
+        Write-Error "Failed to connect to Microsoft Graph: $_"
+        exit 1
+    }
+}
+
+function AssignRoles($principalId) {
+
+    $graphAppId = "00000003-0000-0000-c000-000000000000"
+    $graphSp = Get-MgServicePrincipal -Filter "appId eq '$graphAppId'"
+
+    # Site.Selected role
+    TryAssignRoles $principalId $graphSp "Sites.Selected"
+    # Assign Reports.Read.All
+    TryAssignRoles $principalId $graphSp "Reports.Read.All"
+    # Assign AuditLogsQuery.Read.All
+    TryAssignRoles $principalId $graphSp "AuditLogsQuery.Read.All"
+
+    # Get clientId from principalId 👈 Used for SharePoint site grant
+    $sp = Get-MgServicePrincipal -ServicePrincipalId $principalId
+    $clientId = $sp.AppId
+
+    GrantSharePointPermissions $siteId $clientId $sp.DisplayName
+}
+
+function TryAssignRoles($principalId, $servicePrincipal, $appRoleValue) {
+
+    $sitesSelectedRole = $servicePrincipal.AppRoles | Where-Object {
+        $_.Value -eq $appRoleValue -and $_.AllowedMemberTypes -contains "Application"
+    }
+    if ($sitesSelectedRole -and -not (Test-RoleAssigned $sitesSelectedRole.Id $servicePrincipal.Id $existingAssignments)) {
+        $newRole = New-MgServicePrincipalAppRoleAssignment -ServicePrincipalId $principalId `
+            -PrincipalId $principalId `
+            -ResourceId $servicePrincipal.Id `
+            -AppRoleId $sitesSelectedRole.Id
+    }
+}
 
 # Helper function to check if role is already assigned
 function Test-RoleAssigned($roleId, $resourceId, $assignments) {
@@ -8,69 +88,83 @@ function Test-RoleAssigned($roleId, $resourceId, $assignments) {
     }
 }
 
+function GrantSharePointPermissions($siteId, $clientId, $displayName) {
 
-Connect-MgGraph -NoWelcome -Scopes `
-    "Sites.FullControl.All", `
-    "Application.Read.All", `
-    "AppRoleAssignment.ReadWrite.All"
-
-
-$principalId = "b5d9a8f5-b965-4f43-aea8-ff50d682efc7" # 👈 Must be the OBJECT ID of the service principal
-$graphAppId = "00000003-0000-0000-c000-000000000000"
-$graphSp = Get-MgServicePrincipal -Filter "appId eq '$graphAppId'"
-
-
-## Site.Selected role
-$sitesSelectedRole = $graphSp.AppRoles | Where-Object {
-    $_.Value -eq "Sites.Selected" -and $_.AllowedMemberTypes -contains "Application"
-}
-if ($sitesSelectedRole -and -not (Test-RoleAssigned $sitesSelectedRole.Id $graphSp.Id $existingAssignments)) {
-    $newRole = New-MgServicePrincipalAppRoleAssignment -ServicePrincipalId $principalId `
-        -PrincipalId $principalId `
-        -ResourceId $graphSp.Id `
-        -AppRoleId $sitesSelectedRole.Id
-}
-
-# Assign Reports.Read.All
-$reportsReadAllRole = $graphSp.AppRoles | Where-Object {
-    $_.Value -eq "Reports.Read.All" -and $_.AllowedMemberTypes -contains "Application"
-}
-if ($reportsReadAllRole -and -not (Test-RoleAssigned $reportsReadAllRole.Id $graphSp.Id $existingAssignments)) {
-    $newRole = New-MgServicePrincipalAppRoleAssignment -ServicePrincipalId $principalId `
-        -PrincipalId $principalId `
-        -ResourceId $graphSp.Id `
-        -AppRoleId $reportsReadAllRole.Id
-}
-
-# Assign AuditLogsQuery.Read.All
-$auditLogsQueryReadAllRole = $graphSp.AppRoles | Where-Object {
-    $_.Value -eq "AuditLogsQuery.Read.All" -and $_.AllowedMemberTypes -contains "Application"
-}
-if ($auditLogsQueryReadAllRole -and -not (Test-RoleAssigned $auditLogsQueryReadAllRole.Id $graphSp.Id $existingAssignments)) {
-    $newRole = New-MgServicePrincipalAppRoleAssignment -ServicePrincipalId $principalId `
-        -PrincipalId $principalId `
-        -ResourceId $graphSp.Id `
-        -AppRoleId $auditLogsQueryReadAllRole.Id
-}
-
-### 3. Grant SharePoint permission using Sites.Selected model ###
-$siteId = "2bef5df0-2973-4edf-85d7-882f1532e0c8" # 👈 Update with actual Site ID
-$clientId = "8025703a-0d1f-404e-8900-edfbcb00a9f0" # 👈 Must be the APPLICATION ID of the service principal
-$displayName = "AI in One Dashboard Automation Account"
-
-$permissionBody = @{
-    roles               = @("write") 
-    grantedToIdentities = @(
-        @{
-            application = @{
-                id          = $clientId       # Must be CLIENT ID here, not objectId
-                displayName = $displayName
+    $permissionBody = @{
+        roles               = @("write") 
+        grantedToIdentities = @(
+            @{
+                application = @{
+                    id          = $clientId       # Must be CLIENT ID here, not objectId
+                    displayName = $displayName
+                }
             }
-        }
-    )
+        )
+    }
+
+    $newSPOPerms = New-MgSitePermission -SiteId $siteId -BodyParameter $permissionBody
 }
 
-$newSPOPerms = New-MgSitePermission -SiteId $siteId -BodyParameter $permissionBody
+function UploadRunbooks ($automationAccount) {
+    Write-Host "Uploading runbooks from $runbooksPath to Automation account $automationAccount in RG $resourceGroup"
 
-## need to give the automation account permission to read/write to storage account
-## Storage Queue Data Contributor role
+    if (-not (Test-Path $runbooksPath)) {
+        Write-Error "Runbooks path not found: $runbooksPath"
+        exit 1
+    }
+
+    Get-ChildItem -Path $runbooksPath -Filter *.ps1 | ForEach-Object {
+        $file = $_.FullName
+        $name = $_.BaseName
+        Write-Host "Uploading $name from $file"
+        Set-AzAutomationRunbook -ResourceGroupName $resourceGroup -AutomationAccountName $automationAccount -Name $name -Path $file -Type PowerShell -Force
+        Publish-AzAutomationRunbook -ResourceGroupName $resourceGroup -AutomationAccountName $automationAccount -Name $name -Force
+    }
+
+    Write-Host "Runbooks uploaded successfully."
+}
+
+#############################################################
+# Main Script Execution
+#############################################################
+
+$scriptRoot = Split-Path -Parent $PSCommandPath
+$templateFile = Join-Path $scriptRoot 'main.bicep'
+
+if (-not (Test-Path $templateFile)) {
+    Write-Error "Could not find template file: $templateFile"
+    return
+}
+
+if (-not (Get-AzContext)) {
+    Connect-AzAccount | Out-Null
+}
+
+try {
+    Write-Host "Deploying $templateFile to resource group $resourceGroup using Az PowerShell..."
+
+    $deployment = New-AzResourceGroupDeployment -ResourceGroupName $resourceGroup -TemplateFile $templateFile -Name $deploymentName -Verbose
+}
+catch {
+    Write-Error "Deployment failed: $_"
+    exit 1
+}
+
+# Get the Automation Account name from deployment outputs
+$automationAccount = $deployment.Outputs.AutomationAccountName.Value
+
+# Upload runbooks to the Automation Account
+UploadRunbooks $automationAccount
+
+# Get the Automation Account's principal ID
+$principalId = $deployment.Outputs.AutomationPrincipalId.Value
+
+# Connect to Microsoft Graph
+ConnectToGraph
+
+# Assign required roles to the Automation Account
+AssignRoles $principalId
+
+Write-Host "Deployment and configuration completed successfully."
+
+
