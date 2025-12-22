@@ -1,7 +1,12 @@
 #############################################################
 # Script to get CopilotInteractions from AuditLogs via Microsoft Graph and export to CSV
-# and store in SPO
+# and store in SPO. Script is designed to run in Azure Automation with Managed Identity.
+# It will build the CSV and write to SPO in a streaming manner to avoid large memory usage. 
+#
 # Contact alexgrover@microsoft.com for questions
+#
+#
+# Thanks here for how to chunk the file upload: https://pnp.github.io/script-samples/graph-upload-file-to-sharepoint/README.html?tabs=azure-cli
 
 #############################################################
 # Parameters
@@ -126,9 +131,9 @@ function GetCopilotInteractionsAndUpload {
                 $contentRange = $Range
 
                 # Build headers for Invoke-MgGraphRequest (the module will handle auth)
-                $headers = @{ "Content-Length" = $Body.Length; "Content-Range" = $contentRange }
+                $headers = @{ "Content-Range" = $contentRange; }
 
-                return Invoke-MgGraphRequest -Method PUT -Uri $uploadUrl -Headers $headers -Body $Body -ContentType 'application/octet-stream'
+                return Invoke-MgGraphRequest -Method PUT -Uri $uploadUrl -Headers $headers -Body $Body -SkipHeaderValidation 
             }
             catch {
                 $ex = $_
