@@ -48,7 +48,7 @@ This is an experimental template. On occasion, you may notice small deviations f
 
 ### Choose Your Method
 
-<details open>
+<details>
 <summary>🖱️ Option A: Manual Export via Web Portal (Recommended for first-time setup)</summary>
 
 Follow the traditional workflow using browser-based portals to export your data:
@@ -81,7 +81,7 @@ Use the PowerShell automation scripts in the [`/scripts`](scripts/) folder for a
 - Appropriate permissions (same as manual method)
 
 **Quick Start**:
-```powershell
+~~~powershell
 # 1. Install required modules
 Install-Module Microsoft.Graph.Beta.Security -Scope CurrentUser
 
@@ -90,12 +90,11 @@ cd scripts
 .\create-query.ps1              # Creates audit log query
 .\get-copilot-interactions.ps1  # Exports query results
 .\get-copilot-users.ps1         # Exports licensed users list
-```
+~~~
 
 📖 **Full documentation**: See [`/scripts/readme.md`](scripts/readme.md) for detailed instructions and troubleshooting
 
 </details>
-
 
 ---
 
@@ -230,7 +229,6 @@ This file provides organizational hierarchy and user attributes, enabling segmen
 If you have a custom org data file with organizational hierarchy and user attributes, you can use that instead. Ensure it includes:
 - **Required columns**: UserPrincipalName or PersonID, Department or Organization
 
-
 ### Expected File Format
 - **File format**: CSV
 - **Typical size**: 1–20 MB depending on org size and attributes
@@ -334,9 +332,18 @@ Review the dashboard, customize visualizations, and share with stakeholders.
 ---
 
 ## 📸 Dashboard Preview
+
 See the dashboard in action:
 
-![AI-in-One Dashboard animated preview](Images/aiinonegif.gif)
+![AI-in-One Dashboard animated preview](Images/AI%20in%20One%20Gif.gif)
+
+---
+
+## 🔗 Related Resources
+
+**Viva Insights Sample Code:** Explore the [Viva Insights Sample Code Repository](https://github.com/microsoft/viva-insights-sample-code) for ready-to-use code examples, API integration patterns, and reference implementations to extend your AI adoption analytics.
+
+**Super Usage Analysis:** For deep-dive analysis into Copilot super users and adoption patterns, check out the [DecodingSuperUsage](https://github.com/microsoft/DecodingSuperUsage) repository.
 
 ---
 
