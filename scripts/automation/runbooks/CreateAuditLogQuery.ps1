@@ -9,8 +9,8 @@
 param (
     [DateTime]$startDate = (Get-Date).AddDays(-7),
     [DateTime]$endDate = (Get-Date),
-    [string]$StorageAccountName = "allin1dashag",
-    [string]$StorageQueueName = "auditlogquerries"
+    [string]$StorageAccountName = "allinonedashboardagstg",
+    [string]$StorageQueueName = "auditsearchidqueue"
 )
 
 #############################################################
