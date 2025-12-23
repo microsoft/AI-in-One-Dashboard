@@ -18,7 +18,7 @@ Customers are solely responsible for ensuring that their use of the template too
 **Microsoft disclaims any and all liability** arising from or related to customers' use of the template tool.
 
 **Experimental Template Notice:**  
-This is an experimental template. On occasion, you may notice small deviations from metrics in the official Copilot and Agent Dashboards. We will continue to iterate based on your feedback. Currently available in English only.
+This is an experimental template. On occasion, you may notice small deviations from metrics in the official Copilot and Agent Dashboards. We will continue to iterate based on your feedback. For the most accurate and reliable usage insights, users are encouraged to refer to data from the Microsoft 365 Admin Center and Viva Insights. Currently available in English only. 
 
 </details>
 
@@ -44,19 +44,55 @@ This is an experimental template. On occasion, you may notice small deviations f
 
 ## ✅ What You'll Do
 
-<details open>
-<summary>📤 Step 1: Export 3 Data Sources</summary>
+**Quick Overview**: Export 3 data sources → Connect them to Power BI → Analyze your AI adoption
 
-- **Copilot interactions audit log** from Microsoft Purview  
-- **Copilot licensed user list** from Microsoft 365 Admin Center  
-- **Org data** from Microsoft Entra Admin Center  
+### Choose Your Method
+
+<details>
+<summary>🖱️ Option A: Manual Export via Web Portal (Recommended for first-time setup)</summary>
+
+Follow the traditional workflow using browser-based portals to export your data:
+
+1. **Export Copilot audit logs** from Microsoft Purview
+2. **Download licensed user data** from Microsoft 365 Admin Center
+3. **Export org data** from Microsoft Entra Admin Center
+4. **Connect CSV files** to Power BI template
+
+**Best for**: One-time setup, first-time users, or those who prefer GUI-based workflows
+
+👉 **See detailed instructions below** in the [Detailed Steps](#-detailed-steps) section
 
 </details>
 
-<details open>
-<summary>🔐 Step 2: Connect Files to Power BI Template</summary>
+<details>
+<summary>⚡ Option B: Automated PowerShell Scripts (For regular refreshes)</summary>
 
-- Paste full file paths for each CSV into the Power BI template
+Use the PowerShell automation scripts in the [`/scripts`](scripts/) folder for a faster, repeatable workflow:
+
+**Advantages**:
+- ✅ Automated data export via Microsoft Graph API
+- ✅ Reduced manual steps and potential errors
+- ✅ Easy to schedule for regular data refreshes
+- ✅ Consistent results every time
+
+**Prerequisites**:
+- PowerShell 5.1 or later
+- Microsoft Graph PowerShell modules
+- Appropriate permissions (same as manual method)
+
+**Quick Start**:
+~~~powershell
+# 1. Install required modules
+Install-Module Microsoft.Graph.Beta.Security -Scope CurrentUser
+
+# 2. Navigate to scripts folder and run
+cd scripts
+.\create-query.ps1              # Creates audit log query
+.\get-copilot-interactions.ps1  # Exports query results
+.\get-copilot-users.ps1         # Exports licensed users list
+~~~
+
+📖 **Full documentation**: See [`/scripts/readme.md`](scripts/readme.md) for detailed instructions and troubleshooting
 
 </details>
 
@@ -65,7 +101,7 @@ This is an experimental template. On occasion, you may notice small deviations f
 ## 📁 Detailed Steps
 
 <details>
-<summary>🔍 Step 1: Download Copilot Interactions Audit Logs (Microsoft Purview)</summary>
+<summary>🔍 Step 1 (skip if using 'Option B'): Download Copilot Interactions Audit Logs (Microsoft Purview)</summary>
 
 ### What This Data Provides
 This log provides detailed records of Copilot interactions across all surfaces (Chat, M365 apps, Agents), enabling deep analysis of usage patterns and engagement.
@@ -106,7 +142,7 @@ This log provides detailed records of Copilot interactions across all surfaces (
 </details>
 
 <details>
-<summary>👤 Step 2: Download Copilot Licensed User List (Microsoft 365 Admin Center)</summary>
+<summary>👤 Step 2 (skip if using 'Option B'): Download Copilot Licensed User List (Microsoft 365 Admin Center) </summary>
 
 ### What This Data Provides
 This data provides a list of users with Copilot licenses, enabling you to track license utilization and identify licensed vs. unlicensed usage patterns.
@@ -160,7 +196,7 @@ This file provides organizational hierarchy and user attributes, enabling segmen
 - Portal: Microsoft Entra Admin Center or Viva Insights
 - Permissions needed: View and export user data
 
-### Option A: Export from Microsoft Entra (Recommended)
+### Option A: Export from Microsoft Entra
 
 1. **Navigate to the portal**
    - Sign in to: [entra.microsoft.com](https://entra.microsoft.com)
@@ -188,11 +224,10 @@ This file provides organizational hierarchy and user attributes, enabling segmen
    - Click **Download**
    - Save to a known location (e.g., `C:\Data\Org_Data_Entra.csv`)
 
-### Option B: Use Custom Org Data (Alternative)
+### Option B: Use Custom Org Data (Recommended)
 
 If you have a custom org data file with organizational hierarchy and user attributes, you can use that instead. Ensure it includes:
-- **Required columns**: UserPrincipalName, Department
-- **Optional but recommended**: JobTitle, Office, Manager, any custom attributes
+- **Required columns**: UserPrincipalName or PersonID, Department or Organization
 
 ### Expected File Format
 - **File format**: CSV
@@ -298,40 +333,17 @@ Review the dashboard, customize visualizations, and share with stakeholders.
 
 ## 📸 Dashboard Preview
 
-### M365 Copilot Overview
-Comprehensive view of M365 Copilot adoption, activity trends, and key metrics across your organization.
+See the dashboard in action:
 
-![Copilot Summary - Combined View](Images/Copilot%20Summary%20-%20Combined%20View.png)
+![AI-in-One Dashboard animated preview](Images/AI%20in%20One%20Gif.gif)
 
-### M365 Copilot Activity Trends
-Track M365 Copilot usage patterns and engagement levels over time.
+---
 
-![M365 Copilot Activity Trends](Images/M365%20Copilot%20Activity%20Trends.png)
+## 🔗 Related Resources
 
-### Chat Web - Activity Trends
-Monitor Copilot Chat web activity and usage patterns across different surfaces.
+**Viva Insights Sample Code:** Explore the [Viva Insights Sample Code Repository](https://github.com/microsoft/viva-insights-sample-code) for ready-to-use code examples, API integration patterns, and reference implementations to extend your AI adoption analytics.
 
-![Chat Web - Activity Trend](Images/Chat%20Web%20-%20Activity%20Trend.png)
-
-### Chat Web - Habit Formation
-Understand user habit formation and engagement patterns with Copilot Chat web.
-
-![Chat Web - Habit Formation](Images/Chat%20Web%20-%20Habit%20Formation.png)
-
-### Agents - Activity Trends
-Track AI Agent activity and usage trends across your organization.
-
-![Agents - Activity Trend](Images/Agents%20-%20Activity%20Trend.png)
-
-### Agents - Habit Formation
-Monitor how users are forming habits with AI Agents over time.
-
-![Agents Habit Formation](Images/Agents%20Habit%20Formation.png)
-
-### Agent Leaderboard
-View the most active and popular AI Agents being used in your organization.
-
-![Agent Leaderboard](Images/Agent%20Leaderboard.png)
+**Super Usage Analysis:** For deep-dive analysis into Copilot super users and adoption patterns, check out the [DecodingSuperUsage](https://github.com/microsoft/DecodingSuperUsage) repository.
 
 ---
 
