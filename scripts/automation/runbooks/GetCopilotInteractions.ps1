@@ -14,7 +14,7 @@
 
 param (
     [string]$StorageAccountName = "allin1dashag",
-    [string]$StorageQueueName = "auditlogquerries",
+    [string]$StorageQueueName = "auditsearchidqueue",
     [string]$DriveId = "b!8F3vK3Mp306F14gvFTLgyPa4BMFPYFxNjKT8_wIfG018E1NnUCshSqn-JysXy4tf"  # Update with actual Drive ID
 )
 
