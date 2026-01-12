@@ -84,7 +84,6 @@ This folder contains PowerShell scripts to retrieve and export Microsoft Copilot
 - **Progress Tracking**: Displays record count and status messages
 - **UTF-8 Encoding**: Proper character encoding for international characters
 
-
 ---
 
 ### 3. `get-copilot-users.ps1`
@@ -132,7 +131,6 @@ This folder contains PowerShell scripts to retrieve and export Microsoft Copilot
 4. **Analyze the CSV**:
    - Open in Excel, Power BI, or your analysis tool
    - AuditData column contains detailed interaction JSON
-
 
 ## Output Format
 
@@ -187,6 +185,74 @@ Contains detailed interaction information:
 
 ### "Query status: pending"
 The audit log query is still processing. Wait a few minutes and run `get-copilot-interactions.ps1` again.
+
+---
+
+## Azure Automation Deployment
+
+For enterprise deployments requiring scheduled, unattended automation, see the [`/automation`](automation/) subfolder.
+
+### What's Included
+
+The `/scripts/automation/` folder contains:
+- **Bicep template** (`main.bicep`) for Azure infrastructure deployment
+- **PowerShell deployment script** (`deploy.ps1`) with permission configuration
+- **Runbooks** (`CreateAuditLogQuery.ps1`, `GetCopilotInteractions.ps1`) for Azure Automation
+
+### Key Features
+
+- **Managed Identity authentication**: No stored credentials
+- **SharePoint integration**: Direct upload to SharePoint document library
+- **Queue-based orchestration**: Azure Storage Queue coordinates runbooks
+- **Streaming upload**: Memory-efficient processing of large datasets (1M+ records)
+- **Enterprise logging**: Full audit trail in Azure Automation
+
+### Architecture
+
+```
+Azure Automation Account
+  ├─ Runbook 1: CreateAuditLogQuery
+  │   └─ Writes query ID to Azure Queue
+  ├─ Runbook 2: GetCopilotInteractions
+  │   └─ Reads queue → Downloads data → Uploads to SharePoint
+  └─ Managed Identity (Graph API + SharePoint permissions)
+```
+
+### Quick Start
+
+```powershell
+cd automation
+
+# Update variables in deploy.ps1:
+# - $siteId: SharePoint site ID for output storage
+# - $resourceGroup: Azure resource group name
+
+.\deploy.ps1
+```
+
+### Output Location
+
+Unlike the manual scripts (which save CSV locally), the Azure Automation runbooks upload directly to **SharePoint**:
+- File naming: `CopilotInteractionsReport-[timestamp]-[queryId].csv`
+- Location: Configured SharePoint document library
+
+### When to Use Azure Automation
+
+✅ **Use Azure Automation if**:
+- You need scheduled, recurring data collection
+- You want centralized enterprise automation
+- Your organization uses Azure infrastructure
+- You need audit logs and centralized monitoring
+
+❌ **Use manual scripts if**:
+- One-time or ad-hoc data exports
+- Testing or proof-of-concept
+- Local development environment
+- Simpler setup without Azure dependencies
+
+For detailed deployment instructions, troubleshooting, and architecture details, see [`automation/README.md`](automation/README.md).
+
+---
 
 ## Contact
 
