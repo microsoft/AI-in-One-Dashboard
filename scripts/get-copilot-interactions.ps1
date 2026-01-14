@@ -21,7 +21,7 @@ param (
 # Check if Microsoft Graph module is already installed
 $module = Get-Module -ListAvailable | Where-Object { $_.Name -eq 'Microsoft.Graph.Beta.Security' }
 
-if ($module -eq $null) {
+if ($null -eq $module) {
     try {
         Write-Host "Installing module..."
         Install-Module -Name Microsoft.Graph.Beta.Security -Force -AllowClobber -Scope CurrentUser
@@ -54,6 +54,81 @@ function ConnectToGraph {
     }
 }
 
+
+function Invoke-WithRetry {
+    param(
+        [ScriptBlock]$ScriptBlock,
+        [int]$MaxAttempts = 5,
+        [int]$BaseDelaySeconds = 2,
+        [int]$MaxDelaySeconds = 60
+    )
+
+    $attempt = 0
+
+    while ($true) {
+        $attempt++
+        try {
+            return & $ScriptBlock
+        }
+        catch 
+        {
+            $ex = $_.Exception
+
+            # Try to extract status code + headers (works for Invoke-WebRequest/Invoke-RestMethod failures)
+            $statusCode = $null
+            $headers = $null
+
+            if ($ex.PSObject.Properties.Name -contains "Response" -and $ex.Response) {
+                try {
+                    $statusCode = [int]$ex.Response.StatusCode.value__
+                    $headers = $ex.Response.Headers
+                } catch { }
+            }
+
+            # Decide if retryable
+            $retryableStatus = @(429,502,503,504)
+            $isRetryable = $false
+
+            if ($statusCode -and $retryableStatus -contains $statusCode) {
+                $isRetryable = $true
+            }
+            elseif ($ex.Message -match "The operation has timed out|timed out|connection.*(closed|aborted|reset)|name resolution|temporarily unavailable") {
+                $isRetryable = $true
+            }
+
+            if (-not $isRetryable -or $attempt -ge $MaxAttempts) {
+                throw "Operation failed after $attempt attempts. StatusCode=$statusCode. Error=$($_)"
+            }
+
+            # Prefer Retry-After header if present
+            $delay = $null
+            if ($headers -and $headers["Retry-After"]) {
+                $delay = [int]$headers["Retry-After"][0]
+            }
+
+            if (-not $delay) {
+                # Exponential backoff with jitter
+                $delay = [Math]::Min($MaxDelaySeconds, $BaseDelaySeconds * [Math]::Pow(2, $attempt - 1))
+                $jitter = Get-Random -Minimum (-0.2) -Maximum 0.2
+                $delay = [Math]::Max(1, [Math]::Floor($delay + ($delay * $jitter)))
+            }
+            else {
+                # small jitter even with Retry-After to avoid thundering herd
+                $delay = $delay + (Get-Random -Minimum 0 -Maximum 2)
+                $delay = [Math]::Min($MaxDelaySeconds, [Math]::Max(1, [Math]::Floor($delay)))
+            }
+
+            # Log correlation IDs if available
+            $reqId = $headers["request-id"] | Select-Object -First 1
+            $clientReqId = $headers["client-request-id"] | Select-Object -First 1
+
+            Write-Host "Attempt $attempt failed (HTTP $statusCode). Retrying in $delay seconds... request-id=$reqId client-request-id=$clientReqId"
+            Start-Sleep -Seconds $delay
+        }
+    }
+}
+
+
 # Get Copilot Interactions from AuditLogQuery
 # Get Copilot Interactions from AuditLogQuery - write to CSV incrementally
 function GetCopilotInteractionsAndExport {
@@ -73,7 +148,7 @@ function GetCopilotInteractionsAndExport {
         $headerWritten = $false
         
         do {
-            $response = Invoke-MgGraphRequest -Method GET -Uri $uri
+            $response = Invoke-WithRetry -ScriptBlock { Invoke-MgGraphRequest -Method GET -Uri $uri }
             $records = $response.value
             
             foreach ($item in $records) {
@@ -91,7 +166,7 @@ function GetCopilotInteractionsAndExport {
                 foreach ($propName in $headers) {
                     $value = $item[$propName]
         
-                    if ($value -eq $null) {
+                    if ($null -eq $value) {
                         $values += '""'
                     }
                     elseif ($value -is [string]) {
@@ -163,6 +238,7 @@ function CheckIfQuerySucceeded {
 
 
 # Export interactions to CSV
+# Unused function, kept for reference
 function ExportInteractionsToCSV {
     param (
         [array]$interactions,
@@ -192,7 +268,7 @@ function ExportInteractionsToCSV {
             foreach ($prop in $item.PSObject.Properties) {
                 $value = $prop.Value
                 
-                if ($value -eq $null) {
+                if ($null -eq $value) {
                     $values += '""'
                 }
                 elseif ($value -is [string]) {
@@ -246,8 +322,5 @@ $query = CheckIfQuerySucceeded -auditLogQueryId $AuditLogQueryId
 
 # Get Copilot Interactions
 GetCopilotInteractionsAndExport -auditLogQueryId $AuditLogQueryId -outputCSV $outputCSV
-
-# Export interactions to CSV
-#
 
 Write-Host "Copilot Interactions report generated at: $outputCSV"
