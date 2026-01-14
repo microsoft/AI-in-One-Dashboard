@@ -67,7 +67,10 @@ Follow the traditional workflow using browser-based portals to export your data:
 <details>
 <summary>⚡ Option B: Automated PowerShell Scripts (For regular refreshes)</summary>
 
-Use the PowerShell automation scripts in the [`/scripts`](scripts/) folder for a faster, repeatable workflow:
+Use the PowerShell automation scripts in the [scripts](scripts/) folder for a faster, repeatable workflow. This method supports two execution modes:
+
+- Run locally (PowerShell) and export CSVs
+- Run in Azure Automation (runbooks) and upload outputs to SharePoint
 
 **Advantages**:
 - ✅ Automated data export via Microsoft Graph API
@@ -80,7 +83,7 @@ Use the PowerShell automation scripts in the [`/scripts`](scripts/) folder for a
 - Microsoft Graph PowerShell modules
 - Appropriate permissions (same as manual method)
 
-**Quick Start**:
+**Quick Start (Local execution)**:
 ~~~powershell
 # 1. Install required modules
 Install-Module Microsoft.Graph.Beta.Security -Scope CurrentUser
@@ -92,10 +95,17 @@ cd scripts
 .\get-copilot-users.ps1         # Exports licensed users list
 ~~~
 
-📖 **Full documentation**: See [`/scripts/readme.md`](scripts/readme.md) for detailed instructions and troubleshooting
+**Quick Start (Azure Automation execution)**:
+~~~powershell
+cd scripts/automation
+.\deploy.ps1
+~~~
+
+📖 **Documentation**:
+- Local scripts: [scripts/readme.md](scripts/readme.md)
+- Azure Automation runbooks: [scripts/automation/README.md](scripts/automation/README.md)
 
 </details>
-
 ---
 
 ## 📁 Detailed Steps
