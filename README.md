@@ -10,7 +10,7 @@ This repository contains the <strong>AI-in-One Dashboard</strong> Power BI templ
 
 See the dashboard in action:
 
-![AI-in-One Dashboard animated preview](Images/AI%20in%20One%20Gif.gif)
+![AI-in-One Dashboard animated preview](Images/AIO%20v10%20Gif.gif)
 
 ---
 
