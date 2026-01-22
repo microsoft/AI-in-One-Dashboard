@@ -6,6 +6,14 @@ This repository contains the <strong>AI-in-One Dashboard</strong> Power BI templ
 
 ---
 
+## 📸 Dashboard Preview
+
+See the dashboard in action:
+
+![AI-in-One Dashboard animated preview](Images/AI%20in%20One%20Gif.gif)
+
+---
+
 <details>
 <summary>⚠️ <strong>Important usage & compliance disclaimer</strong></summary>
 
@@ -338,14 +346,6 @@ Review the dashboard, customize visualizations, and share with stakeholders.
 - 📊 **Usage tracking**: Monitor dashboard usage in Power BI Service to understand what resonates
 
 </details>
-
----
-
-## 📸 Dashboard Preview
-
-See the dashboard in action:
-
-![AI-in-One Dashboard animated preview](Images/AI%20in%20One%20Gif.gif)
 
 ---
 
