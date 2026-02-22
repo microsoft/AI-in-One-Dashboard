@@ -204,7 +204,7 @@ This data provides a list of users with Copilot licenses, enabling you to track 
 </details>
 
 <details>
-<summary>🤖 Step 3 (skip if using 'Option B'): Export Agent 365 Data (Microsoft Admin Center)</summary>
+<summary>🤖 Step 3: Export Agent 365 Data (Microsoft Admin Center)</summary>
 
 ### What This Data Provides
 This file provides a catalogue of agents available in your tenant via the Agent 365 platform in the Microsoft Admin Center (MAC), enabling analysis of agent provisioning, availability, and adoption across your organization.
