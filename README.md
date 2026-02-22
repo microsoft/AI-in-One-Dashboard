@@ -369,12 +369,13 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md
 
 ---
 
+## 🔒 Security
+
+Please see [SECURITY.md](SECURITY.md) for information on reporting security vulnerabilities.
+
+---
+
 Found this useful? ⭐ Star this repo to help others discover it!
 
 That's it! 🚀
 
----
-
-## 🔒 Security
-
-Please see [SECURITY.md](SECURITY.md) for information on reporting security vulnerabilities.
