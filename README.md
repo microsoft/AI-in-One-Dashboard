@@ -52,7 +52,7 @@ This is an experimental template with audit logs as the primary source. The audi
 
 ## ✅ What You'll Do
 
-**Quick Overview**: Export 3 data sources → Connect them to Power BI → Analyze your AI adoption
+**Quick Overview**: Export 4 data sources → Connect them to Power BI → Analyze your AI adoption
 
 ### Choose Your Method
 
@@ -204,7 +204,43 @@ This data provides a list of users with Copilot licenses, enabling you to track 
 </details>
 
 <details>
-<summary>📥 Step 3: Access Org Data File (Microsoft Entra or Viva Insights)</summary>
+<summary>🤖 Step 3 (skip if using 'Option B'): Export Agent 365 Data (Microsoft Admin Center)</summary>
+
+### What This Data Provides
+This file provides a catalogue of agents available in your tenant via the Agent 365 platform in the Microsoft Admin Center (MAC), enabling analysis of agent provisioning, availability, and adoption across your organization.
+
+### Requirements
+- Access level required: **Global Administrator** or **Teams Administrator**
+- Portal: Microsoft Admin Center (MAC)
+- Permissions needed: Access to Agent 365 / Agent Inventory
+
+### Step-by-Step Instructions
+
+1. **Navigate to the Agent 365 section**
+   - Go to: [admin.microsoft.com](https://admin.microsoft.com)
+   - In the left navigation, go to **Agent 365** (under Copilot & AI or Settings)
+   - You should see the **Agent Inventory** overview
+
+2. **Open the Agent Inventory**
+   - Click into the **Agent Inventory** or **Agent Catalogue** section
+   - This displays all agents: their availability status, templates applied, and assigned users/sources
+
+3. **Export the Agent data**
+   - Click the **Export** button (or ellipsis `...` menu → **Export**)
+   - Download the file as CSV
+   - Save to a known location (e.g., `C:\Data\Agent365_Inventory.csv`)
+
+### Expected File Format
+- **File format**: CSV
+- **Columns**: Agent name, Agent ID, Availability status, Last Activity Date, Template, Assigned users/sources
+- **Rows**: One row per agent in your tenant
+
+> 💡 **Note**: The admin can also view agent request workflows, blocked agents, and provisioning history from this section. See the [A365 Ignite Agent, Admin and User Flows](https://microsoft.sharepoint.com/:w:/r/teams/MicrosoftIDEAs/_layouts/15/doc2.aspx?sourcedoc=%7B37C90C67-4A5C-4FF0-9564-05357E158AD6%7D) document for detailed screenshots and workflows.
+
+</details>
+
+<details>
+<summary>📥 Step 4: Access Org Data File (Microsoft Entra or Viva Insights)</summary>
 
 ### What This Data Provides
 This file provides organizational hierarchy and user attributes, enabling segmentation by department, role, location, or other organizational dimensions.
@@ -261,7 +297,7 @@ If you have a custom org data file with organizational hierarchy and user attrib
 </details>
 
 <details>
-<summary>🔐 Step 4: Open and Configure the Power BI Template</summary>
+<summary>🔐 Step 5: Open and Configure the Power BI Template</summary>
 
 ### What You'll Do
 Connect the Power BI template to your data sources using file paths for the CSV files.
@@ -280,7 +316,9 @@ Connect the Power BI template to your data sources using file paths for the CSV 
      Example: `C:\Data\Copilot_Audit_Logs.csv`
    - **Licensed Users Path**: Full path to your licensed users CSV  
      Example: `C:\Data\Copilot_Licensed_Users.csv`
-   - **Org Data Path**: Full path to your org data CSV  
+- **Agent 365 Path**: Full path to your Agent 365 CSV
+     Example: `C:\Data\Agent365_Inventory.csv`
+   - **Org Data Path**: Full path to your org data CSV
      Example: `C:\Data\Org_Data_Entra.csv`
 
 4. **Load the data**
@@ -304,7 +342,7 @@ Connect the Power BI template to your data sources using file paths for the CSV 
 </details>
 
 <details>
-<summary>📊 Step 5: Review and Customize</summary>
+<summary>📊 Step 6: Review and Customize</summary>
 
 ### What You'll Do
 Review the dashboard, customize visualizations, and share with stakeholders.
