@@ -361,13 +361,17 @@ Review the dashboard, customize visualizations, and share with stakeholders.
 
 Check the `/Archived Templates` folder for previous versions of the dashboard template.
 
-Current version: **v1.0** (Initial release)
-
 ---
 
 ##  License
 
 This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
+
+---
+
+Found this useful? ⭐ Star this repo to help others discover it!
+
+That's it! 🚀
 
 ---
 
