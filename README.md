@@ -210,7 +210,7 @@ This data provides a list of users with Copilot licenses, enabling you to track 
 This file provides a catalogue of agents available in your tenant via the Agent 365 platform in the Microsoft Admin Center (MAC), enabling analysis of agent provisioning, availability, and adoption across your organization.
 
 ### Requirements
-- Access level required: **Global Administrator** or **Teams Administrator**
+- Access level required: **Global Administrator** or **Reports Reader**
 - Portal: Microsoft Admin Center (MAC)
 - Permissions needed: Access to Agent 365 / Agent Inventory
 
@@ -218,11 +218,8 @@ This file provides a catalogue of agents available in your tenant via the Agent 
 
 1. **Navigate to the Agent 365 section**
    - Go to: [admin.microsoft.com](https://admin.microsoft.com)
-   - In the left navigation, go to **Agent 365** (under Copilot & AI or Settings)
-   - You should see the **Agent Inventory** overview
-
-2. **Open the Agent Inventory**
-   - Click into the **Agent Inventory** or **Agent Catalogue** section
+   - In the left navigation, go to **Agents** 
+   - You should see the **Agents Overview**
    - This displays all agents: their availability status, templates applied, and assigned users/sources
 
 3. **Export the Agent data**
@@ -235,7 +232,6 @@ This file provides a catalogue of agents available in your tenant via the Agent 
 - **Columns**: Agent name, Agent ID, Availability status, Last Activity Date, Template, Assigned users/sources
 - **Rows**: One row per agent in your tenant
 
-> 💡 **Note**: The admin can also view agent request workflows, blocked agents, and provisioning history from this section. See the [A365 Ignite Agent, Admin and User Flows](https://microsoft.sharepoint.com/:w:/r/teams/MicrosoftIDEAs/_layouts/15/doc2.aspx?sourcedoc=%7B37C90C67-4A5C-4FF0-9564-05357E158AD6%7D) document for detailed screenshots and workflows.
 
 </details>
 
