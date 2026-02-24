@@ -122,7 +122,7 @@ cd scripts/automation
 <summary>🔍 Step 1 (skip if using 'Option B'): Download Copilot Interactions Audit Logs (Microsoft Purview)</summary>
 
 ### What This Data Provides
-This log provides detailed records of Copilot interactions across all surfaces (Chat, M365 apps, Agents), enabling deep analysis of usage patterns and engagement.
+This log provides detailed records of Copilot interactions across all surfaces (Chat, M365 apps, Agents), as well as interactions with **third-party and custom-built AI applications** (e.g., Confluence Cloud, Jira Cloud, Miro), enabling deep analysis of usage patterns and engagement across the full AI landscape.
 
 ### Requirements
 - Access level required: **Audit Reader** or **Compliance Administrator**
@@ -138,9 +138,27 @@ This log provides detailed records of Copilot interactions across all surfaces (
 
 2. **Configure the audit search**
    - In **Activities > Friendly Names**, select:  
-     `Copilot Activities – Interacted with Copilot`
+     - `Copilot Activities – Interacted with Copilot` *(required)* — M365 Copilot interactions across all surfaces (RecordType: CopilotInteraction)
+
+   - **Recommended**: Also select these two additional activities to capture **third-party and custom AI app** usage:  
+     - `Copilot Activities – Interacted with a Connected AI App` — Custom-built Copilots and registered 3rd-party AI apps that your org has deployed (RecordType: ConnectedAIAppInteraction)
+     - `Copilot Activities – Interacted with an AI App` — Non-Microsoft 3rd-party AI apps accessed via Microsoft 365, even if not formally deployed in your org (RecordType: AIAppInteraction)
+
    - Set a **Date Range** (recommended: 1–3 months to match your Viva query)
    - Give your search a descriptive name (e.g., "Copilot Audit Export - Oct 2025")
+
+   > 💡 **Why include the extra activities?**  
+   > The standard `Interacted with Copilot` activity only captures M365 Copilot usage. As organisations adopt third-party agents and custom Copilots (e.g., Confluence Cloud, Jira Cloud, Miro), these interactions are logged under separate record types. Including them gives you a **complete picture of AI adoption** — not just Microsoft Copilot, but the full ecosystem of AI tools your users are engaging with.
+
+   > ⚠️ **Pay-as-you-go billing for "Interacted with an AI App" (AIAppInteraction / RT405):**  
+   > This third activity type uses **Microsoft Purview pay-as-you-go (PAYG) billing** and is **not** included in standard Audit (Standard) or Audit (Premium) subscriptions. To enable it:  
+   > 1. An admin must set up [pay-as-you-go billing](https://learn.microsoft.com/en-us/purview/audit-copilot#auditing-for-non-microsoft-ai-applications) in Microsoft Purview, which bills based on the volume of audit records generated  
+   > 2. Once enabled, Purview begins logging interactions with non-Microsoft AI applications  
+   > 3. Costs are consumption-based — you only pay for the records actually generated  
+   >
+   > **If PAYG is not enabled**, selecting this activity will simply return no results — the first two activities will still work normally. You can always add this later without re-exporting the other data.  
+   >
+   > The second activity (`Interacted with a Connected AI App`) does **not** require PAYG — it is included with your existing Audit subscription and covers custom-built Copilots and registered 3P apps.
 
 3. **Run and export the search**
    - Click **Search**
