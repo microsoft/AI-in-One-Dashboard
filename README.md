@@ -122,7 +122,7 @@ cd scripts/automation
 <summary>🔍 Step 1 (skip if using 'Option B'): Download Copilot Interactions Audit Logs (Microsoft Purview)</summary>
 
 ### What This Data Provides
-This log provides detailed records of Copilot interactions across all surfaces (Chat, M365 apps, Agents), enabling deep analysis of usage patterns and engagement.
+This log provides detailed records of Copilot interactions across all surfaces (Chat, M365 apps, Agents), as well as interactions with **third-party and custom-built AI applications** (e.g., Confluence Cloud, Jira Cloud, Miro), enabling deep analysis of usage patterns and engagement across the full AI landscape.
 
 ### Requirements
 - Access level required: **Audit Reader** or **Compliance Administrator**
@@ -137,10 +137,15 @@ This log provides detailed records of Copilot interactions across all surfaces (
    - Ensure you have appropriate compliance roles (e.g., **Audit Reader**). If not, contact your IT admin
 
 2. **Configure the audit search**
-   - In **Activities > Friendly Names**, select:  
-     `Copilot Activities – Interacted with Copilot`
+   - In **Activities > Friendly Names**, select **all three** of the following:  
+     - `Copilot Activities – Interacted with Copilot` — *M365 Copilot interactions (RecordType: CopilotInteraction)*
+     - `Copilot Activities – Interacted with a Connected AI App` — *Custom-built Copilots and registered 3rd-party AI apps (RecordType: ConnectedAIAppInteraction)*
+     - `Copilot Activities – Interacted with an AI App` — *Non-Microsoft / 3rd-party AI apps not deployed in your org (RecordType: AIAppInteraction)*
    - Set a **Date Range** (recommended: 1–3 months to match your Viva query)
    - Give your search a descriptive name (e.g., "Copilot Audit Export - Oct 2025")
+
+   > ⚠️ **Billing note for "Interacted with an AI App" (AIAppInteraction / RT405):**  
+   > Audit logs for non-Microsoft AI applications use **pay-as-you-go billing** and are not included in standard Audit subscriptions. You must [enable pay-as-you-go features](https://learn.microsoft.com/en-us/purview/audit-copilot#auditing-for-non-microsoft-ai-applications) in Microsoft Purview to turn on these logs. If you have not enabled this, the third activity type will return no results — the first two will still work normally.
 
 3. **Run and export the search**
    - Click **Search**
