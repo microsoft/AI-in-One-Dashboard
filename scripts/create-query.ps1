@@ -65,7 +65,7 @@ function CreateAuditLogQuery {
             displayName = $displayName
             filterStartDateTime = $filterStartDateTime
             filterEndDateTime = $filterEndDateTime
-            recordTypeFilters = @("CopilotInteraction")
+            recordTypeFilters = @("CopilotInteraction", "AIAppInteraction")
         }
         
         # Add user filter only if provided
