@@ -1,8 +1,21 @@
+# ℹ️ **Public Preview: Agent Dashboard in Copilot Analytics**  
+The Agent Dashboard is now in public preview, providing one-click visibility into agent usage. Work with your IT admin to enable it.
+
+
+
 # 🤖 AI-in-One Dashboard
 
 <p style="font-size:small; font-weight:normal;">
 This repository contains the <strong>AI-in-One Dashboard</strong> Power BI template. This report provides comprehensive insights into Microsoft Copilot and Agent adoption, empowering AI and business leaders to make informed decisions regarding AI implementation, licensing, and enablement strategies.
 </p>
+
+---
+
+## 📸 Dashboard Preview
+
+See the dashboard in action:
+
+![AI-in-One Dashboard animated preview](Images/AIO%20v10%20Gif.gif)
 
 ---
 
@@ -18,7 +31,7 @@ Customers are solely responsible for ensuring that their use of the template too
 **Microsoft disclaims any and all liability** arising from or related to customers' use of the template tool.
 
 **Experimental Template Notice:**  
-This is an experimental template. On occasion, you may notice small deviations from metrics in the official Copilot and Agent Dashboards. We will continue to iterate based on your feedback. For the most accurate and reliable usage insights, users are encouraged to refer to data from the Microsoft 365 Admin Center and Viva Insights. Currently available in English only. 
+This is an experimental template with audit logs as the primary source. The audit logs from Microsoft Purview are intended to support security and compliance use cases. While they provide visibility into Copilot and Agent interactions, they are not intended to serve as the sole source of truth for licensing or full-fidelity reporting on Copilot or Agent activity. For the most accurate and reliable usage insights, users are encouraged to refer to data from the Microsoft 365 Admin Center and Viva Insights. Currently available in English only. 
 
 </details>
 
@@ -44,7 +57,7 @@ This is an experimental template. On occasion, you may notice small deviations f
 
 ## ✅ What You'll Do
 
-**Quick Overview**: Export 3 data sources → Connect them to Power BI → Analyze your AI adoption
+**Quick Overview**: Export 4 data sources → Connect them to Power BI → Analyze your AI adoption
 
 ### Choose Your Method
 
@@ -114,7 +127,7 @@ cd scripts/automation
 <summary>🔍 Step 1 (skip if using 'Option B'): Download Copilot Interactions Audit Logs (Microsoft Purview)</summary>
 
 ### What This Data Provides
-This log provides detailed records of Copilot interactions across all surfaces (Chat, M365 apps, Agents), enabling deep analysis of usage patterns and engagement.
+This log provides detailed records of Copilot interactions across all surfaces (Chat, M365 apps, Agents), as well as interactions with **third-party and custom-built AI applications** (e.g., Confluence Cloud, Jira Cloud, Miro), enabling deep analysis of usage patterns and engagement across the full AI landscape.
 
 ### Requirements
 - Access level required: **Audit Reader** or **Compliance Administrator**
@@ -130,9 +143,27 @@ This log provides detailed records of Copilot interactions across all surfaces (
 
 2. **Configure the audit search**
    - In **Activities > Friendly Names**, select:  
-     `Copilot Activities – Interacted with Copilot`
+     - `Copilot Activities – Interacted with Copilot` *(required)* — M365 Copilot interactions across all surfaces (RecordType: CopilotInteraction)
+
+   - **Recommended**: Also select these two additional activities to capture **third-party and custom AI app** usage:  
+     - `Copilot Activities – Interacted with a Connected AI App` — Custom-built Copilots and registered 3rd-party AI apps that your org has deployed (RecordType: ConnectedAIAppInteraction)
+     - `Copilot Activities – Interacted with an AI App` — Non-Microsoft 3rd-party AI apps accessed via Microsoft 365, even if not formally deployed in your org (RecordType: AIAppInteraction)
+
    - Set a **Date Range** (recommended: 1–3 months to match your Viva query)
    - Give your search a descriptive name (e.g., "Copilot Audit Export - Oct 2025")
+
+   > 💡 **Why include the extra activities?**  
+   > The standard `Interacted with Copilot` activity only captures M365 Copilot usage. As organisations adopt third-party agents and custom Copilots (e.g., Confluence Cloud, Jira Cloud, Miro), these interactions are logged under separate record types. Including them gives you a **complete picture of AI adoption** — not just Microsoft Copilot, but the full ecosystem of AI tools your users are engaging with.
+
+   > ⚠️ **Pay-as-you-go billing for "Interacted with an AI App" (AIAppInteraction / RT405):**  
+   > This third activity type uses **Microsoft Purview pay-as-you-go (PAYG) billing** and is **not** included in standard Audit (Standard) or Audit (Premium) subscriptions. To enable it:  
+   > 1. An admin must set up [pay-as-you-go billing](https://learn.microsoft.com/en-us/purview/audit-copilot#auditing-for-non-microsoft-ai-applications) in Microsoft Purview, which bills based on the volume of audit records generated  
+   > 2. Once enabled, Purview begins logging interactions with non-Microsoft AI applications  
+   > 3. Costs are consumption-based — you only pay for the records actually generated  
+   >
+   > **If PAYG is not enabled**, selecting this activity will simply return no results — the first two activities will still work normally. You can always add this later without re-exporting the other data.  
+   >
+   > The second activity (`Interacted with a Connected AI App`) does **not** require PAYG — it is included with your existing Audit subscription and covers custom-built Copilots and registered 3P apps.
 
 3. **Run and export the search**
    - Click **Search**
@@ -196,7 +227,39 @@ This data provides a list of users with Copilot licenses, enabling you to track 
 </details>
 
 <details>
-<summary>📥 Step 3: Access Org Data File (Microsoft Entra or Viva Insights)</summary>
+<summary>🤖 Step 3: Export Agent 365 Data (Microsoft Admin Center)</summary>
+
+### What This Data Provides
+This file provides a catalogue of agents available in your tenant via the Agent 365 platform in the Microsoft Admin Center (MAC), enabling analysis of agent provisioning, availability, and adoption across your organization.
+
+### Requirements
+- Access level required: **Global Administrator** or **Reports Reader**
+- Portal: Microsoft Admin Center (MAC)
+- Permissions needed: Access to Agent 365 / Agent Inventory
+
+### Step-by-Step Instructions
+
+1. **Navigate to the Agent 365 section**
+   - Go to: [admin.microsoft.com](https://admin.microsoft.com)
+   - In the left navigation, go to **Agents** 
+   - You should see the **Agents Overview**
+   - This displays all agents: their availability status, templates applied, and assigned users/sources
+
+3. **Export the Agent data**
+   - Click the **Export** button (or ellipsis `...` menu → **Export**)
+   - Download the file as CSV
+   - Save to a known location (e.g., `C:\Data\Agent365_Inventory.csv`)
+
+### Expected File Format
+- **File format**: CSV
+- **Columns**: Agent name, Agent ID, Availability status, Last Activity Date, Template, Assigned users/sources
+- **Rows**: One row per agent in your tenant
+
+
+</details>
+
+<details>
+<summary>📥 Step 4: Access Org Data File (Microsoft Entra or Viva Insights)</summary>
 
 ### What This Data Provides
 This file provides organizational hierarchy and user attributes, enabling segmentation by department, role, location, or other organizational dimensions.
@@ -253,7 +316,7 @@ If you have a custom org data file with organizational hierarchy and user attrib
 </details>
 
 <details>
-<summary>🔐 Step 4: Open and Configure the Power BI Template</summary>
+<summary>🔐 Step 5: Open and Configure the Power BI Template</summary>
 
 ### What You'll Do
 Connect the Power BI template to your data sources using file paths for the CSV files.
@@ -272,7 +335,9 @@ Connect the Power BI template to your data sources using file paths for the CSV 
      Example: `C:\Data\Copilot_Audit_Logs.csv`
    - **Licensed Users Path**: Full path to your licensed users CSV  
      Example: `C:\Data\Copilot_Licensed_Users.csv`
-   - **Org Data Path**: Full path to your org data CSV  
+- **Agent 365 Path**: Full path to your Agent 365 CSV
+     Example: `C:\Data\Agent365_Inventory.csv`
+   - **Org Data Path**: Full path to your org data CSV
      Example: `C:\Data\Org_Data_Entra.csv`
 
 4. **Load the data**
@@ -296,7 +361,7 @@ Connect the Power BI template to your data sources using file paths for the CSV 
 </details>
 
 <details>
-<summary>📊 Step 5: Review and Customize</summary>
+<summary>📊 Step 6: Review and Customize</summary>
 
 ### What You'll Do
 Review the dashboard, customize visualizations, and share with stakeholders.
@@ -341,14 +406,6 @@ Review the dashboard, customize visualizations, and share with stakeholders.
 
 ---
 
-## 📸 Dashboard Preview
-
-See the dashboard in action:
-
-![AI-in-One Dashboard animated preview](Images/AI%20in%20One%20Gif.gif)
-
----
-
 ## 🔗 Related Resources
 
 **Viva Insights Sample Code:** Explore the [Viva Insights Sample Code Repository](https://github.com/microsoft/viva-insights-sample-code) for ready-to-use code examples, API integration patterns, and reference implementations to extend your AI adoption analytics.
@@ -361,8 +418,6 @@ See the dashboard in action:
 
 Check the `/Archived Templates` folder for previous versions of the dashboard template.
 
-Current version: **v1.0** (Initial release)
-
 ---
 
 ##  License
@@ -374,3 +429,10 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md
 ## 🔒 Security
 
 Please see [SECURITY.md](SECURITY.md) for information on reporting security vulnerabilities.
+
+---
+
+Found this useful? ⭐ Star this repo to help others discover it!
+
+That's it! 🚀
+
