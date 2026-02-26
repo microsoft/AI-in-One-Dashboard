@@ -91,7 +91,7 @@ foreach ($moduleName in @('Microsoft.Graph.Authentication', 'Microsoft.Graph.Bet
 # Variables
 #############################################################
 
-$outputCSV = "CopilotInteractionsReport-$(Get-Date -Format 'yyyyMMddHHmmss')-$($AuditLogQueryId).csv"
+$outputCSV = "CopilotInteractionsReport-$(Get-Date -Format 'yyyyMMddHHmmss')-"
 
 #############################################################
 # Functions
@@ -234,10 +234,10 @@ function GetCopilotInteractionsAndUpload {
             if ($IsFinal) {
                 $totalLength = $position + $bytesToSend
                 $finalRange = "bytes $position-$end/$totalLength"
-                Invoke-GraphPutWithRetry -Body $chunk -Range $finalRange -IsFinal $true -TotalLength $totalLength
+                Invoke-GraphPutWithRetry -Body $chunk -Range $finalRange -IsFinal $true -TotalLength $totalLength | Out-Null
             }
             else {
-                Invoke-GraphPutWithRetry -Body $chunk -Range $range
+                Invoke-GraphPutWithRetry -Body $chunk -Range $range | Out-Null
             }
             
             $position += $bytesToSend
@@ -489,7 +489,7 @@ Write-Output "Retrieved AuditLogQueryId from list: $SharePointListId"
 $query = CheckIfQuerySucceeded -auditLogQueryId $AuditLogQueryId
 
 # Define fileName for upload
-$TargetFileName = $outputCSV
+$TargetFileName = $outputCSV + "$($AuditLogQueryId).csv"
 
 # Get Copilot Interactions and Upload directly
 GetCopilotInteractionsAndUpload -auditLogQueryId $AuditLogQueryId -DriveId $DriveId -FileName $TargetFileName
