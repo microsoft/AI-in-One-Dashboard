@@ -45,6 +45,38 @@ The typical workflow is:
 
 ---
 
+## Creating a self-signed certificate (optional)
+
+If you choose the **App registration + certificate** auth mode, you need a certificate uploaded to the app registration and available in the local certificate store of the machine (or Azure Automation account) running the scripts.
+
+The snippet below creates a self-signed certificate, exports the public key as a `.cer` file for upload to the app registration, and leaves the private key in your current user certificate store for use by the scripts.
+
+```powershell
+$certName = "ai-in-one-dashboard"   # Replace with your preferred certificate name
+
+$cert = New-SelfSignedCertificate `
+    -Subject           "CN=$certName" `
+    -CertStoreLocation "Cert:\CurrentUser\My" `
+    -KeyExportPolicy   Exportable `
+    -KeySpec           Signature `
+    -KeyLength         2048 `
+    -KeyAlgorithm      RSA `
+    -HashAlgorithm     SHA256
+
+Export-Certificate -Cert $cert -FilePath "$certName.cer"
+
+Write-Output "Thumbprint: $($cert.Thumbprint)"
+Write-Output "Certificate exported to: $certName.cer"
+```
+
+Then:
+1. In the [Azure portal](https://portal.azure.com), open the app registration → **Certificates & secrets** → **Certificates** → **Upload certificate** → select the exported `.cer` file.
+2. Use the printed thumbprint as the `-CertificateThumbprint` parameter when invoking the runbook scripts.
+
+> **Note:** Self-signed certificates are suitable for development and testing. For production, use a certificate issued by your organisation's CA or Azure Key Vault.
+
+---
+
 ## Script 1 — ProvisionPreReqs.ps1
 
 Run this **once** as a setup step, interactively. It sets up all the Azure and SharePoint infrastructure that the two runbooks depend on.
