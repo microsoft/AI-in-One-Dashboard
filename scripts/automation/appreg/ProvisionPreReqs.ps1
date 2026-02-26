@@ -12,7 +12,9 @@
 #              - Sites.Selected
 #   Step 3 - Admin-consents all permissions
 #   Step 4 - Creates SharePoint site (or uses existing), doc library and queue list
-#   Step 5 - Grants the app write access to the specific SharePoint site
+#   Step 5 - Grants the app 'write' access to the specific SharePoint site
+#
+# Note: The SharePoint site must already exist. Create it manually and pass its ID via -SharePointSiteId.
 #
 # Contact alexgrover@microsoft.com for questions
 #
@@ -33,16 +35,14 @@ param (
     [Parameter(Mandatory)]
     [string]$TenantName,            # e.g. "contoso" (without .onmicrosoft.com / .sharepoint.com)
 
-    [string]$SharePointSiteId = "", # If provided, skips site creation and uses this existing site
+    [Parameter(Mandatory)]
+    [string]$SharePointSiteId,      # Graph site ID, e.g. contoso.sharepoint.com,{siteGuid},{webGuid}
 
-    [string]$SiteAlias = "ai-in-one-dashboard",         # URL alias for new site, e.g. /sites/ai-in-one-dashboard
-    [string]$SiteDisplayName = "AI-in-One Dashboard",   # Display name for new site
     [string]$DocLibName = "CopilotReports",             # Document library name for CSV reports
     [string]$QueueListName = "AuditQueryQueue",         # List name for the audit query queue
 
     [string]$ClientId = "",         # If provided, skips app creation and uses this existing app registration
-    [string]$AppDisplayName = "AI-in-One Dashboard Automation",
-    [string]$SitePermissionRole = "write"   # 'read' or 'write'
+    [string]$AppDisplayName = "AI-in-One Dashboard Automation"
 )
 
 #############################################################
@@ -216,88 +216,16 @@ Write-Output ""
 Write-Output "=== Step 4: SharePoint Site, Document Library and Queue List ==="
 
 # --- 4a: Site ---
-if (-not [string]::IsNullOrWhiteSpace($SharePointSiteId)) {
-    Write-Output "SharePointSiteId provided — looking up existing site..."
-    try {
-        $site = Invoke-MgGraphRequest -Method GET `
-            -Uri "https://graph.microsoft.com/v1.0/sites/$SharePointSiteId"
-        Write-Output "Found site: $($site.displayName) ($($site.id))"
-        $SharePointSiteId = $site.id
-    }
-    catch {
-        Write-Error "Failed to find site with ID '$SharePointSiteId': $_"
-        exit 1
-    }
-} else {
-    Write-Output "No SharePointSiteId provided — checking for existing site at /sites/$SiteAlias..."
-
-    $existingSite = $null
-    try {
-        $existingSite = Invoke-MgGraphRequest -Method GET `
-            -Uri "https://graph.microsoft.com/v1.0/sites/$TenantName.sharepoint.com:/sites/$SiteAlias" `
-            -ErrorAction SilentlyContinue
-    }
-    catch {
-        # Site doesn't exist yet — will create below
-    }
-
-    if ($existingSite) {
-        Write-Output "Found existing site: $($existingSite.displayName) ($($existingSite.id))"
-        $SharePointSiteId = $existingSite.id
-    } else {
-        Write-Output "Creating SharePoint Communication Site: $SiteDisplayName..."
-
-        $siteCreationBody = @{
-            request = @{
-                Title               = $SiteDisplayName
-                Url                 = "https://$TenantName.sharepoint.com/sites/$SiteAlias"
-                Lcid                = 1033
-                ShareByEmailEnabled = $false
-                Classification      = ""
-                Description         = "Site for AI-in-One Dashboard automation reports and queues"
-                WebTemplate         = "STS#3"
-                SiteDesignId        = "00000000-0000-0000-0000-000000000000"
-                HubSiteId           = "00000000-0000-0000-0000-000000000000"
-                Owner               = ""
-            }
-        } | ConvertTo-Json -Depth 5
-
-        try {
-            $createResult = Invoke-MgGraphRequest -Method POST `
-                -Uri "https://$TenantName-admin.sharepoint.com/_api/SPSiteManager/create" `
-                -Body $siteCreationBody `
-                -ContentType "application/json;odata=verbose"
-
-            if ($createResult.SiteStatus -eq 2) {
-                Write-Output "Site created successfully."
-            } elseif ($createResult.SiteStatus -eq 1) {
-                Write-Output "Site provisioning in progress — waiting up to 2 minutes..."
-                $retries = 0
-                do {
-                    Start-Sleep -Seconds 15
-                    $retries++
-                    $statusCheck = Invoke-MgGraphRequest -Method POST `
-                        -Uri "https://$TenantName-admin.sharepoint.com/_api/SPSiteManager/status" `
-                        -Body (@{ "url" = "https://$TenantName.sharepoint.com/sites/$SiteAlias" } | ConvertTo-Json) `
-                        -ContentType "application/json;odata=verbose"
-                } while ($statusCheck.SiteStatus -ne 2 -and $retries -lt 8)
-
-                if ($statusCheck.SiteStatus -ne 2) {
-                    Write-Error "Site provisioning timed out. Provision manually and re-run with -SharePointSiteId."
-                    exit 1
-                }
-            }
-        }
-        catch {
-            Write-Error "Failed to create SharePoint site: $_"
-            exit 1
-        }
-
-        $newSite = Invoke-MgGraphRequest -Method GET `
-            -Uri "https://graph.microsoft.com/v1.0/sites/$TenantName.sharepoint.com:/sites/$SiteAlias"
-        $SharePointSiteId = $newSite.id
-        Write-Output "Site ID: $SharePointSiteId"
-    }
+Write-Output "Looking up site: $SharePointSiteId..."
+try {
+    $site = Invoke-MgGraphRequest -Method GET `
+        -Uri "https://graph.microsoft.com/v1.0/sites/$SharePointSiteId"
+    Write-Output "Found site: $($site.displayName) ($($site.id))"
+    $SharePointSiteId = $site.id
+}
+catch {
+    Write-Error "Failed to find site with ID '$SharePointSiteId': $_"
+    exit 1
 }
 
 # --- 4b: Document Library for CSV reports ---
@@ -398,7 +326,7 @@ if ($existingQueueList) {
 Write-Output ""
 Write-Output "=== Step 5: Granting site-level SharePoint permission ==="
 Write-Output "Site ID   : $SharePointSiteId"
-Write-Output "Role      : $SitePermissionRole"
+Write-Output "Role      : write"
 Write-Output "App       : $($app.DisplayName)"
 
 $existingSitePerms = Invoke-MgGraphRequest -Method GET `
@@ -413,7 +341,7 @@ if ($alreadyGranted) {
     Write-Output "App already has site-level permission — skipping."
 } else {
     $permBody = @{
-        roles               = @($SitePermissionRole)
+        roles               = @("write")
         grantedToIdentities = @(
             @{
                 application = @{
@@ -445,6 +373,6 @@ Write-Output "SPO Site ID      : $SharePointSiteId"
 Write-Output "Doc Library      : $DocLibName (ID: $docLibId)"
 Write-Output "Drive ID         : $driveId"
 Write-Output "Queue List       : $QueueListName (ID: $queueListId)"
-Write-Output "SPO Site Access  : '$SitePermissionRole' on $SharePointSiteId"
+Write-Output "SPO Site Access  : 'write' on $SharePointSiteId"
 Write-Output ""
 Write-Output "Use the values above in your runbook parameters."

@@ -88,55 +88,36 @@ Run this **once** as a setup step, interactively. It sets up all the Azure and S
 | **Step 1** | Creates a new app registration (or finds an existing one by `-ClientId` or display name) |
 | **Step 2** | Declares required Microsoft Graph application permissions on the app: `AuditLog.Read.All`, `AuditLogsQuery.Read.All`, `Sites.Selected` |
 | **Step 3** | Admin-consents all permissions (creates app role assignments via the Graph service principal) |
-| **Step 4** | Creates a SharePoint Communication Site (or uses existing), a Document Library for CSV reports, and a Queue List for query IDs |
+| **Step 4** | Looks up the SharePoint site, then creates the Document Library and Queue List if they don't exist |
 | **Step 5** | Grants the app `write` access to the specific SharePoint site via `Sites.Selected` |
+
+> **Note:** The SharePoint site must already exist before running this script. Create it manually in the [SharePoint admin centre](https://admin.microsoft.com/sharepoint) and pass its Graph site ID via `-SharePointSiteId`.
 
 ### Operating modes
 
 The script is **idempotent** — you can re-run it safely. Each resource is only created if it does not already exist.
 
-#### Mode A — Full new setup (recommended for first-time setup)
+#### Mode A — New app registration
 
-Omit both `-ClientId` and `-SharePointSiteId`. The script creates everything from scratch.
-
-```powershell
-.\ProvisionPreReqs.ps1 `
-    -TenantId    "<your-tenant-id>" `
-    -TenantName  "<your-tenant-name>"     # e.g. "contoso" (without .onmicrosoft.com)
-```
-
-#### Mode B — Existing app registration, new SharePoint site
-
-Pass `-ClientId` to reuse an existing app registration. The script skips app creation and grants permissions to the existing app, then creates the SharePoint site and lists.
-
-```powershell
-.\ProvisionPreReqs.ps1 `
-    -TenantId    "<your-tenant-id>" `
-    -TenantName  "<your-tenant-name>" `
-    -ClientId    "<existing-app-client-id>"
-```
-
-#### Mode C — New app registration, existing SharePoint site
-
-Pass `-SharePointSiteId` to use an existing SharePoint site. The script creates a new app registration, grants it permissions, and creates the document library and queue list on the existing site if they are missing.
+Omit `-ClientId`. The script creates a new app registration, grants and consents all permissions, and sets up the document library and queue list.
 
 ```powershell
 .\ProvisionPreReqs.ps1 `
     -TenantId          "<your-tenant-id>" `
     -TenantName        "<your-tenant-name>" `
-    -SharePointSiteId  "<site-id>"     # e.g. contoso.sharepoint.com,{siteGuid},{webGuid}
-```
-
-#### Mode D — Existing app registration and existing site (re-run / permissions check)
-
-Pass both `-ClientId` and `-SharePointSiteId`. The script ensures all required permissions are declared and consented, and that the document library and queue list exist. Nothing is recreated if already present.
-
-```powershell
-.\ProvisionPreReqs.ps1 `
-    -TenantId          "<your-tenant-id>" `
-    -TenantName        "<your-tenant-name>" `
-    -ClientId          "<existing-app-client-id>" `
     -SharePointSiteId  "<site-id>"
+```
+
+#### Mode B — Existing app registration (re-run / permissions check)
+
+Pass `-ClientId` to reuse an existing app registration. The script ensures all permissions are declared and consented, and that the document library and queue list exist. Nothing is recreated if already present.
+
+```powershell
+.\ProvisionPreReqs.ps1 `
+    -TenantId          "<your-tenant-id>" `
+    -TenantName        "<your-tenant-name>" `
+    -SharePointSiteId  "<site-id>" `
+    -ClientId          "<existing-app-client-id>"
 ```
 
 ### Parameters
@@ -145,14 +126,11 @@ Pass both `-ClientId` and `-SharePointSiteId`. The script ensures all required p
 |---|---|---|---|---|
 | `TenantId` | string | **Yes** | — | Your Microsoft Entra tenant ID (GUID) |
 | `TenantName` | string | **Yes** | — | Your tenant short name (e.g. `contoso`, without `.onmicrosoft.com`) |
+| `SharePointSiteId` | string | **Yes** | — | Graph site ID of the existing SharePoint site (e.g. `contoso.sharepoint.com,{siteGuid},{webGuid}`) |
 | `ClientId` | string | No | _(blank)_ | If provided, uses this existing app registration instead of creating a new one |
-| `SharePointSiteId` | string | No | _(blank)_ | If provided, uses this existing SharePoint site instead of creating a new one |
-| `SiteAlias` | string | No | `ai-in-one-dashboard` | URL alias for the new site (e.g. `/sites/ai-in-one-dashboard`) |
-| `SiteDisplayName` | string | No | `AI-in-One Dashboard` | Display name for the new SharePoint site |
 | `DocLibName` | string | No | `CopilotReports` | Name of the document library for CSV reports |
 | `QueueListName` | string | No | `AuditQueryQueue` | Name of the SharePoint list used as a query queue |
 | `AppDisplayName` | string | No | `AI-in-One Dashboard Automation` | Display name for the new app registration |
-| `SitePermissionRole` | string | No | `write` | Permission role granted to the app on the SharePoint site (`read` or `write`) |
 
 ### Output
 
