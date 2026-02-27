@@ -1,3 +1,5 @@
 scripts/M365CopilotUsers.csv
 scripts/CopilotInteractionsReport-*.csv
 scripts/automation/main.compiled.json
+scripts/automation/appreg/groveParams.ps1
+scripts/automation/appreg/ai-in-one-dashboard.cer

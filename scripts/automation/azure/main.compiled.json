@@ -1,0 +1,228 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.18.4.5664",
+      "templateHash": "11049308465714457543"
+    }
+  },
+  "parameters": {
+    "namePrefix": {
+      "type": "string",
+      "defaultValue": "allinonedash",
+      "metadata": {
+        "description": "Name prefix for resources"
+      }
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "Location for all resources"
+      }
+    },
+    "storageSku": {
+      "type": "string",
+      "defaultValue": "Standard_LRS",
+      "metadata": {
+        "description": "SKU for Storage Account"
+      }
+    },
+    "storageKind": {
+      "type": "string",
+      "defaultValue": "StorageV2",
+      "metadata": {
+        "description": "Kind for Storage Account"
+      }
+    },
+    "queueName": {
+      "type": "string",
+      "defaultValue": "auditsearchidqueue",
+      "metadata": {
+        "description": "Queue name to create"
+      }
+    },
+    "automationAccountName": {
+      "type": "string",
+      "defaultValue": "[format('{0}-automation', parameters('namePrefix'))]",
+      "metadata": {
+        "description": "Automation account name"
+      }
+    },
+    "runtimeEnvironmentName": {
+      "type": "string",
+      "defaultValue": "ps74",
+      "metadata": {
+        "description": "Automation runtime environment name (PowerShell 7.4)"
+      }
+    },
+    "automationModules": {
+      "type": "array",
+      "defaultValue": [
+        "Az.Accounts",
+        "Az.Storage",
+        "Az.Resources",
+        "Microsoft.Graph.Authentication",
+        "Microsoft.Graph.Beta.Security",
+        "Microsoft.Graph.Reports"
+      ],
+      "metadata": {
+        "description": "List of PowerShell modules to import into Automation Account"
+      }
+    },
+    "runbooks": {
+      "type": "object",
+      "defaultValue": {
+        "GetCopilotInteractions": "Downloads copilot interactions from audit API and saves to CSV in SharePoint.",
+        "CreateAuditLogQuery": "Write-Output \"Placeholder: do work\""
+      },
+      "metadata": {
+        "description": "List of runbooks to create (name -> content)"
+      }
+    }
+  },
+  "variables": {
+    "storageAccountName": "[toLower(replace(format('{0}stg', parameters('namePrefix')), '-', ''))]",
+    "storageQueueDataContributorRoleId": "974c5e8b-45b9-4653-ba55-5f855dd0fb88"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "apiVersion": "2025-06-01",
+      "name": "[variables('storageAccountName')]",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "[parameters('storageSku')]"
+      },
+      "kind": "[parameters('storageKind')]",
+      "properties": {
+        "allowBlobPublicAccess": false,
+        "minimumTlsVersion": "TLS1_2",
+        "allowSharedKeyAccess": true,
+        "supportsHttpsTrafficOnly": true
+      }
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts/queueServices/queues",
+      "apiVersion": "2025-06-01",
+      "name": "[format('{0}/default/{1}', variables('storageAccountName'), parameters('queueName'))]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Automation/automationAccounts",
+      "apiVersion": "2023-11-01",
+      "name": "[parameters('automationAccountName')]",
+      "location": "[parameters('location')]",
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "properties": {
+        "sku": {
+          "name": "Basic"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Automation/automationAccounts/runtimeEnvironments",
+      "apiVersion": "2024-10-23",
+      "name": "[format('{0}/{1}', parameters('automationAccountName'), parameters('runtimeEnvironmentName'))]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "runtime": {
+          "language": "PowerShell",
+          "version": "7.4"
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Automation/automationAccounts', parameters('automationAccountName'))]"
+      ]
+    },
+    {
+      "copy": {
+        "name": "runtimePackages",
+        "count": "[length(parameters('automationModules'))]"
+      },
+      "type": "Microsoft.Automation/automationAccounts/runtimeEnvironments/packages",
+      "apiVersion": "2024-10-23",
+      "name": "[format('{0}/{1}/{2}', parameters('automationAccountName'), parameters('runtimeEnvironmentName'), parameters('automationModules')[copyIndex()])]",
+      "properties": {
+        "contentLink": {
+          "uri": "[format('https://www.powershellgallery.com/api/v2/package/{0}', parameters('automationModules')[copyIndex()])]"
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Automation/automationAccounts', parameters('automationAccountName'))]",
+        "[resourceId('Microsoft.Automation/automationAccounts/runtimeEnvironments', split(format('{0}/{1}', parameters('automationAccountName'), parameters('runtimeEnvironmentName')), '/')[0], split(format('{0}/{1}', parameters('automationAccountName'), parameters('runtimeEnvironmentName')), '/')[1])]"
+      ]
+    },
+    {
+      "copy": {
+        "name": "runbookResources",
+        "count": "[length(items(parameters('runbooks')))]"
+      },
+      "type": "Microsoft.Automation/automationAccounts/runbooks",
+      "apiVersion": "2024-10-23",
+      "name": "[format('{0}/{1}', parameters('automationAccountName'), items(parameters('runbooks'))[copyIndex()].key)]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "runbookType": "PowerShell",
+        "runtimeEnvironment": "[parameters('runtimeEnvironmentName')]",
+        "logProgress": true,
+        "logVerbose": true,
+        "draft": {
+          "inEdit": true,
+          "description": "[items(parameters('runbooks'))[copyIndex()].value]"
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Automation/automationAccounts', parameters('automationAccountName'))]",
+        "[resourceId('Microsoft.Automation/automationAccounts/runtimeEnvironments', split(format('{0}/{1}', parameters('automationAccountName'), parameters('runtimeEnvironmentName')), '/')[0], split(format('{0}/{1}', parameters('automationAccountName'), parameters('runtimeEnvironmentName')), '/')[1])]"
+      ]
+    },
+    {
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2020-04-01-preview",
+      "scope": "[format('Microsoft.Storage/storageAccounts/{0}', variables('storageAccountName'))]",
+      "name": "[guid(resourceId('Microsoft.Automation/automationAccounts', parameters('automationAccountName')), resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), variables('storageQueueDataContributorRoleId'))]",
+      "properties": {
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('storageQueueDataContributorRoleId'))]",
+        "principalId": "[reference(resourceId('Microsoft.Automation/automationAccounts', parameters('automationAccountName')), '2023-11-01', 'full').identity.principalId]",
+        "principalType": "ServicePrincipal"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Automation/automationAccounts', parameters('automationAccountName'))]",
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "storageAccountNameOutput": {
+      "type": "string",
+      "value": "[variables('storageAccountName')]"
+    },
+    "queueResourceId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Storage/storageAccounts/queueServices/queues', split(format('{0}/default/{1}', variables('storageAccountName'), parameters('queueName')), '/')[0], split(format('{0}/default/{1}', variables('storageAccountName'), parameters('queueName')), '/')[1], split(format('{0}/default/{1}', variables('storageAccountName'), parameters('queueName')), '/')[2])]"
+    },
+    "automationAccountId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Automation/automationAccounts', parameters('automationAccountName'))]"
+    },
+    "automationAccountName": {
+      "type": "string",
+      "value": "[parameters('automationAccountName')]"
+    },
+    "automationIdentityPrincipalId": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Automation/automationAccounts', parameters('automationAccountName')), '2023-11-01', 'full').identity.principalId]"
+    },
+    "automationIdentityTenantId": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Automation/automationAccounts', parameters('automationAccountName')), '2023-11-01', 'full').identity.tenantId]"
+    }
+  }
+}
