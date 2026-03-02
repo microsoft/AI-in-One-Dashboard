@@ -242,14 +242,10 @@ This file provides a catalogue of agents available in your tenant via the Agent 
 1. **Navigate to the Agent Registry**
    - Go to: [admin.microsoft.com](https://admin.microsoft.com)
    - In the left navigation, go to **Agents → All Agents**
-   - This opens the **Agent Registry**, which lists all agents: their availability status, type, host products, and assigned users/sources
 
 2. **Export the Agent data**
    - Click **Export to Excel** in the toolbar
-   - Download the file (Excel format)
    - Save to a known location (e.g., `C:\Data\Agent365_Inventory.xlsx`)
-
-> ⚠️ **Note**: The Export feature is on the **All Agents** (Agent Registry) page, not on the Agents Overview page. If the export takes more than 1 minute, the exported file will include only the data collected up to that point.
 
 ### Expected File Format
 - **File format**: Excel (.xlsx)
