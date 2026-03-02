@@ -233,28 +233,30 @@ This data provides a list of users with Copilot licenses, enabling you to track 
 This file provides a catalogue of agents available in your tenant via the Agent 365 platform in the Microsoft Admin Center (MAC), enabling analysis of agent provisioning, availability, and adoption across your organization.
 
 ### Requirements
-- Access level required: **Global Administrator** or **Reports Reader**
+- Access level required: **AI Admin** (or **Global Reader** for view-only)
 - Portal: Microsoft Admin Center (MAC)
-- Permissions needed: Access to Agent 365 / Agent Inventory
+- Permissions needed: Access to Agent 365 / Agent Registry
 
 ### Step-by-Step Instructions
 
-1. **Navigate to the Agent 365 section**
+1. **Navigate to the Agent Registry**
    - Go to: [admin.microsoft.com](https://admin.microsoft.com)
-   - In the left navigation, go to **Agents** 
-   - You should see the **Agents Overview**
-   - This displays all agents: their availability status, templates applied, and assigned users/sources
+   - In the left navigation, go to **Agents → All Agents**
+   - This opens the **Agent Registry**, which lists all agents: their availability status, type, host products, and assigned users/sources
 
-3. **Export the Agent data**
-   - Click the **Export** button (or ellipsis `...` menu → **Export**)
-   - Download the file as CSV
-   - Save to a known location (e.g., `C:\Data\Agent365_Inventory.csv`)
+2. **Export the Agent data**
+   - Click **Export to Excel** in the toolbar
+   - Download the file (Excel format)
+   - Save to a known location (e.g., `C:\Data\Agent365_Inventory.xlsx`)
+
+> ⚠️ **Note**: The Export feature is on the **All Agents** (Agent Registry) page, not on the Agents Overview page. If the export takes more than 1 minute, the exported file will include only the data collected up to that point.
 
 ### Expected File Format
-- **File format**: CSV
-- **Columns**: Agent name, Agent ID, Availability status, Last Activity Date, Template, Assigned users/sources
-- **Rows**: One row per agent in your tenant
+- **File format**: Excel (.xlsx)
+- **Columns**: Name, Host products, Created date, Developer user ID, Description, Status, Version
+- **Rows**: One row per shared agent in your tenant
 
+📖 **Learn more**: [Agent Registry in the Microsoft 365 admin center – Microsoft Learn](https://learn.microsoft.com/en-us/microsoft-365/admin/manage/agent-registry)
 
 </details>
 
@@ -335,8 +337,8 @@ Connect the Power BI template to your data sources using file paths for the CSV 
      Example: `C:\Data\Copilot_Audit_Logs.csv`
    - **Licensed Users Path**: Full path to your licensed users CSV  
      Example: `C:\Data\Copilot_Licensed_Users.csv`
-- **Agent 365 Path**: Full path to your Agent 365 CSV
-     Example: `C:\Data\Agent365_Inventory.csv`
+   - **Agent 365 Path**: Full path to your Agent 365 export  
+     Example: `C:\Data\Agent365_Inventory.xlsx`
    - **Org Data Path**: Full path to your org data CSV
      Example: `C:\Data\Org_Data_Entra.csv`
 
@@ -435,4 +437,3 @@ Please see [SECURITY.md](SECURITY.md) for information on reporting security vuln
 Found this useful? ⭐ Star this repo to help others discover it!
 
 That's it! 🚀
-
