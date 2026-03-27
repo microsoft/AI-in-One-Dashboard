@@ -1,7 +1,8 @@
 # ℹ️ **Public Preview: Agent Dashboard in Copilot Analytics**  
 The Agent Dashboard is now in public preview, providing one-click visibility into agent usage. Work with your IT admin to enable it.
 
-
+> ⚠️ **Support Notice**  
+> This repository is not supported through Microsoft support channels. Please report issues by opening an issue in this repo.
 
 # 🤖 AI-in-One Dashboard
 
