@@ -1,5 +1,11 @@
-scripts/M365CopilotUsers.csv
-scripts/CopilotInteractionsReport-*.csv
-scripts/automation/main.compiled.json
-scripts/automation/appreg/groveParams.ps1
-scripts/automation/appreg/ai-in-one-dashboard.cer
+# User data exports
+scripts/*.csv
+
+# Compiled/generated config
+scripts/automation/*.json
+
+# Credentials and certificates
+scripts/automation/appreg/
+*.cer
+*.pfx
+*.p12
