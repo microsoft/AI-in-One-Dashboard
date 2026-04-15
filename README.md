@@ -422,6 +422,10 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md
 
 Please see [SECURITY.md](SECURITY.md) for information on reporting security vulnerabilities.
 
+## 📊 Power BI Reports
+
+Refer to PowerBI-Reports.md for report links.
+
 ---
 
 Found this useful? ⭐ Star this repo to help others discover it!
