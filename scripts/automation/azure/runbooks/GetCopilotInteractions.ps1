@@ -116,24 +116,25 @@ function GetCopilotInteractionsAndUpload {
         throw
     }
 
-    # --- Helper: Retry Logic ---
-    function Invoke-GraphPutWithRetry {
+    # --- Helper: Retry Logic (generic for GET, PUT, POST) ---
+    function Invoke-GraphRequestWithRetry {
         param (
-            [byte[]] $Body,
-            [string] $Range,
-            [bool] $IsFinal = $false,
-            [long] $TotalLength = 0
+            [Parameter(Mandatory)]
+            [string] $Method,
+            [Parameter(Mandatory)]
+            [string] $Uri,
+            [hashtable] $Headers = @{},
+            [object] $Body = $null,
+            [switch] $SkipHeaderValidation
         )
 
         for ($attempt = 1; $attempt -le $MaxRetries; $attempt++) {
             try {
-                # Use the Range string as provided (should be "bytes start-end/*" or "bytes start-end/total")
-                $contentRange = $Range
+                $params = @{ Method = $Method; Uri = $Uri; Headers = $Headers }
+                if ($null -ne $Body) { $params['Body'] = $Body }
+                if ($SkipHeaderValidation) { $params['SkipHeaderValidation'] = $true }
 
-                # Build headers for Invoke-MgGraphRequest (the module will handle auth)
-                $headers = @{ "Content-Range" = $contentRange; }
-
-                return Invoke-MgGraphRequest -Method PUT -Uri $uploadUrl -Headers $headers -Body $Body -SkipHeaderValidation 
+                return Invoke-MgGraphRequest @params
             }
             catch {
                 $ex = $_
@@ -141,14 +142,17 @@ function GetCopilotInteractionsAndUpload {
                 $resp = $null
                 if ($ex.Exception -and $ex.Exception.Response) { $resp = $ex.Exception.Response }
                 if ($resp -and ($resp.StatusCode -eq 429 -or $resp.StatusCode -ge 500)) {
-                    $retryAfter = 5
+                    # Exponential backoff: 5s, 10s, 20s, 40s ... capped at 60s
+                    $retryAfter = [Math]::Min(5 * [Math]::Pow(2, $attempt - 1), 60)
                     try { if ($resp.Headers['Retry-After']) { $retryAfter = [int]$resp.Headers['Retry-After'] } } catch {}
+                    Write-Output "$Method request failed (attempt $attempt/$MaxRetries, HTTP $($resp.StatusCode)), retrying in ${retryAfter}s..."
                     Start-Sleep -Seconds $retryAfter
                     continue
                 }
                 throw
             }
         }
+        throw "$Method request to $Uri failed after $MaxRetries attempts."
     }
 
     # --- Helper: Smart Flush ---
@@ -182,10 +186,10 @@ function GetCopilotInteractionsAndUpload {
             if ($IsFinal) {
                 $totalLength = $position + $bytesToSend
                 $finalRange = "bytes $position-$end/$totalLength"
-                Invoke-GraphPutWithRetry -Body $chunk -Range $finalRange -IsFinal $true -TotalLength $totalLength
+                Invoke-GraphRequestWithRetry -Method PUT -Uri $uploadUrl -Headers @{ "Content-Range" = $finalRange } -Body $chunk -SkipHeaderValidation
             }
             else {
-                Invoke-GraphPutWithRetry -Body $chunk -Range $range
+                Invoke-GraphRequestWithRetry -Method PUT -Uri $uploadUrl -Headers @{ "Content-Range" = $range } -Body $chunk -SkipHeaderValidation
             }
             
             $position += $bytesToSend
@@ -214,7 +218,7 @@ function GetCopilotInteractionsAndUpload {
         $headerWritten = $false
         
         do {
-            $response = Invoke-MgGraphRequest -Method GET -Uri $uri
+            $response = Invoke-GraphRequestWithRetry -Method GET -Uri $uri
             $records = $response.value
             
             foreach ($item in $records) {
@@ -254,6 +258,9 @@ function GetCopilotInteractionsAndUpload {
 
             Write-Output "Processed $rowCount records..."
             $uri = $response.'@odata.nextLink'
+
+            # Throttle between pages to reduce pressure on the beta endpoint
+            if ($uri) { Start-Sleep -Milliseconds 200 }
 
         } while ($uri)
         
