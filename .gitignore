@@ -1,5 +1,38 @@
-scripts/M365CopilotUsers.csv
-scripts/CopilotInteractionsReport-*.csv
-scripts/automation/main.compiled.json
-scripts/automation/appreg/groveParams.ps1
-scripts/automation/appreg/ai-in-one-dashboard.cer
+# User data exports
+scripts/*.csv
+
+# Compiled/generated config
+scripts/automation/*.json
+
+# Credentials and certificates
+scripts/automation/appreg/
+*.cer
+*.pfx
+*.p12
+
+# Local working files (not for distribution)
+*.pbix
+*.xlsx
+*.pdf
+*.ps1
+*.py
+*.txt
+*.md
+!README.md
+!LICENSE.md
+!SECURITY.md
+!Archived Templates/README.md
+
+# Local folders
+Jan Updates*/
+Data sources/
+Discussion Deck/
+Images & Gif/
+Images/New*/
+Interpretation Guide/
+PBI Model/
+PBI Tools/
+Studio Transcripts/
+AiO with sentiment/
+test/
+.github/
