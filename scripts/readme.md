@@ -7,7 +7,29 @@ This folder contains PowerShell scripts to retrieve and export Microsoft Copilot
 - PowerShell 5.1 or higher
 - Microsoft.Graph.Beta.Security PowerShell module (automatically installed by scripts)
 - Microsoft 365 tenant with appropriate permissions
-- Account with `AuditLogsQuery.Read.All` scope access
+- Account with `AuditLogsQuery.Read.All` scope access (see Permissions below)
+
+## Permissions (April 2026 Graph API change)
+
+> 🚨 **Microsoft enforced a new permission model for `/security/auditLog/queries` in April 2026.**
+
+**What changed**: a dedicated scope `AuditLogsQuery.Read.All` is now required for the audit-log query API. The broader `AuditLog.Read.All` scope is **no longer sufficient on its own** — apps consented to that older scope alone will silently get **0 records** back from the records endpoint, with no error.
+
+**What you need**:
+
+| Requirement | Where to verify |
+|---|---|
+| App registration / signed-in account is consented to `AuditLogsQuery.Read.All` | Entra Admin Centre → Identity → Applications → Enterprise applications → find your app → Permissions |
+| Optional granular workload scopes (`AuditLogsQuery-*.Read.All`) for least-privilege deployments | Same place — only needed if you want narrower-than-tenant-wide consent |
+| `Reports.Read.All` for `get-copilot-users.ps1` | unchanged from before |
+
+**Quick check** — after `Connect-MgGraph`, run:
+```powershell
+Get-MgContext | Select-Object Scopes
+```
+You should see `AuditLogsQuery.Read.All` listed. If you only see `AuditLog.Read.All`, the new permission hasn't been granted and you'll hit the silent-0-records issue.
+
+**Workaround if you can't get admin consent right away**: the `Search-UnifiedAuditLog` cmdlet (from the Exchange Online Management module) is unaffected by this change. Tradeoffs vs the Graph API path: no client-secret app-auth, serial execution (slower for large pulls), and no Entra user enrichment.
 
 ## Scripts
 
@@ -185,6 +207,19 @@ Contains detailed interaction information:
 
 ### "Query status: pending"
 The audit log query is still processing. Wait a few minutes and run `get-copilot-interactions.ps1` again.
+
+### Query completes but `get-copilot-interactions.ps1` returns **0 records** (despite known activity)
+This is the classic symptom of the April 2026 Graph API permission change.
+
+**Diagnose**:
+1. Run `Connect-MgGraph -Scopes "AuditLogsQuery.Read.All"` and then `Get-MgContext | Select-Object Scopes`
+2. If you don't see `AuditLogsQuery.Read.All` in the consented scopes, the permission hasn't been granted at the tenant level
+
+**Fix**:
+- For interactive scripts: tenant admin consents to `AuditLogsQuery.Read.All` for the user account or app being used
+- For app-registration / unattended scripts: tenant admin grants the scope as an Application permission on the app registration in Entra Admin Centre, then re-runs the script
+
+See the [Permissions](#permissions-april-2026-graph-api-change) section above for the full background.
 
 ---
 

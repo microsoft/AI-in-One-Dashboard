@@ -1,6 +1,11 @@
 # ℹ️ **Agent Dashboard in Copilot Analytics**  
 The Agent Dashboard is now generally available, providing one-click visibility into agent usage. Work with your IT admin to enable it.
 
+> 🚨 **April 2026 — Microsoft Graph Audit Log Query API permission change**  
+> Microsoft began enforcing a new permission for the `/security/auditLog/queries` endpoint. The broader `AuditLog.Read.All` scope is **no longer sufficient on its own** — `AuditLogsQuery.Read.All` is now required.  
+> **Symptom**: scripts run successfully but `CopilotInteraction` queries silently return **0 records** even when activity exists.  
+> **Fix**: have your tenant admin grant `AuditLogsQuery.Read.All` to the app registration / consented account before running the scripts. See [`scripts/readme.md`](scripts/readme.md#permissions-april-2026-graph-api-change) for details.
+
 > ⚠️ **Support Notice**  
 > This repository is not supported through Microsoft support channels. Please report issues by opening an issue in this repo.
 
