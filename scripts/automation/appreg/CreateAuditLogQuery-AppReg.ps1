@@ -145,7 +145,7 @@ function CreateAuditLogQuery {
             $params["userPrincipalNameFilters"] = $userPrincipalNameFilters
         }
         
-        $query = New-MgBetaSecurityAuditLogQuery -BodyParameter $params
+        $query = New-MgBetaSecurityAuditLogQuery -BodyParameter $params -ErrorAction Stop
         Write-Output "Created Audit Log Query: $($query.Id)"
         return $query
     }
@@ -192,6 +192,13 @@ Write-Output "Script started with parameters:"
 Write-Output "Start Date: $startDate"
 Write-Output "End Date: $endDate"
 
+# Validate search duration (API max is 180 days)
+$daySpan = ($endDate - $startDate).TotalDays
+if ($daySpan -gt 180) {
+    Write-Error "Search duration ($([Math]::Ceiling($daySpan)) days) exceeds the maximum of 180 days. Please use a shorter date range."
+    exit 1
+}
+
 # Connect to Microsoft Graph
 ConnectToGraph
 
@@ -204,6 +211,12 @@ $query = CreateAuditLogQuery `
 Write-Output "Query creation completed."
 Write-Output "Query ID: $($query.Id)"
 Write-Output "Query Display Name: $($query.displayName)"
+
+# Validate query ID before writing to the list
+if (-not $query -or [string]::IsNullOrWhiteSpace($query.Id)) {
+    Write-Error "Audit log query failed - no valid query ID returned. Exiting without writing to the list."
+    exit 1
+}
 
 # Send query ID to SharePoint list
 SendQueryIdToList -queryId $query.Id -siteId $SharePointSiteId -listId $SharePointListId
