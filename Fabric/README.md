@@ -1,6 +1,8 @@
-# Fabric / Lakehouse deployment (Path D)
+# Fabric / Lakehouse deployment
 
-This is the **fastest, most reliable** way to run the AI-in-One Dashboard on real audit-log volumes. The heavy JSON parsing happens **upstream in Fabric** instead of inside the Power BI dataset, so the dataset refresh becomes a near-instant data copy (or zero-copy with Direct Lake mode).
+> **Not just Fabric.** This folder is named "Fabric" because that's the simplest deployment, but the same PBIT + parsing notebook also work on **Azure Databricks**, **Synapse Spark**, **Azure SQL / Fabric Warehouse**, or **ADLS Gen2** with no real changes — see [Alternative platforms](#alternative-platforms) below.
+
+This is the **fastest, most reliable** way to run the AI-in-One Dashboard on real audit-log volumes. The heavy JSON parsing happens **upstream** (in Fabric / Databricks / wherever your Spark or SQL compute lives) instead of inside the Power BI dataset, so the dataset refresh becomes a near-instant data copy (or zero-copy with Direct Lake mode).
 
 ## What's in this folder
 
@@ -100,26 +102,46 @@ The existing [`scripts/get-copilot-interactions.ps1`](../scripts/get-copilot-int
 
 ## Alternative platforms
 
-The parsing logic in the notebook is plain PySpark — it runs unchanged in any Spark environment. Swap the source/sink lines for your platform:
+The two artifacts in this folder are deliberately portable:
 
-### Azure Databricks
+- **The notebook** is plain PySpark — runs unchanged on any Spark engine (Fabric, Databricks, Synapse Spark)
+- **The PBIT** uses the `Sql.Database()` connector, which works against any SQL endpoint that exposes the parsed Delta/SQL table — Fabric Lakehouse, Databricks SQL Warehouse, Synapse SQL pool, Azure SQL DB, Fabric Warehouse, on-prem SQL Server
 
-- Replace `Files/audit_raw/*.csv` with your DBFS or Unity Catalog volume path
-- Replace `saveAsTable('Copilot_Interactions_Parsed')` with your Unity Catalog table name (e.g. `catalog.schema.copilot_interactions_parsed`)
-- Connect the PBIT via the **Azure Databricks** connector instead of `Sql.Database` — point it at the Databricks SQL warehouse hostname and HTTP path
+So the same set of files supports the deployments below; only a couple of paths/parameter values change.
 
-### Azure Data Lake Gen2 (no Spark)
+### 🧱 Azure Databricks
 
-- Run the export script to produce CSVs and land them in your ADLS container
-- Either:
-  - **Use a Fabric Lakehouse Shortcut** to expose the ADL folder as a Lakehouse table, then use this Fabric path as-is, **or**
-  - Use the **CSV variant** (`AI-in-One Dashboard - csv only.pbit` at the repo root) and point its `Copilot Interactions File` parameter at the ADL `https://<account>.dfs.core.windows.net/...` URL
+**Notebook changes (3 lines):**
+- Raw input path: `'Files/audit_raw/*.csv'` → DBFS or Unity Catalog volume, e.g. `'/Volumes/main/copilot/audit_raw/*.csv'`
+- Output: `saveAsTable('Copilot_Interactions_Parsed')` → three-part UC name, e.g. `'main.copilot.interactions_parsed'`
+- Schedule via **Databricks Workflows** instead of Fabric Pipelines
 
-### Synapse / Azure SQL DB
+**PBIT parameters:**
 
-- Run the parsing notebook (Spark pool) or any equivalent Python/SQL transform
-- Land the result in a SQL table
-- The PBIT's `Sql.Database(...)` connector works against any SQL endpoint — just supply the right hostname + database
+| Parameter | Value |
+|---|---|
+| **Fabric SQL Endpoint** | Your Databricks SQL Warehouse hostname (e.g. `<workspace-id>.cloud.databricks.com`) |
+| **Lakehouse Database** | The Unity Catalog name (or `hive_metastore`) — the database the parsed table lives in |
+
+For a more polished native-connector experience, swap the M-query's `Sql.Database(...)` line for `Databricks.Catalogs(...)`. The rest of the M-query is unchanged.
+
+### 🪣 Azure Data Lake Gen2 (no Spark)
+
+You have **three** routes depending on what you're willing to stand up:
+
+1. **Easiest — Fabric Lakehouse Shortcut.** Create a Shortcut from your Fabric Lakehouse to the ADL container holding raw CSVs. The Shortcut makes the ADL data appear as a Lakehouse `Files/` reference. Run the notebook unchanged. Best of both worlds — your data stays in ADL, Fabric does the compute.
+
+2. **No Fabric — use the [`Manual CSV`](../Manual%20CSV/) `sharepoint only` PBIT instead.** Point its `Copilot Interactions File` parameter at `https://<account>.dfs.core.windows.net/<container>/<path>/parsed.csv`. Skips the Spark step entirely; works for tenants that already pre-parse upstream and just need Power BI to consume the result.
+
+3. **Pure ADL + Databricks.** Mount the ADL container in Databricks (or use Unity Catalog external locations), then run the notebook from there as in the Databricks section above.
+
+### 🔷 Azure Synapse / Azure SQL DB / Fabric Warehouse
+
+- Run the parsing notebook on a **Synapse Spark pool**, or replace it with an equivalent SQL stored procedure / dbt model that produces the same flat schema
+- Land the output in any SQL table
+- Use the PBIT's existing `Sql.Database(...)` connector — supply your hostname + database name in the two parameters
+
+The PBIT only cares that a table called `dbo.Copilot_Interactions_Parsed` (or whatever you name it — adjust one line in the M-query) exists with the [expected schema](#schema-reference).
 
 ## Troubleshooting
 
