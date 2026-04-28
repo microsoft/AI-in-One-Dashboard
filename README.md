@@ -43,6 +43,22 @@ This is an experimental template with audit logs as the primary source. The audi
 
 ---
 
+## 📁 Choose your deployment path
+
+Pick the template that matches your environment:
+
+| Path | Folder | Use when… |
+|---|---|---|
+| **Manual CSV / SharePoint single file** | [`Manual CSV/`](Manual%20CSV/) | You have a single static audit-log CSV (local or SharePoint URL) and refresh ad-hoc |
+| **SharePoint Refresh** | [`SharePoint Refresh/`](SharePoint%20Refresh/) | Your audit CSVs land in a SharePoint folder and you want Service to auto-union and refresh on schedule (Pro-friendly) |
+| **Fabric / Lakehouse** | [`Fabric/`](Fabric/) | You have Fabric capacity (or Premium / PPU) and want JSON parsing to happen upstream — best performance and reliability for tenants > 100K events / week |
+
+Each folder has its own README with parameter values, setup steps, and troubleshooting.
+
+For automated audit-log export (feeds any of the paths above), see [`scripts/`](scripts/).
+
+---
+
 ## 📊 What This Dashboard Provides
 
 - **Comprehensive visibility into M365 Copilot, unlicensed Copilot Chat, and Agent usage** across your organization
