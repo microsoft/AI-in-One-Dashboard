@@ -339,44 +339,39 @@ If you have a custom org data file with organizational hierarchy and user attrib
 <summary>🔐 Step 5: Open and Configure the Power BI Template</summary>
 
 ### What You'll Do
-Connect the Power BI template to your data sources using file paths for the CSV files.
+Pick the deployment path that matches where your CSVs live, open the matching PBIT, and supply parameters.
 
-### Step-by-Step Instructions
+### Pick the right template
 
-1. **Download the template**
-   - Download **AI-in-One Dashboard - Purview - Template.pbit** from this repository
+Refer back to the [**Choose your deployment path**](#-choose-your-deployment-path) table above. The three options:
 
-2. **Open the template in Power BI Desktop**
-   - Double-click the `.pbit` file
-   - A parameter dialog will appear
+| Path | PBIT | Setup guide |
+|---|---|---|
+| **Manual CSV / SharePoint single file** | `Manual CSV/AI-in-One Dashboard - csv only.pbit` *(local)* or `Manual CSV/AI-in-One Dashboard - sharepoint only.pbit` *(single SharePoint URL)* | [`Manual CSV/README.md`](Manual%20CSV/README.md) |
+| **SharePoint Refresh** *(folder, scheduled refresh)* | `SharePoint Refresh/AI-in-One Dashboard - Sharepoint Refresh.pbit` | [`SharePoint Refresh/README.md`](SharePoint%20Refresh/README.md) |
+| **Fabric / Lakehouse** *(upstream JSON parsing, large tenants)* | `Fabric/AI-in-One Dashboard - Fabric.pbit` | [`Fabric/README.md`](Fabric/README.md) |
 
-3. **Enter file paths**
-   - **Copilot Audit Log Path**: Full path to your audit log CSV  
-     Example: `C:\Data\Copilot_Audit_Logs.csv`
-   - **Licensed Users Path**: Full path to your licensed users CSV  
-     Example: `C:\Data\Copilot_Licensed_Users.csv`
-   - **Agent 365 Path**: Full path to your Agent 365 export  
-     Example: `C:\Data\Agent365_Inventory.xlsx`
-   - **Org Data Path**: Full path to your org data CSV
-     Example: `C:\Data\Org_Data_Entra.csv`
+Each per-folder README has the **definitive setup steps, parameter values, and troubleshooting** for that variant — including SharePoint folder URL conventions, Service refresh / credential setup, and (for Fabric) the upstream notebook + Lakehouse provisioning.
 
-4. **Load the data**
-   - Click **Load**
-   - Wait for all queries to refresh (may take 5–15 minutes on first load)
-   - If errors occur, verify file paths are correct and files are accessible
+### Common parameters across templates
 
-5. **Save and publish**
-   - Save as a `.pbix` file (e.g., `AI-in-One Dashboard - Purview.pbix`)
-   - Publish to your Power BI workspace
-   - Configure scheduled refresh for CSV files in Power BI Service (recommended weekly or monthly)
+All three template paths share the same four parameters — only the *value format* changes (local path vs SharePoint URL vs SharePoint folder):
 
-### Troubleshooting
+| Parameter | What it points at |
+|---|---|
+| **Copilot Interactions File** | Audit-log CSV from Step 1 (or the SharePoint folder of audit CSVs in the SharePoint Refresh path) |
+| **Copilot Licensed Users** | Licensed-users CSV from Step 2 |
+| **Org Data File** | Org-data CSV from Step 4 |
+| **Agent 365** *(optional)* | Agent 365 inventory file from Step 3 |
 
-- **Issue**: "File not found" error
-  - **Solution**: Verify file paths use absolute paths (e.g., `C:\Data\file.csv`, not `.\file.csv`) and files exist at those locations
+After supplying parameters, click **Load**. First refresh on a moderate dataset takes 5–15 minutes; large tenants on the Manual / SharePoint Refresh paths may need 30+ minutes (use the Fabric path if you're hitting the 1 GB / 2-hour Service caps).
 
-- **Issue**: Data refresh takes extremely long
-  - **Solution**: Check CSV file sizes. Very large audit logs (>500 MB) may need to be filtered or split.
+### Generic troubleshooting
+
+- **"File not found" / `DataSource.Error`** — local paths must be absolute (e.g. `C:\Data\file.csv`, not `.\file.csv`). For SharePoint URLs, copy the **document URL**, not the share link.
+- **Refresh times out in Power BI Service (>2 hours)** — switch to the [`Fabric/`](Fabric/) deployment path. JSON parsing happens upstream in a Lakehouse / notebook, leaving the dataset as a thin pass-through against a flat Delta table.
+- **`Formula.Firewall: Query references other queries…`** — privacy-level mismatch when combining sources. In Power BI Desktop: **File → Options → Current File → Privacy → Combine data without privacy**. In Service: dataset Settings → Data source credentials → set **Privacy: None** for SharePoint sources.
+- **Path-specific issues** — see the troubleshooting section in each per-folder README.
 
 </details>
 
