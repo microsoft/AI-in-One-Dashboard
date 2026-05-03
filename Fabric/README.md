@@ -8,8 +8,10 @@ This is the **fastest, most reliable** way to run the AI-in-One Dashboard on rea
 
 | File | Purpose |
 |---|---|
-| `AI-in-One Dashboard - Fabric.pbit` | The Power BI template (thin client — sources from a Lakehouse SQL endpoint) |
-| `notebooks/Copilot_Audit_Log_Parser.ipynb` | The PySpark notebook that parses raw audit logs into a flat Delta table |
+| `AI-in-One Dashboard - Fabric.pbit` | The Power BI template (thin client — sources all three input tables from a Lakehouse SQL endpoint) |
+| `notebooks/Copilot_Audit_Log_Parser.ipynb` | Parses raw audit logs → `dbo.copilot_interactions_parsed` |
+| `notebooks/Copilot_Licensed_Users_Loader.ipynb` | Ingests MAC licensed-user CSVs → `dbo.copilot_licensed_users` |
+| `notebooks/Copilot_Org_Data_Loader.ipynb` | Ingests Entra/HRIS org CSVs → `dbo.copilot_org_data` |
 
 ## When to use this path
 
@@ -33,20 +35,28 @@ Moving the parse into Fabric eliminates all three. The dataset becomes a thin pa
 ## Architecture
 
 ```
-Raw audit-log CSVs (from scripts/get-copilot-interactions.ps1
-                     or your own export pipeline)
-                              ↓
-                  Fabric Lakehouse: Files/audit_raw/
-                              ↓
-              Notebook: Copilot_Audit_Log_Parser.ipynb
-                  (runs on schedule via Fabric pipelines)
-                              ↓
-       Lakehouse Delta table: dbo.Copilot_Interactions_Parsed
-                              ↓
-                    PBIT (Sql.Database connector)
-                              ↓
-                       Power BI Report
+Raw audit-log CSVs       Licensed-users CSV         Org-data CSV
+(get-copilot-            (MAC export)               (Entra / HRIS)
+ interactions.ps1
+ or your pipeline)
+        ↓                       ↓                        ↓
+Files/audit_raw/         Files/licensed_raw/        Files/org_raw/
+        ↓                       ↓                        ↓
+Copilot_Audit_Log_       Copilot_Licensed_          Copilot_Org_Data_
+Parser.ipynb             Users_Loader.ipynb         Loader.ipynb
+        ↓                       ↓                        ↓
+dbo.copilot_             dbo.copilot_               dbo.copilot_
+interactions_parsed      licensed_users             org_data
+        └───────────────────────┴────────────────────────┘
+                                ↓
+                  PBIT (Sql.Database connector
+                  + one direct Org→Licensed
+                  relationship for filter context)
+                                ↓
+                        Power BI Report
 ```
+
+The PBIT only requires two parameters: **Fabric SQL Endpoint** and **Lakehouse Database**. The previous file-path parameters (`Copilot Licensed Users`, `Org Data File`, `Copilot Interactions File`) are kept for backward compatibility but should be left blank when running this Fabric path — the notebooks own those data sources now. Only `Agent 365` still uses a file-path parameter (a CSV export from MAC), pending a Graph API loader.
 
 ## Quick start
 
@@ -56,41 +66,53 @@ Raw audit-log CSVs (from scripts/get-copilot-interactions.ps1
 - **+ New → Lakehouse**, name it e.g. `CopilotAnalytics`
 - Note the **SQL endpoint** under Lakehouse settings — looks like `<workspace-guid>.datawarehouse.fabric.microsoft.com`
 
-### 2. Land raw audit CSVs in `Files/audit_raw/`
+### 2. Land raw CSVs in three Lakehouse `Files/` sub-folders
 
-The CSVs must have the standard Microsoft 365 audit-log columns:
-`RecordId, CreationDate, RecordType, Operation, AuditData, AssociatedAdminUnits, AssociatedAdminUnitsNames`
+Create the folders if they don't exist (right-click `Files` → **New folder**), then drop the corresponding CSVs in:
 
-Pick whichever ingestion path fits your environment:
+| Folder | Source | Required columns |
+|---|---|---|
+| `Files/audit_raw/` | M365 audit-log export (e.g. [`scripts/get-copilot-interactions.ps1`](../scripts/get-copilot-interactions.ps1) or any other audit pipeline) | `RecordId, CreationDate, RecordType, Operation, AuditData, AssociatedAdminUnits, AssociatedAdminUnitsNames` |
+| `Files/licensed_raw/` | MAC export of Copilot-licensed users | A UPN column (`User Principal Name`, `userPrincipalName`, `UserPrincipalName`, `User principal name`) and a licence column (`Has license`, `Has Licence`, `HasLicense`, `HasCopilot`, `Has Copilot License`, `Has Copilot license assigned`, `isUser`, etc.). The loader auto-detects which variant your export uses. |
+| `Files/org_raw/` | Entra / HRIS / Viva Insights export with org structure | A PersonId column (`User Principal Name` / `UPN` / `PersonId`) plus a `Department` column. Optional: `JobTitle`, `DisplayName`, `Email`, `Country`, plus any management-path / hierarchy columns you want to slice by. |
 
-| If your audit export goes to… | Use… |
+For each, pick whichever ingestion path fits your environment:
+
+| If your export goes to… | Use… |
 |---|---|
 | SharePoint folder | A **Fabric Pipeline** with a Copy activity (SharePoint Online → Lakehouse Files) |
 | Azure Blob Storage / ADLS Gen2 | A **Lakehouse Shortcut** to the storage container (no copy needed) |
 | Local files | Direct upload via the Fabric portal, or pipeline Copy activity |
 
-The existing [`scripts/get-copilot-interactions.ps1`](../scripts/get-copilot-interactions.ps1) writes CSV output that drops in directly.
+### 3. Import and run all three notebooks
 
-### 3. Import and run the parser notebook
+For each of the three notebooks under `notebooks/`:
 
-- In your Fabric workspace → **+ New → Import notebook** → upload [`notebooks/Copilot_Audit_Log_Parser.ipynb`](notebooks/Copilot_Audit_Log_Parser.ipynb)
-- Attach the notebook to your Lakehouse (top-left **+ Lakehouse** → select `CopilotAnalytics`)
-- Click **Run all**. First run typically takes 30–60 seconds for ~400K events
-- Output: a Delta table called `Copilot_Interactions_Parsed` in the Lakehouse Tables folder
-- Configure **Schedule** (top of notebook) to match your audit-log export cadence (typically daily)
+- In your Fabric workspace → **+ New → Import notebook** → upload the `.ipynb`
+- Attach the notebook to your `CopilotAnalytics` Lakehouse and **pin it as default** (📌 icon next to the name in the Lakehouses panel — this is what makes `saveAsTable` write to the right place)
+- Click **Run all**
+
+| Notebook | Run cadence | Output Delta table | Typical runtime |
+|---|---|---|---|
+| `Copilot_Audit_Log_Parser.ipynb` | Daily (matches audit-log export) | `dbo.copilot_interactions_parsed` | 30–60s for ~400K events |
+| `Copilot_Licensed_Users_Loader.ipynb` | Weekly / monthly (matches MAC export cadence) | `dbo.copilot_licensed_users` | Seconds |
+| `Copilot_Org_Data_Loader.ipynb` | Weekly (matches HRIS / Entra refresh) | `dbo.copilot_org_data` | Seconds |
+
+Use the **Schedule** button at the top of each notebook to set a cadence — or wire all three into a single Fabric Pipeline.
 
 ### 4. Connect the PBIT
 
 - Open `AI-in-One Dashboard - Fabric.pbit` in Power BI Desktop
-- Supply the two parameters when prompted:
+- Supply the two **required** parameters when prompted; leave the rest blank:
 
 | Parameter | Value |
 |---|---|
 | **Fabric SQL Endpoint** | `<workspace-guid>.datawarehouse.fabric.microsoft.com` |
 | **Lakehouse Database** | `CopilotAnalytics` (or whatever you named your Lakehouse) |
-| Copilot Licensed Users | Path to your licensed-users CSV (or a SharePoint URL) |
-| Org Data File | Path to your org-data CSV (or a SharePoint URL) |
-| Optional ones | Leave blank |
+| Copilot Interactions File | Leave blank — vestigial |
+| Copilot Licensed Users | Leave blank — sourced from `dbo.copilot_licensed_users` |
+| Org Data File | Leave blank — sourced from `dbo.copilot_org_data` |
+| Agent 365 (highly recommended) | Path to your Agents 365 CSV (still file-based pending Graph API loader) |
 
 - Click **Load**. Refresh should complete in seconds
 - Publish to a Power BI workspace ideally **on the same Fabric capacity** so Direct Lake works without cross-capacity overhead
@@ -149,7 +171,10 @@ The PBIT only cares that a table called `dbo.Copilot_Interactions_Parsed` (or wh
 |---|---|---|
 | Refresh succeeds but interactions table is empty | Parsing notebook hasn't run yet, or failed silently | Check the notebook's last execution; run manually |
 | `Login failed` / `cannot open database` | SQL endpoint hostname or database name wrong | Re-check Lakehouse settings page for the exact SQL endpoint string |
-| `Formula.Firewall` error | Cross-source merge with privacy levels mismatched | Service → dataset Settings → Data source credentials → set **Privacy: None** for both sources |
+| `the key didn't match any rows in the table` | A loader notebook ran against the wrong (non-default) lakehouse, so the expected table name doesn't exist | In the notebook's Lakehouses panel, confirm `CopilotAnalytics` is **pinned** (📌) before re-running |
+| All users show as "Unlicensed" / `Total Licensed Users` empty | Licensed-users notebook hasn't been run yet, or its CSV used a UPN column-name variant the loader doesn't recognise | Check the notebook output for the detected UPN/licence column names; widen the variant list in the loader if needed |
+| `Inactive Licensed Users` is 0 even with no filter | Every licensed user has audit activity (likely with synthetic / test data); or `UPN_Normalized` ↔ `PersonId_Normalized` casing mismatch | Run `SELECT COUNT(*) FROM dbo.copilot_licensed_users WHERE UPN_Normalized NOT IN (SELECT LOWER(LTRIM(RTRIM(Audit_UserId))) FROM dbo.copilot_interactions_parsed)` — if result is 0, your population is genuinely fully active |
+| `Formula.Firewall` error (only on non-Fabric variants) | Cross-source merge with privacy levels mismatched | Service → dataset Settings → Data source credentials → set **Privacy: None** for both sources |
 | Only some columns populated | Microsoft added new fields to the audit schema | Update `audit_schema` in the notebook (cell 2) to include them, re-run |
 | Refresh slow (more than a minute) | Dataset is in Import mode | Switch the workspace to a Fabric capacity and convert to **Direct Lake** for sub-second response |
 
