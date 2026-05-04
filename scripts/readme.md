@@ -22,6 +22,7 @@ This folder contains PowerShell scripts to retrieve and export Microsoft Copilot
 | App registration / signed-in account is consented to `AuditLogsQuery.Read.All` | Entra Admin Centre → Identity → Applications → Enterprise applications → find your app → Permissions |
 | Optional granular workload scopes (`AuditLogsQuery-*.Read.All`) for least-privilege deployments | Same place — only needed if you want narrower-than-tenant-wide consent |
 | `Reports.Read.All` for `get-copilot-users.ps1` | unchanged from before |
+| `User.Read.All` for `Get-EntraOrgData.ps1` | Granted via the same admin-consent flow |
 
 **Quick check** — after `Connect-MgGraph`, run:
 ```powershell
@@ -129,6 +130,68 @@ You should see `AuditLogsQuery.Read.All` listed. If you only see `AuditLog.Read.
 
 **Output**:
 - CSV file with user information and interaction statistics
+
+---
+
+### 4. `Get-EntraOrgData.ps1`
+
+**Purpose**: Extracts organisational data (manager, department, location, etc.) for all users from Microsoft Entra ID. Output feeds the **Org Data** parameter of the dashboard PBIP.
+
+**Usage**:
+```powershell
+# With defaults (writes to ./EntraOrgData.csv)
+./Get-EntraOrgData.ps1
+
+# Custom output path
+./Get-EntraOrgData.ps1 -OutputCsv ".\MyOrgData.csv"
+```
+
+**Required scope**: `User.Read.All` (delegated). Tenant admin consent typically required.
+
+**What it does**:
+- Connects to Microsoft Graph interactively
+- Pages through `/v1.0/users` with `$select` and `$expand=manager`
+- Writes a CSV with one row per user
+
+**Output schema** (CSV columns):
+
+| Column | Notes |
+|---|---|
+| `userPrincipalName` | Join key — auto-renames to `PersonId` in PBIP Power Query |
+| `displayName` | |
+| `department` | |
+| `jobTitle` | |
+| `companyName` | |
+| `officeLocation` | |
+| `city` | |
+| `country` | |
+| `accountEnabled` | TRUE/FALSE |
+| `managerUPN` | UPN of direct manager (blank if none) |
+
+For unattended runs (Azure Automation), use the AppReg variant: [`automation/appreg/Get-EntraOrgData-AppReg.ps1`](automation/appreg/Get-EntraOrgData-AppReg.ps1).
+
+---
+
+### 5. `Get-Agents365Registry.ps1` ⚠️ **EXPERIMENTAL**
+
+**Purpose**: Extracts the Agent 365 Registry (Copilot agents catalog) from Microsoft Graph. Output feeds the **Agent 365** parameter of the dashboard PBIP.
+
+> ⚠️ **Status: not yet validated.** The Microsoft Graph endpoint for the Agent 365 admin registry is in flux and the script's defaults have not been confirmed against a live tenant. Initial testing returned HTTP 403 ("Customer must be licensed for Agent 365") even on tenants that DO have Agent 365 — strongly suggesting the default endpoint or scope is wrong.
+>
+> **Workaround until verified**: discover the real endpoint by opening `admin.cloud.microsoft/agents/all`, pressing F12 → Network tab, reloading, and inspecting the request that returns the agent list. Then override `-Endpoint` and `-GraphScope` on the command line.
+
+**Usage**:
+```powershell
+# With defaults (likely fails with 403 - see status note above)
+./Get-Agents365Registry.ps1
+
+# With overridden endpoint / scope
+./Get-Agents365Registry.ps1 `
+    -Endpoint   "https://graph.microsoft.com/beta/<actual-path>" `
+    -GraphScope "<actual-scope>"
+```
+
+**Output**: CSV with one row per agent. Schema is **dynamic** — whatever fields the API returns become columns. This keeps the script forward-compatible if Microsoft adds new fields.
 
 ---
 
