@@ -323,16 +323,79 @@ to the root of the document library.
 
 ---
 
+## Script 4 — Get-EntraOrgData-AppReg.ps1
+
+**Optional companion runbook.** Pulls organisational data (manager, department, location, etc.) for all users from Microsoft Entra ID and uploads the CSV to the same SharePoint document library used by the audit-log runbooks. Output feeds the **Org Data** parameter of the dashboard PBIP.
+
+This is the unattended counterpart to the interactive `Get-EntraOrgData.ps1` in the parent `/scripts/` folder.
+
+### What it does
+
+1. Authenticates to Microsoft Graph using the configured auth mode.
+2. Pages through `GET /v1.0/users` with `$select` and `$expand=manager`.
+3. Builds the CSV in memory (org-data exports are small — under a few MB even for large tenants).
+4. Uploads the CSV to the document library via a single PUT (no chunked upload session needed).
+
+### Required permissions
+
+| Permission | Type | Purpose |
+|---|---|---|
+| `User.Read.All` | Application | Read user profile + manager data |
+| `Sites.Selected` | Application | Write the CSV to the document library |
+
+> ⚠️ `ProvisionPreReqs.ps1` does **not** yet declare `User.Read.All` on the app registration. If you intend to use this runbook, add the permission manually in the Azure portal (App registration → API permissions → Microsoft Graph → Application permissions → `User.Read.All`) and grant admin consent. Re-running `ProvisionPreReqs.ps1` after editing the script to include the permission ID `df021288-bdef-4463-88db-98f22de89214` would also work.
+
+### Authentication modes
+
+The same three modes as the interactions runbooks (Managed Identity, App secret, Certificate). Substitute `Get-EntraOrgData-AppReg.ps1` in the examples above.
+
+```powershell
+# Managed Identity
+.\Get-EntraOrgData-AppReg.ps1 -DriveId "<drive-id>"
+
+# App secret
+.\Get-EntraOrgData-AppReg.ps1 `
+    -DriveId      "<drive-id>" `
+    -TenantId     "<tenant-id>" `
+    -ClientId     "<app-client-id>" `
+    -ClientSecret "<client-secret>"
+```
+
+### Parameters
+
+| Parameter | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `DriveId` | string | **Yes** | — | Graph Drive ID of the document library (same one used by Runbook 2) |
+| `TenantId` | string | No* | — | Entra tenant ID — required when using app registration auth |
+| `ClientId` | string | No* | — | App registration client ID — required when using app registration auth |
+| `ClientSecret` | string | No* | — | Client secret (mutually exclusive with `CertificateThumbprint`) |
+| `CertificateThumbprint` | string | No* | — | Certificate thumbprint (mutually exclusive with `ClientSecret`) |
+
+\* Required together when using app registration authentication.
+
+### Output
+
+CSV file named:
+
+```
+EntraOrgData-{yyyyMMddHHmmss}.csv
+```
+
+uploaded to the root of the document library.
+
+---
+
 ## Permissions summary
 
-| Permission | `ProvisionPreReqs.ps1` | Runbook 1 | Runbook 2 |
-|---|:---:|:---:|:---:|
-| `Application.ReadWrite.All` (delegated) | Required to run | — | — |
-| `AppRoleAssignment.ReadWrite.All` (delegated) | Required to run | — | — |
-| `Sites.FullControl.All` (delegated) | Required to run | — | — |
-| `AuditLog.Read.All` (application) | Granted to app | — | ✓ |
-| `AuditLogsQuery.Read.All` (application) | Granted to app | ✓ | — |
-| `Sites.Selected` (application) | Granted to app | ✓ | ✓ |
+| Permission | `ProvisionPreReqs.ps1` | Runbook 1 | Runbook 2 | Org Data Runbook |
+|---|:---:|:---:|:---:|:---:|
+| `Application.ReadWrite.All` (delegated) | Required to run | — | — | — |
+| `AppRoleAssignment.ReadWrite.All` (delegated) | Required to run | — | — | — |
+| `Sites.FullControl.All` (delegated) | Required to run | — | — | — |
+| `AuditLog.Read.All` (application) | Granted to app | — | ✓ | — |
+| `AuditLogsQuery.Read.All` (application) | Granted to app | ✓ | — | — |
+| `User.Read.All` (application) | _Add manually_ — see Script 4 note | — | — | ✓ |
+| `Sites.Selected` (application) | Granted to app | ✓ | ✓ | ✓ |
 
 ---
 
