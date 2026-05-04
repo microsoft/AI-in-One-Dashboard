@@ -1,8 +1,8 @@
 # Fabric / Lakehouse deployment
 
-> **Not just Fabric.** This folder is named "Fabric" because that's the simplest deployment, but the same PBIT + parsing notebook also work on **Azure Databricks**, **Synapse Spark**, **Azure SQL / Fabric Warehouse**, or **ADLS Gen2** with no real changes — see [Alternative platforms](#alternative-platforms) below.
+> **Not just Fabric.** This folder is named "Fabric" because that's the simplest deployment, but the same PBIT + loader notebooks also work on **Azure Databricks**, **Synapse Spark**, **Azure SQL / Fabric Warehouse**, or **ADLS Gen2** with no real changes — see [Alternative platforms](#alternative-platforms) below.
 
-This is the **fastest, most reliable** way to run the AI-in-One Dashboard on real audit-log volumes. The heavy JSON parsing happens **upstream** (in Fabric / Databricks / wherever your Spark or SQL compute lives) instead of inside the Power BI dataset, so the dataset refresh becomes a near-instant data copy (or zero-copy with Direct Lake mode).
+This is the **fastest, most reliable** way to run the AI-in-One Dashboard on real audit-log volumes. All three input tables (audit interactions, licensed users, org data) are populated upstream by Spark loader notebooks and exposed as Delta tables in the lakehouse, so the dataset refresh becomes a near-instant data copy (or zero-copy with Direct Lake mode). Heavy JSON parsing, column-variant detection, and joins all happen in Spark — the Power BI dataset is a thin pass-through.
 
 ## What's in this folder
 
@@ -56,7 +56,7 @@ interactions_parsed      licensed_users             org_data
                         Power BI Report
 ```
 
-The PBIT only requires two parameters: **Fabric SQL Endpoint** and **Lakehouse Database**. The previous file-path parameters (`Copilot Licensed Users`, `Org Data File`, `Copilot Interactions File`) are kept for backward compatibility but should be left blank when running this Fabric path — the notebooks own those data sources now. Only `Agent 365` still uses a file-path parameter (a CSV export from MAC), pending a Graph API loader.
+The PBIT exposes only three parameters: **Fabric SQL Endpoint**, **Lakehouse Database**, and **Agent 365 (highly recommended)**. The first two are required and point at your lakehouse SQL endpoint. The third is a file path to your Agents 365 CSV export and remains file-based pending a Graph API loader.
 
 ## Quick start
 
@@ -74,7 +74,7 @@ Create the folders if they don't exist (right-click `Files` → **New folder**),
 |---|---|---|
 | `Files/audit_raw/` | M365 audit-log export (e.g. [`scripts/get-copilot-interactions.ps1`](../scripts/get-copilot-interactions.ps1) or any other audit pipeline) | `RecordId, CreationDate, RecordType, Operation, AuditData, AssociatedAdminUnits, AssociatedAdminUnitsNames` |
 | `Files/licensed_raw/` | MAC export of Copilot-licensed users | A UPN column (`User Principal Name`, `userPrincipalName`, `UserPrincipalName`, `User principal name`) and a licence column (`Has license`, `Has Licence`, `HasLicense`, `HasCopilot`, `Has Copilot License`, `Has Copilot license assigned`, `isUser`, etc.). The loader auto-detects which variant your export uses. |
-| `Files/org_raw/` | Entra / HRIS / Viva Insights export with org structure | A PersonId column (`User Principal Name` / `UPN` / `PersonId`) plus a `Department` column. Optional: `JobTitle`, `DisplayName`, `Email`, `Country`, plus any management-path / hierarchy columns you want to slice by. |
+| `Files/org_raw/` | Entra / HRIS / Viva Insights export with org structure | A PersonId column (`User Principal Name` / `UPN` / `PersonId`) plus a `Department` column. The loader auto-renames `Department` → `Organization` and lowercase `jobTitle` → `JobTitle` for downstream consistency. Optional: `JobTitle`, `DisplayName`, `Email`, `Country`, plus any management-path / hierarchy columns you want to slice by. |
 
 For each, pick whichever ingestion path fits your environment:
 
@@ -103,16 +103,15 @@ Use the **Schedule** button at the top of each notebook to set a cadence — or 
 ### 4. Connect the PBIT
 
 - Open `AI-in-One Dashboard - Fabric.pbit` in Power BI Desktop
-- Supply the two **required** parameters when prompted; leave the rest blank:
+- Supply the parameters when prompted:
 
-| Parameter | Value |
-|---|---|
-| **Fabric SQL Endpoint** | `<workspace-guid>.datawarehouse.fabric.microsoft.com` |
-| **Lakehouse Database** | `CopilotAnalytics` (or whatever you named your Lakehouse) |
-| Copilot Interactions File | Leave blank — vestigial |
-| Copilot Licensed Users | Leave blank — sourced from `dbo.copilot_licensed_users` |
-| Org Data File | Leave blank — sourced from `dbo.copilot_org_data` |
-| Agent 365 (highly recommended) | Path to your Agents 365 CSV (still file-based pending Graph API loader) |
+| Parameter | Required? | Value |
+|---|---|---|
+| **Fabric SQL Endpoint** | ✅ | `<workspace-guid>.datawarehouse.fabric.microsoft.com` |
+| **Lakehouse Database** | ✅ | `CopilotAnalytics` (or whatever you named your Lakehouse) |
+| Agent 365 (highly recommended) | Optional | **SharePoint URL** to your Agents 365 CSV — see note below |
+
+> **SharePoint URL only on the Fabric path** (e.g. `https://contoso.sharepoint.com/sites/copilot/Shared%20Documents/Agents365_latest.csv`). Local file paths aren't supported here: they don't work for Service refresh (no gateway access to user filesystems) and a dual local/URL pattern can trigger `Formula.Firewall` errors during static analysis. Upload your Agents 365 CSV to a SharePoint document library, paste the file URL, and the dataset will refresh cleanly in the Service. (This parameter will be replaced by a Graph API loader in a future iteration — at which point the file step goes away entirely.)
 
 - Click **Load**. Refresh should complete in seconds
 - Publish to a Power BI workspace ideally **on the same Fabric capacity** so Direct Lake works without cross-capacity overhead
@@ -124,28 +123,35 @@ Use the **Schedule** button at the top of each notebook to set a cadence — or 
 
 ## Alternative platforms
 
-The two artifacts in this folder are deliberately portable:
+The four artifacts in this folder (PBIT + three loader notebooks) are deliberately portable:
 
-- **The notebook** is plain PySpark — runs unchanged on any Spark engine (Fabric, Databricks, Synapse Spark)
-- **The PBIT** uses the `Sql.Database()` connector, which works against any SQL endpoint that exposes the parsed Delta/SQL table — Fabric Lakehouse, Databricks SQL Warehouse, Synapse SQL pool, Azure SQL DB, Fabric Warehouse, on-prem SQL Server
+- **The notebooks** are plain PySpark — they run unchanged on any Spark engine (Fabric, Databricks, Synapse Spark) once two config lines are adjusted per environment
+- **The PBIT** uses the `Sql.Database()` connector, which works against any SQL endpoint that exposes the parsed Delta/SQL tables — Fabric Lakehouse, Databricks SQL Warehouse, Synapse SQL pool, Azure SQL DB, Fabric Warehouse, on-prem SQL Server
 
 So the same set of files supports the deployments below; only a couple of paths/parameter values change.
 
 ### 🧱 Azure Databricks
 
-**Notebook changes (3 lines):**
-- Raw input path: `'Files/audit_raw/*.csv'` → DBFS or Unity Catalog volume, e.g. `'/Volumes/main/copilot/audit_raw/*.csv'`
-- Output: `saveAsTable('Copilot_Interactions_Parsed')` → three-part UC name, e.g. `'main.copilot.interactions_parsed'`
-- Schedule via **Databricks Workflows** instead of Fabric Pipelines
+The same three-notebook pattern applies. For each loader, two config lines change per environment:
+
+**Notebook changes (per loader):**
+
+| Loader | Adjust `RAW_PATH` from… | Adjust `OUTPUT_TABLE` from… |
+|---|---|---|
+| `Copilot_Audit_Log_Parser.ipynb` | `'Files/audit_raw/*.csv'` → e.g. `'/Volumes/main/copilot/audit_raw/*.csv'` | `'Copilot_Interactions_Parsed'` → e.g. `'main.copilot.interactions_parsed'` |
+| `Copilot_Licensed_Users_Loader.ipynb` | `'Files/licensed_raw/*.csv'` → equivalent UC volume | `'copilot_licensed_users'` → e.g. `'main.copilot.licensed_users'` |
+| `Copilot_Org_Data_Loader.ipynb` | `'Files/org_raw/*.csv'` → equivalent UC volume | `'copilot_org_data'` → e.g. `'main.copilot.org_data'` |
+
+Schedule via **Databricks Workflows** instead of Fabric Pipelines (one job per notebook, or a single multi-task workflow).
 
 **PBIT parameters:**
 
 | Parameter | Value |
 |---|---|
 | **Fabric SQL Endpoint** | Your Databricks SQL Warehouse hostname (e.g. `<workspace-id>.cloud.databricks.com`) |
-| **Lakehouse Database** | The Unity Catalog name (or `hive_metastore`) — the database the parsed table lives in |
+| **Lakehouse Database** | The Unity Catalog name (or `hive_metastore`) — the database the three Delta tables live in |
 
-For a more polished native-connector experience, swap the M-query's `Sql.Database(...)` line for `Databricks.Catalogs(...)`. The rest of the M-query is unchanged.
+For a more polished native-connector experience, swap the M-query's `Sql.Database(...)` line for `Databricks.Catalogs(...)`. The rest of the M-query is unchanged. The PBIT expects the three tables (`copilot_interactions_parsed`, `copilot_licensed_users`, `copilot_org_data`) to all live in the same database — adjust the `Item=` literals in the M-queries if you split them across catalogs.
 
 ### 🪣 Azure Data Lake Gen2 (no Spark)
 
@@ -163,7 +169,7 @@ You have **three** routes depending on what you're willing to stand up:
 - Land the output in any SQL table
 - Use the PBIT's existing `Sql.Database(...)` connector — supply your hostname + database name in the two parameters
 
-The PBIT only cares that a table called `dbo.Copilot_Interactions_Parsed` (or whatever you name it — adjust one line in the M-query) exists with the [expected schema](#schema-reference).
+The PBIT only cares that the three tables (`dbo.copilot_interactions_parsed`, `dbo.copilot_licensed_users`, `dbo.copilot_org_data`) exist with their expected schemas — see [Schema reference](#schema-reference). If you rename any of them, adjust the corresponding `Item=` literal in the table's M-query.
 
 ## Troubleshooting
 
@@ -180,7 +186,7 @@ The PBIT only cares that a table called `dbo.Copilot_Interactions_Parsed` (or wh
 
 ## Schema reference
 
-The `Copilot_Interactions_Parsed` Delta table has one row per **prompt × accessed-resource**, mirroring what the AI-in-One M-query produces post-expansion. Key columns:
+The `dbo.copilot_interactions_parsed` Delta table has one row per **prompt × accessed-resource**, mirroring what the AI-in-One M-query produces post-expansion. (Spark normalises `saveAsTable` names to lowercase, which is why the SQL endpoint exposes the table in lowercase even though the notebook variable uses `Copilot_Interactions_Parsed`.) Key columns:
 
 | Column | Type | Notes |
 |---|---|---|
