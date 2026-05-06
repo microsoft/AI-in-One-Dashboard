@@ -24,7 +24,7 @@ Best for ad-hoc analysis, one-off exports, or single-user dashboards.
 
 Two options:
 
-**(A) Run the scripts** — kept in [`../SharePoint/Single File/scripts/interactive/`](../SharePoint/Single%20File/scripts/interactive/) since they're the same scripts. Run `create-query.ps1` then `get-copilot-interactions.ps1` — produces a CSV in your current directory.
+**(A) Run the scripts** — kept in [`../2. SharePoint/Single File/scripts/interactive/`](../2.%20SharePoint/Single%20File/scripts/interactive/) since they're the same scripts. Run `create-query.ps1` then `get-copilot-interactions.ps1` — produces a CSV in your current directory.
 
 **(B) Manual export from Purview UI**:
 - Go to https://purview.microsoft.com → Solutions → **Audit**

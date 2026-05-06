@@ -193,15 +193,59 @@ function UploadToSharePoint {
     $encodedSegments = $uploadPath.Split('/') | ForEach-Object { [uri]::EscapeDataString($_) }
     $encodedPath = $encodedSegments -join '/'
 
-    $uploadUri = "https://graph.microsoft.com/v1.0/drives/$DriveId/root:/${encodedPath}:/content"
+    # Graph caps simple PUT (root:/path:/content) at 4 MB. Larger files need an upload session
+    # with chunked PUTs and Content-Range headers. To exercise the chunked branch on a small
+    # test CSV, temporarily lower this to e.g. 100.
+    $simpleUploadCap = 4 * 1024 * 1024
+
     Write-Output "Uploading $($Bytes.Length) bytes to: $uploadPath"
 
-    try {
-        Invoke-MgGraphRequest -Method PUT -Uri $uploadUri -Body $Bytes -ContentType 'text/csv' | Out-Null
-        Write-Output "Upload complete."
-    } catch {
-        Write-Error "Failed to upload CSV to SharePoint: $_"; exit 1
+    if ($Bytes.Length -le $simpleUploadCap) {
+        $uploadUri = "https://graph.microsoft.com/v1.0/drives/$DriveId/root:/${encodedPath}:/content"
+        try {
+            Invoke-MgGraphRequest -Method PUT -Uri $uploadUri -Body $Bytes -ContentType 'text/csv' | Out-Null
+            Write-Output "Upload complete (simple PUT)."
+        } catch {
+            Write-Error "Failed to upload CSV to SharePoint: $_"; exit 1
+        }
+        return
     }
+
+    # Large file: createUploadSession then chunked PUT with Content-Range.
+    $sessionUri = "https://graph.microsoft.com/v1.0/drives/$DriveId/root:/${encodedPath}:/createUploadSession"
+    $sessionBody = @{ item = @{ '@microsoft.graph.conflictBehavior' = 'replace' } } | ConvertTo-Json
+    try {
+        $session = Invoke-MgGraphRequest -Method POST -Uri $sessionUri -Body $sessionBody -ContentType 'application/json'
+    } catch {
+        Write-Error "Failed to create upload session: $_"; exit 1
+    }
+    $uploadUrl = $session.uploadUrl
+    if (-not $uploadUrl) { Write-Error "createUploadSession returned no uploadUrl"; exit 1 }
+
+    # Upload session chunk size must be a multiple of 320 KB. 5 MB = 16 * 320 KB.
+    $chunkSize = 5 * 1024 * 1024
+    $total  = $Bytes.Length
+    $offset = 0
+
+    while ($offset -lt $total) {
+        $end = [Math]::Min($offset + $chunkSize, $total) - 1
+        $len = $end - $offset + 1
+        $chunk = New-Object byte[] $len
+        [Array]::Copy($Bytes, $offset, $chunk, 0, $len)
+        $contentRange = "bytes $offset-$end/$total"
+
+        try {
+            Invoke-WebRequest -Uri $uploadUrl -Method Put `
+                -Body $chunk -ContentType 'application/octet-stream' `
+                -Headers @{ 'Content-Range' = $contentRange } `
+                -UseBasicParsing -ErrorAction Stop | Out-Null
+        } catch {
+            Write-Error "Chunk upload failed at $contentRange : $_"; exit 1
+        }
+        $offset = $end + 1
+        Write-Output ("Uploaded {0:N0}/{1:N0} bytes" -f $offset, $total)
+    }
+    Write-Output "Upload complete (upload session)."
 }
 
 #############################################################

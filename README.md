@@ -49,10 +49,10 @@ Pick the path that matches your environment. Each folder is self-contained — R
 
 | Path | Folder | Best when… | Volume ceiling |
 |---|---|---|---|
-| **Manual** | [`Manual/`](Manual/) | One-off, ad-hoc, or single-user. Customer manually exports audit CSV from Purview UI, drops into the local PBIT | < ~100K events lifetime |
-| **SharePoint — Single File** *(recommended default)* | [`SharePoint/Single File/`](SharePoint/Single%20File/) | Scheduled refresh in PBI Service without a Gateway. Script overwrites one CSV per refresh — no folder iteration, no privacy firewall errors | Rolling 30 days, refreshes weekly or daily |
-| **SharePoint — Folder** *(advanced)* | [`SharePoint/Folder/`](SharePoint/Folder/) | Need > 30 days of accumulated history but no Fabric. Folder iteration auto-unions all daily CSVs | Up to 180 days (Graph cap), heavier PBI memory footprint |
-| **Fabric / Lakehouse** | [`Fabric/`](Fabric/) | Have Fabric capacity. JSON parsing happens upstream in a notebook → best performance, multi-year history, sub-second dashboard | Millions of events, multi-year |
+| **Manual** | [`1. Manual/`](1.%20Manual/) | One-off, ad-hoc, or single-user. Customer manually exports audit CSV from Purview UI, drops into the local PBIT | < ~100K events lifetime |
+| **SharePoint — Single File** *(recommended default)* | [`2. SharePoint/Single File/`](2.%20SharePoint/Single%20File/) | Scheduled refresh in PBI Service without a Gateway. Script overwrites one CSV per refresh — no folder iteration, no privacy firewall errors | Rolling 30 days, refreshes weekly or daily |
+| **SharePoint — Folder** *(advanced)* | [`2. SharePoint/Folder/`](2.%20SharePoint/Folder/) | Need > 30 days of accumulated history but no Fabric. Folder iteration auto-unions all daily CSVs | Up to 180 days (Graph cap), heavier PBI memory footprint |
+| **Fabric / Lakehouse** | [`3. Fabric/`](3.%20Fabric/) | Have Fabric capacity. JSON parsing happens upstream in a notebook → best performance, multi-year history, sub-second dashboard | Millions of events, multi-year |
 
 Inside each path:
 - The PBIT for that pattern (and a README explaining what parameters to fill in)
@@ -352,29 +352,30 @@ Refer back to the [**Choose your deployment path**](#-choose-your-deployment-pat
 
 | Path | PBIT | Setup guide |
 |---|---|---|
-| **Manual CSV / SharePoint single file** | `Manual CSV/AI-in-One Dashboard - csv only.pbit` *(local)* or `Manual CSV/AI-in-One Dashboard - sharepoint only.pbit` *(single SharePoint URL)* | [`Manual CSV/README.md`](Manual%20CSV/README.md) |
-| **SharePoint Refresh** *(folder, scheduled refresh)* | `SharePoint Refresh/AI-in-One Dashboard - Sharepoint Refresh.pbit` | [`SharePoint Refresh/README.md`](SharePoint%20Refresh/README.md) |
-| **Fabric / Lakehouse** *(upstream JSON parsing, large tenants)* | `Fabric/AI-in-One Dashboard - Fabric.pbit` | [`Fabric/README.md`](Fabric/README.md) |
+| **Manual** | `1. Manual/AI-in-One Dashboard.pbit` (single local CSV) | [`1. Manual/README.md`](1.%20Manual/README.md) |
+| **SharePoint — Single File** *(recommended default for scheduled refresh)* | `2. SharePoint/Single File/AI-in-One Dashboard.pbit` | [`2. SharePoint/Single File/README.md`](2.%20SharePoint/Single%20File/README.md) |
+| **SharePoint — Folder** *(advanced; >30 days history without Fabric)* | `2. SharePoint/Folder/AI-in-One Dashboard - SP Folder.pbit` | [`2. SharePoint/Folder/README.md`](2.%20SharePoint/Folder/README.md) |
+| **Fabric / Lakehouse** *(upstream JSON parsing, large tenants)* | `3. Fabric/AI-in-One Dashboard - Fabric.pbit` | [`3. Fabric/README.md`](3.%20Fabric/README.md) |
 
 Each per-folder README has the **definitive setup steps, parameter values, and troubleshooting** for that variant — including SharePoint folder URL conventions, Service refresh / credential setup, and (for Fabric) the upstream notebook + Lakehouse provisioning.
 
 ### Common parameters across templates
 
-All three template paths share the same four parameters — only the *value format* changes (local path vs SharePoint URL vs SharePoint folder):
+All four template paths share the same four parameters — only the *value format* changes (local path vs SharePoint URL vs SharePoint folder vs Lakehouse table):
 
 | Parameter | What it points at |
 |---|---|
-| **Copilot Interactions File** | Audit-log CSV from Step 1 (or the SharePoint folder of audit CSVs in the SharePoint Refresh path) |
+| **Copilot Interactions File** | Audit-log CSV from Step 1 (or the SharePoint folder of audit CSVs in the SharePoint Folder path) |
 | **Copilot Licensed Users** | Licensed-users CSV from Step 2 |
 | **Org Data File** | Org-data CSV from Step 4 |
 | **Agent 365** *(optional)* | Agent 365 inventory file from Step 3 |
 
-After supplying parameters, click **Load**. First refresh on a moderate dataset takes 5–15 minutes; large tenants on the Manual / SharePoint Refresh paths may need 30+ minutes (use the Fabric path if you're hitting the 1 GB / 2-hour Service caps).
+After supplying parameters, click **Load**. First refresh on a moderate dataset takes 5–15 minutes; large tenants on the Manual / SharePoint paths may need 30+ minutes (use the Fabric path if you're hitting the 1 GB / 2-hour Service caps).
 
 ### Generic troubleshooting
 
 - **"File not found" / `DataSource.Error`** — local paths must be absolute (e.g. `C:\Data\file.csv`, not `.\file.csv`). For SharePoint URLs, copy the **document URL**, not the share link.
-- **Refresh times out in Power BI Service (>2 hours)** — switch to the [`Fabric/`](Fabric/) deployment path. JSON parsing happens upstream in a Lakehouse / notebook, leaving the dataset as a thin pass-through against a flat Delta table.
+- **Refresh times out in Power BI Service (>2 hours)** — switch to the [`3. Fabric/`](3.%20Fabric/) deployment path. JSON parsing happens upstream in a Lakehouse / notebook, leaving the dataset as a thin pass-through against a flat Delta table.
 - **`Formula.Firewall: Query references other queries…`** — privacy-level mismatch when combining sources. In Power BI Desktop: **File → Options → Current File → Privacy → Combine data without privacy**. In Service: dataset Settings → Data source credentials → set **Privacy: None** for SharePoint sources.
 - **Path-specific issues** — see the troubleshooting section in each per-folder README.
 
