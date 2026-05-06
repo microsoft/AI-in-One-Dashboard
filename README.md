@@ -45,17 +45,22 @@ This is an experimental template with audit logs as the primary source. The audi
 
 ## 📁 Choose your deployment path
 
-Pick the template that matches your environment:
+Pick the path that matches your environment. Each folder is self-contained — README, PBIT, and the scripts you need are all in one place.
 
-| Path | Folder | Use when… |
-|---|---|---|
-| **Manual CSV / SharePoint single file** | [`Manual CSV/`](Manual%20CSV/) | You have a single static audit-log CSV (local or SharePoint URL) and refresh ad-hoc |
-| **SharePoint Refresh** | [`SharePoint Refresh/`](SharePoint%20Refresh/) | Your audit CSVs land in a SharePoint folder and you want Service to auto-union and refresh on schedule (Pro-friendly) |
-| **Fabric / Lakehouse** | [`Fabric/`](Fabric/) | You have Fabric capacity (or Premium / PPU) and want JSON parsing to happen upstream — best performance and reliability for tenants > 100K events / week |
+| Path | Folder | Best when… | Volume ceiling |
+|---|---|---|---|
+| **Manual** | [`Manual/`](Manual/) | One-off, ad-hoc, or single-user. Customer manually exports audit CSV from Purview UI, drops into the local PBIT | < ~100K events lifetime |
+| **SharePoint — Single File** *(recommended default)* | [`SharePoint/Single File/`](SharePoint/Single%20File/) | Scheduled refresh in PBI Service without a Gateway. Script overwrites one CSV per refresh — no folder iteration, no privacy firewall errors | Rolling 30 days, refreshes weekly or daily |
+| **SharePoint — Folder** *(advanced)* | [`SharePoint/Folder/`](SharePoint/Folder/) | Need > 30 days of accumulated history but no Fabric. Folder iteration auto-unions all daily CSVs | Up to 180 days (Graph cap), heavier PBI memory footprint |
+| **Fabric / Lakehouse** | [`Fabric/`](Fabric/) | Have Fabric capacity. JSON parsing happens upstream in a notebook → best performance, multi-year history, sub-second dashboard | Millions of events, multi-year |
 
-Each folder has its own README with parameter values, setup steps, and troubleshooting.
+Inside each path:
+- The PBIT for that pattern (and a README explaining what parameters to fill in)
+- `scripts/interactive/` — manual one-shot PowerShell (admin signs in via browser)
+- `scripts/appreg/` — unattended app-registration scripts (service principal for scheduled jobs)
+- `scripts/azure/` *(SharePoint / Single File only)* — Bicep + runbooks for Azure Automation
 
-For automated audit-log export (feeds any of the paths above), see [`scripts/`](scripts/).
+**Not sure which path?** Most customers should start with **SharePoint / Single File** — it covers 80% of real deployments and avoids the data-combination errors that the Folder pattern is prone to. If you have Fabric capacity, **Fabric / Lakehouse** is the long-term home for any serious volume.
 
 ---
 
