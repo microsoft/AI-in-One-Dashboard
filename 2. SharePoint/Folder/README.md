@@ -2,7 +2,7 @@
 
 > ⚠️ **This is the advanced SharePoint path.** Most customers should use [`../Single File/`](../Single%20File/) instead — it's simpler, has none of the privacy-firewall fragilities documented below, and works for ~80% of real deployments.
 >
-> Use this Folder path **only if** you need >30 days of accumulated audit history *and* you don't have Fabric capacity. If you have Fabric, use [`../../Fabric/`](../../Fabric/) — it solves the same problem more robustly.
+> Use this Folder path **only if** you need >30 days of accumulated audit history *and* you don't have Fabric capacity. If you have Fabric, use [`../../3. Fabric/`](../../3.%20Fabric/) — it solves the same problem more robustly.
 
 Use this template when your audit-log CSVs land in a **SharePoint folder** (typically as scheduled drops accumulating over time) and you want Power BI Service to auto-union and refresh them.
 
@@ -77,7 +77,7 @@ Formula.Firewall: Query references other queries or steps...
 - Set customer expectations up front: dashboard history starts from the date you began running the export script
 - Run the script weekly (minimum) so the SharePoint folder accumulates beyond 180 days over time
 - **Never delete old CSVs** — they're your only history record beyond the rolling 180-day Graph window
-- For 2-year+ history needs, switch to the [`Fabric/`](../Fabric/) deployment path with managed Lakehouse retention
+- For 2-year+ history needs, switch to the [`3. Fabric/`](../../3.%20Fabric/) deployment path with managed Lakehouse retention
 
 ### 4. Don't overlap your script's date windows
 
@@ -152,7 +152,7 @@ This is what `scripts/get-copilot-interactions.ps1` produces. If your export use
 | Inflated counts, users with 5-7× expected activity | Date windows in your script runs are overlapping | See Pitfall #4 above. Use non-overlapping windows |
 | Desktop refresh works, Service refresh fails with `Access denied` | Per-URL credentials missing in Service | See Pitfall #5 above. Sign in to every SharePoint URL in dataset Settings |
 | "Can't see data before February" / "Where's my 2025 history?" | Microsoft Graph 180-day audit log API limit | See Pitfall #3 above. Don't delete old CSVs; for >180 days history use Fabric path |
-| Refresh times out (2-hour limit on shared) or hits 1 GB memory cap | Volume too large for in-dataset JSON parsing | Switch to the [`Fabric/`](../Fabric/) deployment path — moves parsing upstream, eliminates the limits |
+| Refresh times out (2-hour limit on shared) or hits 1 GB memory cap | Volume too large for in-dataset JSON parsing | Switch to the [`3. Fabric/`](../../3.%20Fabric/) deployment path — moves parsing upstream, eliminates the limits |
 
 ## When this approach isn't right
 
@@ -161,7 +161,7 @@ If you're hitting the same pitfalls repeatedly, or the data volume keeps trippin
 | Alternative | Pattern | Best for |
 |---|---|---|
 | **Single File** ([`../Single File/`](../Single%20File/)) | Script always writes to one CSV per source, overwriting. PBI reads one static URL — no folder iteration, no Privacy Firewall trips | Customers with simple needs, low volume, who don't need >180 days of history |
-| **Fabric Lakehouse** ([`../../Fabric/`](../../Fabric/)) | Script lands data in a Lakehouse Delta table; PBI queries the table directly. No SharePoint, no folder iteration | Enterprise customers with Fabric capacity, large tenants, multi-year history needs |
+| **Fabric Lakehouse** ([`../../3. Fabric/`](../../3.%20Fabric/)) | Script lands data in a Lakehouse Delta table; PBI queries the table directly. No SharePoint, no folder iteration | Enterprise customers with Fabric capacity, large tenants, multi-year history needs |
 
 ## Compared to the other paths
 

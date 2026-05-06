@@ -103,6 +103,6 @@ For Azure Automation specifically, see [`scripts/azure/`](scripts/azure/) for Bi
 
 | Symptom | Move to |
 |---|---|
-| You need >30 days of historical data | [`../Folder/`](../Folder/) (advanced) or [`../../Fabric/`](../../Fabric/) |
-| Refresh hits 1 GB / 2-hour caps | [`../../Fabric/`](../../Fabric/) (Lakehouse handles parsing upstream) |
-| You don't need scheduled refresh, just a one-off CSV | [`../../Manual/`](../../Manual/) |
+| You need >30 days of historical data | [`../Folder/`](../Folder/) (advanced) or [`../../3. Fabric/`](../../3.%20Fabric/) |
+| Refresh hits 1 GB / 2-hour caps | [`../../3. Fabric/`](../../3.%20Fabric/) (Lakehouse handles parsing upstream) |
+| You don't need scheduled refresh, just a one-off CSV | [`../../1. Manual/`](../../1.%20Manual/) |

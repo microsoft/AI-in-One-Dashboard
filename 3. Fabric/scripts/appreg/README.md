@@ -16,7 +16,7 @@ Lakehouse notebook (../../notebooks/) parses + writes Delta tables
 PBI Direct Lake reads Delta tables → near-instant refresh
 ```
 
-If you want **direct upload to SharePoint** instead, use the [`../../../SharePoint/Single File/scripts/appreg/`](../../../SharePoint/Single%20File/scripts/appreg/) variants — they upload to a SharePoint document library directly and produce the **pre-parsed format** (different schema).
+If you want **direct upload to SharePoint** instead, use the [`../../../2. SharePoint/Single File/scripts/appreg/`](../../../2.%20SharePoint/Single%20File/scripts/appreg/) variants — they upload to a SharePoint document library directly and produce the **pre-parsed format** (different schema).
 
 ## Scripts in this folder
 

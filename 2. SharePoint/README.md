@@ -13,7 +13,7 @@ Two SharePoint patterns are available — pick the one that fits your scenario:
 Are you a customer with > 100K events/week?
 ├── No  → Single File (rolling 30 days is plenty)
 └── Yes → Do you have Fabric capacity?
-         ├── Yes → use Fabric path instead (../Fabric/), not SharePoint at all
+         ├── Yes → use Fabric path instead (../3. Fabric/), not SharePoint at all
          └── No  → Folder (180-day cap, but accept the additional fragility)
 ```
 
@@ -37,4 +37,4 @@ Are you a customer with > 100K events/week?
 
 ## When to escape SharePoint entirely
 
-If you're hitting the 1 GB / 2-hour PBI refresh caps on shared capacity, or your customer needs multi-year history, switch to [`../Fabric/`](../Fabric/). Fabric Lakehouse handles upstream parsing and gives you Direct Lake performance.
+If you're hitting the 1 GB / 2-hour PBI refresh caps on shared capacity, or your customer needs multi-year history, switch to [`../3. Fabric/`](../3.%20Fabric/). Fabric Lakehouse handles upstream parsing and gives you Direct Lake performance.
