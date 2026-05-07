@@ -17,12 +17,12 @@
 #
 # Usage:
 #   .\ProvisionSiteAccess-SP-AppReg.ps1 `
-#       -TenantId "<demo-tenant-guid>" `
-#       -SiteHost "m365cpi94179096.sharepoint.com" `
-#       -AppClientId "a363e2fa-cb84-42e0-8a6c-8ae52153ad37" `
-#       -AppDisplayName "PAX-Test"
+#       -TenantId "<your-tenant-guid>" `
+#       -SiteHost "<tenant>.sharepoint.com" `
+#       -AppClientId "<your-app-client-id>" `
+#       -AppDisplayName "<your-app-display-name>"
 #
-# For non-root sites, also pass -SitePath e.g. "/sites/PAXTest".
+# For non-root sites, also pass -SitePath e.g. "/sites/CopilotAnalytics".
 #
 # Outputs:
 #   - Site ID  (Graph composite, e.g. host,siteGuid,webGuid)
@@ -37,14 +37,15 @@ param (
     [string]$TenantId,
 
     [Parameter(Mandatory)]
-    [string]$SiteHost,                 # e.g. m365cpi94179096.sharepoint.com
+    [string]$SiteHost,                 # e.g. contoso.sharepoint.com
 
-    [string]$SitePath = "",            # e.g. /sites/PAXTest. Leave empty for root site.
+    [string]$SitePath = "",            # e.g. /sites/CopilotAnalytics. Leave empty for root site.
 
     [Parameter(Mandatory)]
-    [string]$AppClientId,              # The app registration that needs write access (e.g. PAX-Test)
+    [string]$AppClientId,              # The app registration that needs write access
 
-    [string]$AppDisplayName = "PAX-Test"
+    [Parameter(Mandatory)]
+    [string]$AppDisplayName
 )
 
 #############################################################
