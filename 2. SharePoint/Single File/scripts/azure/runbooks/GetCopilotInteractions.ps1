@@ -72,8 +72,19 @@ function ConnectToAzure {
 }
 
 # Combined function: Get Copilot Interactions and Upload to SharePoint
-# Fetches pages from API and streams directly to SharePoint upload session
-# Handles 320 KiB alignment automatically
+#
+# Builds the full CSV in memory by paging through Graph audit records, then
+# uploads to SharePoint:
+#   * <= 4 MB → simple PUT to /drives/{id}/root:/{path}:/content
+#   * >  4 MB → createUploadSession + chunked PUTs with explicit Content-Range
+#               total length (SharePoint rejects "*" as the total).
+#
+# The previous streaming approach used "bytes X-Y/*" for intermediate chunks
+# and Invoke-MgGraphRequest for the chunk PUTs; both are incompatible with
+# SharePoint's upload-session endpoint, which:
+#   1. requires the actual total length in every Content-Range header
+#   2. needs a plain HTTP client (the upload URL is a pre-signed SP URL,
+#      not a Graph URL — Invoke-MgGraphRequest mangles non-Graph requests)
 function GetCopilotInteractionsAndUpload {
     param (
         [Parameter(Mandatory)]
@@ -85,197 +96,136 @@ function GetCopilotInteractionsAndUpload {
         [Parameter(Mandatory)]
         [string]$FileName,
 
-        [int]$TargetChunkSizeMB = 4, # Target size, will be adjusted to nearest 320KiB
         [int]$MaxRetries = 8
     )
 
-    # --- Upload Setup ---
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
-    # 320 KiB constant required by Graph API
-    $UploadMultipleSize = 327680 
-    
-    # Calculate a safe chunk size that is a multiple of 320 KiB
-    $chunkThreshold = [Math]::Ceiling(($TargetChunkSizeMB * 1MB) / $UploadMultipleSize) * $UploadMultipleSize
-
-    $position = 0
-    $bufferStream = New-Object System.IO.MemoryStream
-
-    try {
-        # Create upload session via the Graph module (uses managed identity context)
-        $bodyJson = '{ "item": { "@microsoft.graph.conflictBehavior": "replace" } }'
-        $session = Invoke-MgGraphRequest -Method POST -Uri "https://graph.microsoft.com/v1.0/drives/$DriveId/root:/$($FileName):/createUploadSession" -Body $bodyJson -ContentType "application/json"
-
-        if (-not $session.uploadUrl) {
-            throw "Failed to create upload session: no uploadUrl returned"
-        }
-        $uploadUrl = $session.uploadUrl
-    }
-    catch {
-        Write-Error "Failed to create upload session: $_"
-        throw
-    }
-
-    # --- Helper: Retry Logic (generic for GET, PUT, POST) ---
-    function Invoke-GraphRequestWithRetry {
-        param (
-            [Parameter(Mandatory)]
-            [string] $Method,
-            [Parameter(Mandatory)]
-            [string] $Uri,
-            [hashtable] $Headers = @{},
-            [object] $Body = $null,
-            [switch] $SkipHeaderValidation
-        )
-
+    # --- Helper: Graph GET with retry on 429/5xx ---
+    function Invoke-GraphGetWithRetry {
+        param ([Parameter(Mandatory)] [string]$Uri)
         for ($attempt = 1; $attempt -le $MaxRetries; $attempt++) {
-            try {
-                $params = @{ Method = $Method; Uri = $Uri; Headers = $Headers }
-                if ($null -ne $Body) { $params['Body'] = $Body }
-                if ($SkipHeaderValidation) { $params['SkipHeaderValidation'] = $true }
-
-                return Invoke-MgGraphRequest @params
-            }
+            try { return Invoke-MgGraphRequest -Method GET -Uri $Uri }
             catch {
-                $ex = $_
-                # Try to extract response status and headers when available
                 $resp = $null
-                if ($ex.Exception -and $ex.Exception.Response) { $resp = $ex.Exception.Response }
-                if ($resp -and ($resp.StatusCode -eq 429 -or $resp.StatusCode -ge 500)) {
-                    # Exponential backoff: 5s, 10s, 20s, 40s ... capped at 60s
-                    $retryAfter = [Math]::Min(5 * [Math]::Pow(2, $attempt - 1), 60)
-                    try { if ($resp.Headers['Retry-After']) { $retryAfter = [int]$resp.Headers['Retry-After'] } } catch {}
-                    Write-Output "$Method request failed (attempt $attempt/$MaxRetries, HTTP $($resp.StatusCode)), retrying in ${retryAfter}s..."
-                    Start-Sleep -Seconds $retryAfter
+                if ($_.Exception -and $_.Exception.Response) { $resp = $_.Exception.Response }
+                if ($resp -and ($resp.StatusCode -eq 429 -or $resp.StatusCode -ge 500) -and $attempt -lt $MaxRetries) {
+                    $sleep = [Math]::Min(5 * [Math]::Pow(2, $attempt - 1), 60)
+                    try { if ($resp.Headers['Retry-After']) { $sleep = [int]$resp.Headers['Retry-After'] } } catch {}
+                    Write-Output "GET failed (attempt $attempt/$MaxRetries, HTTP $($resp.StatusCode)), retrying in ${sleep}s..."
+                    Start-Sleep -Seconds $sleep
                     continue
                 }
                 throw
             }
         }
-        throw "$Method request to $Uri failed after $MaxRetries attempts."
+        throw "GET request to $Uri failed after $MaxRetries attempts."
     }
 
-    # --- Helper: Smart Flush ---
-    # Sends only multiples of 320 KiB, keeps the rest in buffer
-    function Flush-Buffer {
-        param ([bool]$IsFinal = $false)
+    # --- Build full CSV in memory by paging through audit records ---
+    $sb = New-Object System.Text.StringBuilder
+    $rowCount = 0
+    $headerWritten = $false
+    $headers = $null
+    $uri = "https://graph.microsoft.com/beta/security/auditLog/queries/$auditLogQueryId/records"
 
-        $len = $bufferStream.Length
-        if ($len -eq 0) { return }
+    do {
+        $response = Invoke-GraphGetWithRetry -Uri $uri
 
-        # Calculate bytes to send
-        if ($IsFinal) {
-            $bytesToSend = $len
-        }
-        else {
-            # Round down to nearest 320 KiB
-            $numMultiples = [Math]::Floor($len / $UploadMultipleSize)
-            $bytesToSend = $numMultiples * $UploadMultipleSize
-        }
-
-        # Only upload if we have enough data (or it's the end)
-        if ($bytesToSend -gt 0) {
-            $bufferStream.Position = 0
-            $chunk = New-Object byte[] $bytesToSend
-            $readCount = $bufferStream.Read($chunk, 0, $bytesToSend)
-
-            $end = $position + $bytesToSend - 1
-            # For intermediate chunks, use '*' as the total. For final, we'll pass the actual total later.
-            $range = "bytes $position-$end/*"
-
-            if ($IsFinal) {
-                $totalLength = $position + $bytesToSend
-                $finalRange = "bytes $position-$end/$totalLength"
-                Invoke-GraphRequestWithRetry -Method PUT -Uri $uploadUrl -Headers @{ "Content-Range" = $finalRange } -Body $chunk -SkipHeaderValidation
+        foreach ($item in $response.value) {
+            if (-not $headerWritten) {
+                $headers = $item.Keys
+                $headerLine = ($headers | ForEach-Object { '"{0}"' -f $_.Replace('"','""') }) -join ','
+                [void]$sb.AppendLine($headerLine)
+                $headerWritten = $true
             }
-            else {
-                Invoke-GraphRequestWithRetry -Method PUT -Uri $uploadUrl -Headers @{ "Content-Range" = $range } -Body $chunk -SkipHeaderValidation
-            }
-            
-            $position += $bytesToSend
-            Write-Output "Uploaded chunk: $([Math]::Round($bytesToSend / 1MB, 2)) MB. Total uploaded: $([Math]::Round($position / 1MB, 2)) MB"
 
-            # Handle remainder
-            $remaining = $len - $bytesToSend
-            if ($remaining -gt 0) {
-                $remainder = New-Object byte[] $remaining
-                $bufferStream.Read($remainder, 0, $remaining) | Out-Null
-                
-                # Reset buffer with just the remainder
-                $bufferStream.SetLength(0)
-                $bufferStream.Write($remainder, 0, $remaining)
-            }
-            else {
-                $bufferStream.SetLength(0)
-            }
-        }
-    }
-
-    # --- Data Fetching Loop ---
-    try {
-        $uri = "https://graph.microsoft.com/beta/security/auditLog/queries/$auditLogQueryId/records"
-        $rowCount = 0
-        $headerWritten = $false
-        
-        do {
-            $response = Invoke-GraphRequestWithRetry -Method GET -Uri $uri
-            $records = $response.value
-            
-            foreach ($item in $records) {
-                # 1. Handle Header
-                if (-not $headerWritten) {
-                    $headers = $item.Keys
-                    $headerLine = ($headers | ForEach-Object { '"{0}"' -f $_.Replace('"', '""') }) -join ','
-                    $bytes = [System.Text.Encoding]::UTF8.GetBytes("$headerLine`n")
-                    $bufferStream.Write($bytes, 0, $bytes.Length)
-                    $headerWritten = $true
+            $values = @()
+            foreach ($propName in $headers) {
+                $value = $item[$propName]
+                if ($null -eq $value)          { $values += '""' }
+                elseif ($value -is [string])   { $values += '"{0}"' -f $value.Replace('"','""') }
+                elseif ($value -is [bool])     { $values += $value.ToString() }
+                elseif ($value -is [DateTime]) { $values += '"{0:O}"' -f $value }
+                else {
+                    $jsonValue = $value | ConvertTo-Json -Compress -Depth 10
+                    $values += '"{0}"' -f $jsonValue.Replace('"','""')
                 }
-                
-                # 2. Handle Row
-                $values = @()
-                foreach ($propName in $headers) {
-                    $value = $item[$propName]
-                    if ($value -eq $null) { $values += '""' }
-                    elseif ($value -is [string]) { $values += '"{0}"' -f $value.Replace('"', '""') }
-                    elseif ($value -is [bool]) { $values += $value.ToString() }
-                    elseif ($value -is [DateTime]) { $values += '"{0:O}"' -f $value }
-                    else {
-                        $jsonValue = $value | ConvertTo-Json -Compress -Depth 10
-                        $values += '"{0}"' -f $jsonValue.Replace('"', '""')
-                    }
-                }
-                $csvLine = $values -join ','
-                $bytes = [System.Text.Encoding]::UTF8.GetBytes("$csvLine`n")
-                $bufferStream.Write($bytes, 0, $bytes.Length)
-
-                # 3. Check if we should flush (if buffer > threshold)
-                if ($bufferStream.Length -ge $chunkThreshold) { 
-                    Flush-Buffer -IsFinal $false 
-                }
-
-                $rowCount++
             }
+            [void]$sb.AppendLine($values -join ',')
+            $rowCount++
+        }
 
-            Write-Output "Processed $rowCount records..."
-            $uri = $response.'@odata.nextLink'
+        Write-Output "Processed $rowCount records..."
+        $uri = $response.'@odata.nextLink'
+        if ($uri) { Start-Sleep -Milliseconds 200 }
+    } while ($uri)
 
-            # Throttle between pages to reduce pressure on the beta endpoint
-            if ($uri) { Start-Sleep -Milliseconds 200 }
+    # --- Encode CSV and upload ---
+    $bytes = [System.Text.Encoding]::UTF8.GetBytes($sb.ToString())
+    $totalBytes = $bytes.Length
+    Write-Output "Built CSV with $rowCount rows ($totalBytes bytes). Uploading to: $FileName"
 
-        } while ($uri)
-        
-        # 4. Final Flush (sends whatever is left)
-        Flush-Buffer -IsFinal $true
-        
-        Write-Output "Successfully uploaded $rowCount records to $FileName"
+    # Graph caps simple PUT (root:/path:/content) at 4 MB. Larger files need an
+    # upload session with chunked PUTs and Content-Range headers. To exercise
+    # the chunked branch on a small test CSV, temporarily lower this to e.g. 100.
+    $simpleUploadCap = 4 * 1024 * 1024
+
+    if ($totalBytes -le $simpleUploadCap) {
+        $uploadUri = "https://graph.microsoft.com/v1.0/drives/$DriveId/root:/$($FileName):/content"
+        Invoke-MgGraphRequest -Method PUT -Uri $uploadUri -Body $bytes -ContentType 'text/csv' | Out-Null
+        Write-Output "Upload complete (simple PUT, $totalBytes bytes). $rowCount records."
+        return
     }
-    catch {
-        Write-Error "Failed during processing: $_"
-        exit 1
+
+    # Large file: createUploadSession then chunked PUT with explicit total.
+    $sessionBody = '{ "item": { "@microsoft.graph.conflictBehavior": "replace" } }'
+    $session = Invoke-MgGraphRequest -Method POST `
+        -Uri "https://graph.microsoft.com/v1.0/drives/$DriveId/root:/$($FileName):/createUploadSession" `
+        -Body $sessionBody -ContentType 'application/json'
+    if (-not $session.uploadUrl) { throw "createUploadSession returned no uploadUrl" }
+    $uploadUrl = $session.uploadUrl
+
+    # Upload session chunk size must be a multiple of 320 KiB. 5 MiB = 16 * 320 KiB.
+    $chunkSize = 5 * 1024 * 1024
+    $offset = 0
+    while ($offset -lt $totalBytes) {
+        $end = [Math]::Min($offset + $chunkSize, $totalBytes) - 1
+        $len = $end - $offset + 1
+        $chunk = New-Object byte[] $len
+        [Array]::Copy($bytes, $offset, $chunk, 0, $len)
+        $contentRange = "bytes $offset-$end/$totalBytes"
+
+        for ($attempt = 1; $attempt -le $MaxRetries; $attempt++) {
+            try {
+                # Use Invoke-WebRequest, NOT Invoke-MgGraphRequest — uploadUrl is a
+                # pre-signed SharePoint URL, not a Graph URL. The Graph SDK strips
+                # custom headers (including Content-Range) when called with non-Graph
+                # URLs, which is what caused SP to reject the request.
+                Invoke-WebRequest -Uri $uploadUrl -Method Put `
+                    -Body $chunk -ContentType 'application/octet-stream' `
+                    -Headers @{ 'Content-Range' = $contentRange } `
+                    -UseBasicParsing -ErrorAction Stop | Out-Null
+                break
+            }
+            catch {
+                $resp = $null
+                if ($_.Exception -and $_.Exception.Response) { $resp = $_.Exception.Response }
+                if ($resp -and ($resp.StatusCode -eq 429 -or $resp.StatusCode -ge 500) -and $attempt -lt $MaxRetries) {
+                    $sleep = [Math]::Min(5 * [Math]::Pow(2, $attempt - 1), 60)
+                    Write-Output "Chunk PUT failed at $contentRange (attempt $attempt/$MaxRetries, HTTP $($resp.StatusCode)), retrying in ${sleep}s..."
+                    Start-Sleep -Seconds $sleep
+                    continue
+                }
+                Write-Error "Chunk upload failed at $contentRange : $_"
+                throw
+            }
+        }
+
+        $offset = $end + 1
+        Write-Output ("Uploaded {0:N0}/{1:N0} bytes" -f $offset, $totalBytes)
     }
-    finally {
-        $bufferStream.Dispose()
-    }
+    Write-Output "Upload complete (upload session, $totalBytes bytes). $rowCount records."
 }
 
 
