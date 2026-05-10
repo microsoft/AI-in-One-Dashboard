@@ -1,0 +1,12 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "DataPipeline",
+    "displayName": "CopilotAdoptionPipeline",
+    "description": "Orchestrates the 3 Direct Ingester notebooks (audit log, users, org data) and writes Delta tables for the Fabric PBIT to consume. Schedule weekly. See ../../README.md for the deployment story."
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "137128cb-a180-4263-84e5-5dd9e84ffce7"
+  }
+}
