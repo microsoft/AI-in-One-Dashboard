@@ -50,7 +50,9 @@ Import-Module -Name Az.Storage -Force
 # Variables
 #############################################################
 
-$outputCSV = "CopilotInteractionsReport-$(Get-Date -Format 'yyyyMMddHHmmss')-$($AuditLogQueryId).csv"
+# Note: $outputCSV is defined later in Main Script Execution, after
+# $AuditLogQueryId is populated from the queue, so the filename includes
+# the actual query ID for traceability.
 
 #############################################################
 # Functions
@@ -403,6 +405,10 @@ ConnectToAzure
 # Get query from the queue
 $AuditLogQueryId = GetAuditQueryIdFromQueue
 Write-Output "Retrieved AuditLogQueryId from queue: $AuditLogQueryId"
+
+# Build CSV filename now that we have the query ID, so the filename includes it
+# for traceability (matches the query that produced the report).
+$outputCSV = "CopilotInteractionsReport-$(Get-Date -Format 'yyyyMMddHHmmss')-$($AuditLogQueryId).csv"
 
 # Check if ready to process / download (Exits if not ready)
 $query = CheckIfQuerySucceeded -auditLogQueryId $AuditLogQueryId
