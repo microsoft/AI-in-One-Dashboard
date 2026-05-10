@@ -14,6 +14,11 @@
 #############################################################
 
 param (
+    # Direct QueryId passthrough — when supplied, the script skips the SharePoint
+    # list-queue lookup entirely. Useful for ad-hoc testing or any setup that
+    # doesn't want the queue-list pattern.
+    [string]$AuditLogQueryId = "",
+
     [string]$SharePointSiteId = "",   # Graph site ID, e.g. contoso.sharepoint.com,{siteGuid},{webGuid}
     [string]$SharePointListId = "",   # GUID of the source SharePoint list
     [string]$DriveId = "",  # Update with actual Drive ID
@@ -488,9 +493,19 @@ function DeleteAuditQueryIdFromList {
 # Connect to Microsoft Graph
 ConnectToGraph
 
-# Get query ID from the SharePoint list
-$AuditLogQueryId = GetAuditQueryIdFromList
-Write-Output "Retrieved AuditLogQueryId from list: $SharePointListId"
+# Resolve the QueryId — direct param wins, otherwise pull from the SharePoint list queue
+$useDirectQueryId = -not [string]::IsNullOrWhiteSpace($AuditLogQueryId)
+$useQueueList     = (-not [string]::IsNullOrWhiteSpace($SharePointSiteId)) -and (-not [string]::IsNullOrWhiteSpace($SharePointListId))
+
+if ($useDirectQueryId) {
+    Write-Output "Using provided AuditLogQueryId: $AuditLogQueryId"
+} elseif ($useQueueList) {
+    $AuditLogQueryId = GetAuditQueryIdFromList
+    Write-Output "Retrieved AuditLogQueryId from list: $AuditLogQueryId"
+} else {
+    Write-Error "Provide either -AuditLogQueryId directly, OR both -SharePointSiteId and -SharePointListId for queue-list lookup."
+    exit 1
+}
 
 # Check if ready to process / download (Exits if not ready)
 $query = CheckIfQuerySucceeded -auditLogQueryId $AuditLogQueryId
@@ -501,7 +516,9 @@ $TargetFileName = $outputCSV + "$($AuditLogQueryId).csv"
 # Get Copilot Interactions and Upload directly
 GetCopilotInteractionsAndUpload -auditLogQueryId $AuditLogQueryId -DriveId $DriveId -FileName $TargetFileName
 
-# Remove item from list after processing
-DeleteAuditQueryIdFromList
+# Remove item from list after processing (only when we used the queue lookup)
+if (-not $useDirectQueryId) {
+    DeleteAuditQueryIdFromList
+}
 
 Write-Output "Copilot Interactions report generated at: $TargetFileName"
