@@ -29,31 +29,48 @@ If you don't need turnkey deployment and just want to plug the AppReg scripts in
 | `GetCopilotUsers` | Weekly or daily | `Reports.Read.All` + `Sites.Selected` | Pulls M365 active user report, adds `HasCopilot` flag column, uploads CSV |
 | `GetEntraOrgData` | Weekly or monthly | `User.Read.All` + `Sites.Selected` | Pulls org structure (manager, dept, location), uploads CSV |
 
+## Values you must set before deploying
+
+Five values customise the deployment per tenant. Three are **edited in `deploy.ps1`** (one-time, before running). Two are **passed as parameters** at runtime (or as defaults if you prefer to bake them in).
+
+| # | Value | Where | Why |
+|---|---|---|---|
+| 1 | **NamePrefix** | `-NamePrefix` parameter to `deploy.ps1` | **Required, no default.** Derives all resource names. The Storage Account name is globally-unique across all of Azure, so this must be unique to your org. Pattern: short lowercase hyphenated, e.g. `contoso-copilot-dash`, `acme-cad-prod` |
+| 2 | **SiteId** | Edit `$siteId` at top of `deploy.ps1` | The Graph **composite** Site ID of the SharePoint site that will receive the CSV uploads. Format: `hostname,siteCollectionGuid,siteGuid`. Get via Graph Explorer: `GET https://graph.microsoft.com/v1.0/sites/{hostname}:/{site-path}?$select=id` |
+| 3 | **ResourceGroup** | Edit `$resourceGroup` at top of `deploy.ps1` | Existing or new Azure Resource Group in your subscription. If it doesn't exist yet, create it first via `New-AzResourceGroup` |
+| 4 | **DriveId** | Pass `-DriveId` at runbook invocation, OR set the default in `runbooks/GetCopilotInteractions.ps1` | The Graph Drive ID of the document library that receives uploaded CSVs. Get via: `GET https://graph.microsoft.com/v1.0/sites/{siteId}/drives` and copy the `id` of the target drive |
+| 5 | **Region** | Inherited from `ResourceGroup`'s location | Pick the region closest to your SharePoint tenant when creating the RG. Examples: `uksouth`, `eastus`, `westeurope` |
+
 ## One-time deployment
 
 ```powershell
+# 0. Sign into Azure (if not already)
+Connect-AzAccount -SubscriptionId <your-sub-guid>
+
+# 1. Create or confirm the target Resource Group
+New-AzResourceGroup -Name "contoso-cad-rg" -Location "uksouth"
+
+# 2. Edit deploy.ps1: set $siteId and $resourceGroup at the top
+
+# 3. Run the deployment, passing your unique NamePrefix
 cd ".\2. SharePoint\File\azure"
-
-# 1. Fill in your values at the top of deploy.ps1:
-#    - $siteId        = "<Graph site ID for your SharePoint upload target>"
-#    - $resourceGroup = "<your-RG-name>"
-
-# 2. Run the deployment
-.\deploy.ps1
+.\deploy.ps1 -NamePrefix "contoso-copilot-dash"
 ```
 
 What `deploy.ps1` does, in order:
 
-1. `Connect-AzAccount` (browser prompt if not signed in)
-2. `bicep build` to compile `main.bicep` → `main.compiled.json`
-3. `New-AzResourceGroupDeployment` to deploy the stack
-4. Captures the Automation Account's Managed Identity principal ID from outputs
-5. `Connect-MgGraph` (browser prompt for tenant-admin sign-in)
-6. Grants the MI: `Sites.Selected`, `Reports.Read.All`, `AuditLogsQuery.Read.All`, `User.Read.All`
-7. Grants the MI `write` access on the target SharePoint site via `New-MgSitePermission`
-8. Uploads runbook content from `./runbooks/*.ps1` to the Automation Account
+1. Validates `-NamePrefix` is provided and matches the naming pattern
+2. Fails fast if `$siteId` or `$resourceGroup` is still a placeholder
+3. `bicep build` to compile `main.bicep` → `main.compiled.json`
+4. `New-AzResourceGroupDeployment` to deploy the stack (Storage Account, Queue, Automation Account with managed identity, runtime env with PS modules, runbook resources, role assignment)
+5. Uploads runbook content from `./runbooks/*.ps1` to the Automation Account
+6. `Connect-MgGraph` (browser prompt — sign in with tenant-admin or equivalent)
+7. Grants the managed identity: `Sites.Selected`, `Reports.Read.All`, `AuditLogsQuery.Read.All`, `User.Read.All`
+8. Grants the managed identity `write` access on the target SharePoint site via `New-MgSitePermission`
 
-After deployment you'll have a fully scheduled pipeline. The Automation Account costs nothing for the first 500 runtime-minutes/month (well within typical usage).
+After deployment you'll have a fully provisioned pipeline. **One additional manual step**: set the `-DriveId` parameter on `GetCopilotInteractions` either at runbook invocation time, or as a default in the runbook file. Then trigger `CreateAuditLogQuery` once to validate, wait ~5–10 minutes for Purview to run the audit search, trigger `GetCopilotInteractions` to fetch + upload the CSV.
+
+The Automation Account costs nothing for the first 500 runtime-minutes/month (well within typical usage); the Storage Account is pennies per month.
 
 ## Standalone permissions update
 
@@ -83,3 +100,8 @@ Schedules can be set via the Azure Portal (Automation Account → Schedules → 
 | Runbook fails with `AccessDenied` on Graph | Permissions not granted yet | Run `apply-permissions.ps1` (or check that `deploy.ps1` completed step 6) |
 | Runbook fails with `403 Forbidden` on SharePoint PUT | `Sites.Selected` not granted on the target site | Run `apply-permissions.ps1` with the correct `-SiteId` |
 | `Failed to upload CSV` with `Content-Range must include a total length` | (Old issue, fixed in current runbooks.) Large file used streaming upload with `*` placeholder | Current runbooks use chunked upload with explicit total length |
+| Deploy fails with `StorageAccountAlreadyTaken` | The Storage Account name derived from your NamePrefix is globally taken (storage account names are globally unique across all of Azure) | Re-run with a different `-NamePrefix` that includes your org name, e.g. `contoso-cad-2026` instead of a generic name. Check name availability first with `Get-AzStorageAccountNameAvailability -Name "<prefix-with-hyphens-removed>stg"` |
+| Deploy fails with `LocationRequired` during runbook upload | (Old issue, fixed.) Runbook PUT body missing top-level `location` field | Current `deploy.ps1` fetches the RG location and includes it in the runbook metadata PUT |
+| Deploy fails with `MissingApiVersionParameter` during runbook upload | (Old issue, fixed.) URL had `?api-version=` with empty value due to PowerShell `?` string-expansion ambiguity | Current `deploy.ps1` builds URLs via string concatenation, not interpolation |
+| Deploy fails with `MethodNotAllowed` (HTTP 405) on runbook content PUT | (Old issue, fixed.) Old code used `/content` endpoint (GET-only); should be `/draft/content` for PUT | Current `deploy.ps1` targets `/draft/content` |
+| `Get-MgServicePrincipal : Method not found` during AssignRoles | Microsoft.Graph PowerShell 2.36.1 has a known assembly-mismatch bug with `Microsoft.Kiota.Authentication.Azure` | Close the PowerShell window completely, open a fresh one (PowerShell 7+ recommended), reinstall `Microsoft.Graph.Authentication, Microsoft.Graph.Applications, Microsoft.Graph.Sites`, reconnect with `Connect-AzAccount`, then re-run `apply-permissions.ps1` standalone (skips the already-completed Bicep + runbook upload steps) |
