@@ -6,12 +6,22 @@
 # Variables
 #############################################################
 
-$siteId = "0cfcc973-02f9-4a5b-b458-5bc1ca896d00" # 👈 Update with actual Site ID
+$siteId = "<UPDATE-ME composite form: tenant.sharepoint.com,siteCollGuid,siteGuid>" # 👈 Update with actual Site ID
 $displayName = "AI in One Dashboard Automation Account"
-$resourceGroup = "auditautomation" # 👈 Update with actual Resource Group name
+$resourceGroup = "<UPDATE-ME resource-group-name>" # 👈 Update with actual Resource Group name
 $deploymentName = 'all-in-one-dashboard-ag'
 $runbooksPath = ".\runbooks"
 $queueName = "auditsearchidqueue"
+
+# Fail fast on placeholder values — running with these will fail downstream with confusing errors.
+if ($siteId -like "<*") {
+    Write-Error "siteId is still a placeholder. Edit deploy.ps1 line 9. Composite form is hostname,siteCollectionGuid,siteGuid (get via Graph Explorer: GET /sites/{hostname}:/{path}?$select=id)."
+    exit 1
+}
+if ($resourceGroup -like "<*") {
+    Write-Error "resourceGroup is still a placeholder. Edit deploy.ps1 line 11."
+    exit 1
+}
 
 #############################################################
 # Dependencies
@@ -103,7 +113,7 @@ function TryAssignRoles($principalId, $servicePrincipal, $appRoleValue) {
     $sitesSelectedRole = $servicePrincipal.AppRoles | Where-Object {
         $_.Value -eq $appRoleValue -and $_.AllowedMemberTypes -contains "Application"
     }
-    if ($sitesSelectedRole -and -not (Test-RoleAssigned $sitesSelectedRole.Id $servicePrincipal.Id $existingAssignments)) {
+    if ($sitesSelectedRole -and -not (Test-RoleAssigned $sitesSelectedRole.Id $servicePrincipal.Id $principalId)) {
         $newRole = New-MgServicePrincipalAppRoleAssignment -ServicePrincipalId $principalId `
             -PrincipalId $principalId `
             -ResourceId $servicePrincipal.Id `
@@ -111,8 +121,15 @@ function TryAssignRoles($principalId, $servicePrincipal, $appRoleValue) {
     }
 }
 
-# Helper function to check if role is already assigned
-function Test-RoleAssigned($roleId, $resourceId, $assignments) {
+# Helper function to check if role is already assigned. Fetches the principal's
+# current assignments inline so we never reference an undefined caller-scope variable.
+function Test-RoleAssigned($roleId, $resourceId, $principalId) {
+    try {
+        $assignments = Get-MgServicePrincipalAppRoleAssignment -ServicePrincipalId $principalId -All -ErrorAction Stop
+    }
+    catch {
+        return $null
+    }
     return $assignments | Where-Object {
         $_.AppRoleId -eq $roleId -and $_.ResourceId -eq $resourceId
     }
@@ -344,7 +361,8 @@ $automationAccount = Get-DeploymentOutputValue -Deployment $deployment -Name 'au
 Write-Host "Automation Account deployed: $automationAccount"
 
 # Upload runbooks to the Automation Account
-#UploadRunbooks $automationAccount
+# Without this, deploy.ps1 leaves runbook resources empty in Azure and the runbooks won't actually run.
+UploadRunbooks $automationAccount
 
 #Get the Automation Account's principal ID
 $principalId = Get-DeploymentOutputValue -Deployment $deployment -Name 'automationIdentityPrincipalId'

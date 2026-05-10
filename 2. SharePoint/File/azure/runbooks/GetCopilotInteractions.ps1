@@ -13,10 +13,19 @@
 #############################################################
 
 param (
-    [string]$StorageAccountName = "allin1dashag",
+    # Default matches what main.bicep produces with deploy.ps1's namePrefix='all-in-one-dashboard-ag'.
+    # If you used a different namePrefix, override at runbook invocation.
+    [string]$StorageAccountName = "allinonedashboardagstg",
     [string]$StorageQueueName = "auditsearchidqueue",
-    [string]$DriveId = "b!8F3vK3Mp306F14gvFTLgyPa4BMFPYFxNjKT8_wIfG018E1NnUCshSqn-JysXy4tf"  # Update with actual Drive ID
+    # SharePoint Drive ID for the target document library. MUST be overridden — this default is invalid.
+    # Get yours via: Graph Explorer -> GET /sites/{siteId}/drives -> copy "id" of the target drive.
+    [string]$DriveId = "<UPDATE-ME-tenant-DriveId>"
 )
+
+if ($DriveId -like "<*" -or [string]::IsNullOrWhiteSpace($DriveId)) {
+    Write-Error "DriveId not provided. Pass -DriveId at runbook invocation. Format: b!<base64-blob>"
+    exit 1
+}
 
 
 
