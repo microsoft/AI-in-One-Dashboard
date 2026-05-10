@@ -88,7 +88,7 @@ function TryAssignRoles($principalId, $servicePrincipal, $appRoleValue) {
     $sitesSelectedRole = $servicePrincipal.AppRoles | Where-Object {
         $_.Value -eq $appRoleValue -and $_.AllowedMemberTypes -contains "Application"
     }
-    if ($sitesSelectedRole -and -not (Test-RoleAssigned $sitesSelectedRole.Id $servicePrincipal.Id $existingAssignments)) {
+    if ($sitesSelectedRole -and -not (Test-RoleAssigned $sitesSelectedRole.Id $servicePrincipal.Id $principalId)) {
         $newRole = New-MgServicePrincipalAppRoleAssignment -ServicePrincipalId $principalId `
             -PrincipalId $principalId `
             -ResourceId $servicePrincipal.Id `
@@ -96,7 +96,13 @@ function TryAssignRoles($principalId, $servicePrincipal, $appRoleValue) {
     }
 }
 
-function Test-RoleAssigned($roleId, $resourceId, $assignments) {
+function Test-RoleAssigned($roleId, $resourceId, $principalId) {
+    try {
+        $assignments = Get-MgServicePrincipalAppRoleAssignment -ServicePrincipalId $principalId -All -ErrorAction Stop
+    }
+    catch {
+        return $null
+    }
     return $assignments | Where-Object {
         $_.AppRoleId -eq $roleId -and $_.ResourceId -eq $resourceId
     }

@@ -42,9 +42,17 @@ Until Tier 1 ships, Option A above is the working approach.
 |---|---|---|
 | `Run_Audit_Log_Ingester` | 5–15 min (Purview-bound) | Reads Graph audit log API; writes to `dbo.copilot_interactions_parsed`. No dependency on other tables. |
 | `Run_Licensed_Users_Ingester` | <30 sec | Reads Graph reports endpoint; writes to `dbo.copilot_licensed_users`. No dependency on audit log. |
-| `Run_Org_Data_Ingester` | <30 sec | Reads Graph users endpoint; writes to `dbo.copilot_org_data`. No dependency on audit log. |
+| `Conditionally_Run_Org_Data` → `Run_Org_Data_Ingester` | <30 sec when enabled | Reads Graph users endpoint; writes to `dbo.copilot_org_data`. **Optional** — gated by the `EnableOrgDataPull` parameter. |
 
-Since the 3 tables are independent (joined later at the model layer in the PBIT), the activities can run in parallel for fastest total runtime ~= max(audit, users, org) ≈ 15 min vs sequential ≈ 16 min. Tiny gain, but cleaner conceptually.
+Since the 3 tables are independent (joined later at the model layer in the PBIT), the activities can run in parallel for fastest total runtime ≈ max(audit, users, org) ≈ 15 min vs sequential ≈ 16 min. Tiny gain, but cleaner conceptually.
+
+## Pipeline parameters
+
+| Parameter | Type | Default | Purpose |
+|---|---|---|---|
+| `EnableOrgDataPull` | Boolean | `true` | When `false`, the Org Data Ingester is skipped. Use this for customers who upload Entra/HRIS data manually (e.g. from their internal HRIS system) instead of pulling from Microsoft Graph — common because Graph's `/users` data is often incomplete vs the customer's source-of-truth HRIS. |
+
+When you trigger the pipeline manually, Fabric prompts for parameter values. When you schedule it (via the Schedule button), the schedule definition stores fixed parameter values — you can have, e.g., a weekly Sunday schedule with `EnableOrgDataPull = true`, OR set it to `false` if you want the schedule to skip Org Data even when fired.
 
 ## Failure handling
 
