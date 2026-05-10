@@ -2,7 +2,7 @@
 
 Scheduled orchestration for the Direct Ingester notebooks. Two ways to use:
 
-## Option A — Manual deployment (works today)
+## Deployment
 
 1. **Import the 3 notebooks** into your Fabric workspace first (one-time):
    - `3. Fabric/notebooks/Copilot_Audit_Log_Direct_Ingester.ipynb`
@@ -29,12 +29,6 @@ Scheduled orchestration for the Direct Ingester notebooks. Two ways to use:
 4. **Run manually first** to validate: pipeline editor → **Run** at top. Should kick off the 3 notebooks in parallel. Audit log activity typically runs 5–15 min (Purview polling); users + org each <30 sec.
 
 5. **Schedule it**: pipeline editor → **Schedule** at top → e.g. weekly Sunday 02:00. Activities run on the same cadence.
-
-## Option B — Tier 1 Fabric Git Integration (in development)
-
-The Tier 1 work-in-progress will make this pipeline plus the 3 notebooks deployable via Fabric Git Sync — customer connects their workspace to this repo's branch, clicks Sync, all items appear. No manual GUID-swapping. See `Automation Scripts/Tier 1 — Fabric Git Integration Plan.md` for the build plan.
-
-Until Tier 1 ships, Option A above is the working approach.
 
 ## Activity design notes
 
