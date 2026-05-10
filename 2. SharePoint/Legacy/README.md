@@ -8,18 +8,19 @@ Older flow that uploads **raw audit log records** to SharePoint (with embedded `
 
 ## What's in this folder
 
-| Item | Purpose |
+| Script | Purpose |
 |---|---|
-| `scripts/CreateAuditLogQuery-AppReg.ps1` | Same as the modern flow. |
-| `scripts/GetCopilotInteractions-AppReg.ps1` | **Different** — uploads *raw* audit records (with embedded JSON) to SharePoint. PBIP must do the JSON parsing. |
-| `scripts/Get-EntraOrgData-AppReg.ps1` | Same as the modern flow. |
-| `scripts/ProvisionPreReqs.ps1` | Same as the modern flow. |
+| `scripts/appreg/CreateAuditLogQuery-AppReg.ps1` | Same as the modern flow. |
+| `scripts/appreg/GetCopilotInteractions-AppReg.ps1` | **Different from the modern flow** — uploads *raw* audit records (with embedded JSON) to SharePoint. PBIP must do the JSON parsing in M-query. |
+| `scripts/appreg/GetCopilotUsers-AppReg.ps1` | Same content as the modern `../File/scripts/appreg/GetCopilotUsers-SP-AppReg.ps1` — added here so the Legacy path is feature-complete. (Users data isn't part of the audit JSON, so this is identical across paths.) |
+| `scripts/appreg/Get-EntraOrgData-AppReg.ps1` | Same as the modern flow. |
+| `scripts/appreg/ProvisionPreReqs.ps1` | Same as the modern flow. |
 
-There is no PBIP shipped here. If you need the legacy raw-audit dashboard, use any older `.pbit` from before the pre-parsed migration (check `git log` of [`../File/`](../File/) for pre-2026-04 versions).
+There is no PBIP shipped in this folder. If you need the legacy raw-audit dashboard, use any older `.pbit` from before the pre-parsed migration (check `git log` of [`../File/`](../File/) for pre-2026-04 versions).
 
 ## When you might genuinely need this
 
-- A non-Power-BI consumer also reads the SharePoint CSVs and expects the raw audit schema.
-- You're maintaining a tenant on the legacy flow and don't have time to migrate the PBIP.
+- A non-Power-BI consumer also reads the SharePoint CSVs and expects the raw audit schema
+- You're maintaining a tenant on the legacy flow and don't have time to migrate the PBIP
 
 In all other cases — **use [`../File/`](../File/) or [`../Folder/`](../Folder/)** instead.
