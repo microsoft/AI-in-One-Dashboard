@@ -1,17 +1,47 @@
 #############################################################
 # Script to deploy and configure Automation Account and assign permissions
 # Contact alexgrover@microsoft.com for questions
+#
+# Usage:
+#   .\deploy.ps1 -NamePrefix "contoso-copilot-dash"
+#
+# The NamePrefix MUST be globally unique because it derives a storage account
+# name (Azure storage account namespace is global). Pick a short lowercase
+# hyphenated string that includes your organisation, e.g. 'contoso-copilot-dash'
+# or 'acme-cad-prod'. The storage account name will be your NamePrefix with
+# hyphens removed plus 'stg' suffix (e.g. 'contosocopilotdashstg').
+#
+# You ALSO need to edit $siteId and $resourceGroup below before running.
+#############################################################
+
+param(
+    [Parameter(Mandatory = $true,
+               HelpMessage = "Short lowercase hyphenated name prefix, globally unique. Derives all resource names. Example: 'contoso-copilot-dash'.")]
+    [ValidateNotNullOrEmpty()]
+    [ValidatePattern('^[a-z][a-z0-9-]*[a-z0-9]$')]
+    [string]$NamePrefix
+)
 
 #############################################################
 # Variables
 #############################################################
 
-$siteId = "0cfcc973-02f9-4a5b-b458-5bc1ca896d00" # 👈 Update with actual Site ID
+$siteId = "<UPDATE-ME composite form: tenant.sharepoint.com,siteCollGuid,siteGuid>" # 👈 Update with actual Site ID
 $displayName = "AI in One Dashboard Automation Account"
-$resourceGroup = "auditautomation" # 👈 Update with actual Resource Group name
-$deploymentName = 'all-in-one-dashboard-ag'
+$resourceGroup = "<UPDATE-ME resource-group-name>" # 👈 Update with actual Resource Group name
+$deploymentName = $NamePrefix
 $runbooksPath = ".\runbooks"
 $queueName = "auditsearchidqueue"
+
+# Fail fast on placeholder values — running with these will fail downstream with confusing errors.
+if ($siteId -like "<*") {
+    Write-Error "siteId is still a placeholder. Edit deploy.ps1 line 30. Composite form is hostname,siteCollectionGuid,siteGuid (get via Graph Explorer: GET /sites/{hostname}:/{path}?`$select=id)."
+    exit 1
+}
+if ($resourceGroup -like "<*") {
+    Write-Error "resourceGroup is still a placeholder. Edit deploy.ps1 line 32."
+    exit 1
+}
 
 #############################################################
 # Dependencies
@@ -270,20 +300,39 @@ function Upload-RunbookViaRest {
     $subsId = (Get-AzContext).Subscription.Id
     if (-not $subsId) { throw "No active Az context. Run Connect-AzAccount." }
 
-    $runbookResourcePath = "/subscriptions/$subsId/resourceGroups/$ResourceGroup/providers/Microsoft.Automation/automationAccounts/$AutomationAccount/runbooks/$RunbookName?api-version=$ApiVersion"
-    $contentPath = "/subscriptions/$subsId/resourceGroups/$ResourceGroup/providers/Microsoft.Automation/automationAccounts/$AutomationAccount/runbooks/$RunbookName/content?api-version=$ApiVersion"
-    $runtimeEnvResourceId = "/subscriptions/$subsId/resourceGroups/$ResourceGroup/providers/Microsoft.Automation/automationAccounts/$AutomationAccount/runtimeEnvironments/$RuntimeEnvironmentName"
+    # Use Invoke-WebRequest directly so we can set Content-Type per request.
+    # Invoke-AzRestMethod / Invoke-AzRest in Az.Accounts 5.x doesn't accept -ContentType,
+    # and the script content endpoint requires text/powershell (not application/json),
+    # so we issue raw HTTPS PUTs against management.azure.com with an explicit bearer token.
+    $tokenObj = Get-AzAccessToken -ResourceUrl 'https://management.azure.com/' -ErrorAction Stop
+    if ($tokenObj.Token -is [System.Security.SecureString]) {
+        # Az.Accounts 4.x+ returns SecureString by default
+        $accessToken = [System.Net.NetworkCredential]::new('', $tokenObj.Token).Password
+    } else {
+        $accessToken = $tokenObj.Token
+    }
+    $authHeader = @{ 'Authorization' = "Bearer $accessToken" }
+
+    # Build URIs via concatenation to avoid PowerShell string-expansion ambiguity around `?`.
+    # Note: PUT goes to /draft/content (replace draft). GET on /content downloads the published
+    # version — that's why a PUT on /content returns 405 MethodNotAllowed.
+    $runbookBase = "https://management.azure.com/subscriptions/" + $subsId + "/resourceGroups/" + $ResourceGroup + "/providers/Microsoft.Automation/automationAccounts/" + $AutomationAccount + "/runbooks/" + $RunbookName
+    $runbookResourceUri = $runbookBase + "?api-version=" + $ApiVersion
+    $contentUri         = $runbookBase + "/draft/content?api-version=" + $ApiVersion
+    Write-Verbose "Upload-RunbookViaRest URI: $runbookResourceUri"
 
     Write-Host "Uploading runbook content (no publish): $RunbookName"
 
     # 1) Check existing runbook
     try {
-        $existingResp = Invoke-AzRest -Path $runbookResourcePath -Method Get -ErrorAction Stop
+        $existingResp = Invoke-WebRequest -Uri $runbookResourceUri -Method Get -Headers $authHeader -UseBasicParsing -ErrorAction Stop
         $existing = ($existingResp.Content | ConvertFrom-Json)
         $existingType = $existing.properties.runbookType
     }
     catch {
-        if ($_.Exception.Response -and ($_.Exception.Response.StatusCode -eq 404)) {
+        $statusCode = $null
+        try { $statusCode = $_.Exception.Response.StatusCode.value__ } catch {}
+        if ($statusCode -eq 404) {
             $existing = $null
             $existingType = $null
         }
@@ -293,17 +342,20 @@ function Upload-RunbookViaRest {
     # 2) If exists and kind differs, delete it (to allow recreation with correct kind)
     if ($existing -and $existingType -and ($existingType -ne $RunbookType)) {
         Write-Host "Existing runbook '$RunbookName' is type '$existingType' (desired: $RunbookType). Deleting to recreate..."
-        Invoke-AzRest -Path $runbookResourcePath -Method Delete -ErrorAction Stop
-        # small pause for deletion to propagate
+        Invoke-WebRequest -Uri $runbookResourceUri -Method Delete -Headers $authHeader -UseBasicParsing -ErrorAction Stop | Out-Null
         Start-Sleep -Seconds 2
         $existing = $null
     }
 
-    # 3) Create or update runbook metadata (PUT). Using runtimeEnvironment resourceId is most compatible.
+    # 3) Create or update runbook metadata (PUT JSON to runbook resource).
+    # Azure requires `location` at the top level. `runtimeEnvironment` is the runtime env NAME only
+    # (not the full resource path) — matches what Bicep does and what the REST API expects.
+    $rgLocation = (Get-AzResourceGroup -Name $ResourceGroup -ErrorAction Stop).Location
     $runbookBody = @{
+        location = $rgLocation
         properties = @{
             runbookType = $RunbookType
-            runtimeEnvironment = $runtimeEnvResourceId
+            runtimeEnvironment = $RuntimeEnvironmentName
             draft = @{
                 inEdit = $true
                 description = "Uploaded by script (content only)."
@@ -312,14 +364,19 @@ function Upload-RunbookViaRest {
     } | ConvertTo-Json -Depth 12
 
     Write-Host "Creating/updating runbook metadata..."
-    Invoke-AzRest -Path $runbookResourcePath -Method Put -Payload $runbookBody -ContentType 'application/json' -ErrorAction Stop
+    $metadataHeaders = $authHeader.Clone()
+    $metadataHeaders['Content-Type'] = 'application/json'
+    Invoke-WebRequest -Uri $runbookResourceUri -Method Put -Headers $metadataHeaders -Body $runbookBody -UseBasicParsing -ErrorAction Stop | Out-Null
 
-    # 4) Upload runbook content (raw script text) to /content (no publish)
+    # 4) Upload script content. Content-Type for PowerShell runbooks is text/powershell.
     if (-not (Test-Path $FilePath)) { throw "Runbook file not found: $FilePath" }
     $scriptText = Get-Content -Path $FilePath -Raw -ErrorAction Stop
 
     Write-Host "Uploading script content to runbook content endpoint..."
-    Invoke-AzRest -Path $contentPath -Method Put -Payload $scriptText -ContentType 'text/plain' -ErrorAction Stop
+    $contentTypeHeader = if ($RunbookType -eq 'PowerShell') { 'text/powershell' } else { 'text/plain' }
+    $contentHeaders = $authHeader.Clone()
+    $contentHeaders['Content-Type'] = $contentTypeHeader
+    Invoke-WebRequest -Uri $contentUri -Method Put -Headers $contentHeaders -Body $scriptText -UseBasicParsing -ErrorAction Stop | Out-Null
 
     Write-Host "Upload complete (runbook not published): $RunbookName"
     return $true
@@ -351,7 +408,8 @@ $automationAccount = Get-DeploymentOutputValue -Deployment $deployment -Name 'au
 Write-Host "Automation Account deployed: $automationAccount"
 
 # Upload runbooks to the Automation Account
-#UploadRunbooks $automationAccount
+# Without this, deploy.ps1 leaves runbook resources empty in Azure and the runbooks won't actually run.
+UploadRunbooks $automationAccount
 
 #Get the Automation Account's principal ID
 $principalId = Get-DeploymentOutputValue -Deployment $deployment -Name 'automationIdentityPrincipalId'
