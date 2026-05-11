@@ -1,30 +1,32 @@
 # Fabric / Lakehouse deployment
 
-> **Not just Fabric.** This folder is named "Fabric" because that's the simplest deployment, but the same PBIT + loader notebooks also work on **Azure Databricks**, **Synapse Spark**, **Azure SQL / Fabric Warehouse**, or **ADLS Gen2** with no real changes — see [Alternative platforms](#alternative-platforms) below.
+> **Not just Fabric.** This folder is named "Fabric" because that's the simplest deployment, but the same PBIT + ingester notebooks also work on **Azure Databricks**, **Synapse Spark**, **Azure SQL / Fabric Warehouse**, or **ADLS Gen2** with no real changes — see [Alternative platforms](#alternative-platforms) below.
 
-This is the **fastest, most reliable** way to run the AI-in-One Dashboard on real audit-log volumes. All three input tables (audit interactions, licensed users, org data) are populated upstream by Spark loader notebooks and exposed as Delta tables in the lakehouse, so the dataset refresh becomes a near-instant data copy (or zero-copy with Direct Lake mode). Heavy JSON parsing, column-variant detection, and joins all happen in Spark — the Power BI dataset is a thin pass-through.
+This is the **fastest, most reliable** way to run the AI-in-One Dashboard on real audit-log volumes. All three input tables (audit interactions, licensed users, org data) are populated by **Direct Ingester** notebooks that authenticate to Microsoft Graph with an app registration and write Delta tables directly into the Lakehouse — no PowerShell, no raw-CSV landing step. The Power BI dataset becomes a thin pass-through against those Delta tables (or zero-copy with Direct Lake mode). Heavy JSON parsing, column-variant detection, and joins all happen in Spark.
 
 ## What's in this folder
 
-| File | Purpose |
+| Item | Purpose |
 |---|---|
-| `AI-in-One Dashboard - Fabric.pbit` | The Power BI template (thin client — sources all three input tables from a Lakehouse SQL endpoint) |
-| `notebooks/Copilot_Audit_Log_Parser.ipynb` | Parses raw audit logs → `dbo.copilot_interactions_parsed` |
-| `notebooks/Copilot_Licensed_Users_Loader.ipynb` | Ingests MAC licensed-user CSVs → `dbo.copilot_licensed_users` |
-| `notebooks/Copilot_Org_Data_Loader.ipynb` | Ingests Entra/HRIS org CSVs → `dbo.copilot_org_data` |
+| [`AI-in-One Dashboard - Fabric.pbit`](AI-in-One%20Dashboard%20-%20Fabric.pbit) | The Power BI template (thin client — sources all three input tables from a Lakehouse SQL endpoint) |
+| [`notebooks/Copilot_Audit_Log_Direct_Ingester.ipynb`](notebooks/Copilot_Audit_Log_Direct_Ingester.ipynb) | Calls the Graph audit-log API → `dbo.copilot_interactions_parsed` |
+| [`notebooks/Copilot_Licensed_Users_Direct_Ingester.ipynb`](notebooks/Copilot_Licensed_Users_Direct_Ingester.ipynb) | Calls the Graph M365 active-user report → `dbo.copilot_licensed_users` |
+| [`notebooks/Copilot_Org_Data_Direct_Ingester.ipynb`](notebooks/Copilot_Org_Data_Direct_Ingester.ipynb) | Calls Graph `/users` (with manager expand) → `dbo.copilot_org_data` |
+| [`pipelines/CopilotAdoptionPipeline.DataPipeline/`](pipelines/CopilotAdoptionPipeline.DataPipeline/) | Fabric Data Pipeline that orchestrates the three Direct Ingester notebooks on a schedule (audit → in parallel: licensed users + org data) |
+| [`archive/`](archive/) | The legacy two-stage flow (PowerShell → CSVs → Parser/Loader notebooks). Kept for migration reference only. See [`archive/README.md`](archive/README.md). |
 
 ## When to use this path
 
-| Pick this path if… | Pick the [scripts](../scripts/) path instead if… |
+| Pick this path if… | Pick another path instead if… |
 |---|---|
-| You have Fabric capacity (F2+ or trial) | You're on Power BI Pro only with no Fabric / Premium |
-| Audit volume > 100K events / week | Audit volume is small enough to refresh in Power BI dataset directly |
+| You have Fabric capacity (F2+ or trial) | Power BI Pro only with no Fabric / Premium → use [`2. SharePoint/`](../2.%20SharePoint/) or the [`1. Manual/`](../1.%20Manual/) PBIT |
+| Audit volume > 100K events / week | Audit volume is small enough to refresh in the Power BI dataset directly |
 | You want scheduled, hands-off ingestion | You're happy running scripts ad-hoc |
 | You hit the 1 GB dataset cap or 2-hour refresh timeout in Service | Refresh has always succeeded for you |
 
 ## Why pre-parsing matters
 
-The default templates parse the `AuditData` JSON column inside the Power BI dataset's M-query. That works for small/medium tenants, but at large scale it triggers three separate Service-side limits:
+The default templates parse the `AuditData` JSON column inside the Power BI dataset's M-query. That works for small/medium tenants, but at scale it triggers three Service-side limits:
 
 1. **Memory cap** — Pro/shared workspaces cap the dataset at 1 GB; peak refresh memory can be 3× that during JSON expansion
 2. **Refresh timeout** — 2 hours on shared, 5 hours on Premium
@@ -35,70 +37,84 @@ Moving the parse into Fabric eliminates all three. The dataset becomes a thin pa
 ## Architecture
 
 ```
-Raw audit-log CSVs       Licensed-users CSV         Org-data CSV
-(get-copilot-            (MAC export)               (Entra / HRIS)
- interactions.ps1
- or your pipeline)
-        ↓                       ↓                        ↓
-Files/audit_raw/         Files/licensed_raw/        Files/org_raw/
-        ↓                       ↓                        ↓
-Copilot_Audit_Log_       Copilot_Licensed_          Copilot_Org_Data_
-Parser.ipynb             Users_Loader.ipynb         Loader.ipynb
-        ↓                       ↓                        ↓
-dbo.copilot_             dbo.copilot_               dbo.copilot_
-interactions_parsed      licensed_users             org_data
-        └───────────────────────┴────────────────────────┘
-                                ↓
-                  PBIT (Sql.Database connector
-                  + one direct Org→Licensed
-                  relationship for filter context)
-                                ↓
-                        Power BI Report
+Microsoft Graph                 Microsoft Graph                Microsoft Graph
+(Office 365 audit logs)         (M365 active users report)     (/users + manager expand)
+        ↓                               ↓                               ↓
+Copilot_Audit_Log_              Copilot_Licensed_              Copilot_Org_Data_
+Direct_Ingester.ipynb           Users_Direct_Ingester.ipynb    Direct_Ingester.ipynb
+        ↓                               ↓                               ↓
+dbo.copilot_                    dbo.copilot_                   dbo.copilot_
+interactions_parsed             licensed_users                 org_data
+        └───────────────────────┴───────────────────────────┘
+                                        ↓
+                          PBIT (Sql.Database connector
+                          + one direct Org→Licensed
+                          relationship for filter context)
+                                        ↓
+                                Power BI Report
+                                        ↑
+                  Agents 365 CSV — manual upload (see below)
 ```
 
-The PBIT exposes only three parameters: **Fabric SQL Endpoint**, **Lakehouse Database**, and **Agent 365 (highly recommended)**. The first two are required and point at your lakehouse SQL endpoint. The third is a file path to your Agents 365 CSV export and remains file-based pending a Graph API loader.
+The three Direct Ingester notebooks can run individually or be orchestrated by the included `CopilotAdoptionPipeline.DataPipeline` — which fires the audit log first (slowest), then licensed users + org data in parallel.
+
+The PBIT exposes three parameters: **Fabric SQL Endpoint**, **Lakehouse Database**, and **Agent 365**. The first two are required. **Agent 365 is a manual file upload for now** — pending a Graph API loader.
+
+## Prerequisites
+
+Before running the notebooks, you need:
+
+1. **A Fabric workspace** assigned to a Fabric capacity (F2+ or trial), or Premium / PPU.
+2. **A Lakehouse** in that workspace (any name; `CopilotAnalytics` is the convention used in examples).
+3. **An Entra app registration** with these Microsoft Graph **application** permissions (admin consent required):
+   - `AuditLog.Read.All` — for the audit log notebook
+   - `Reports.Read.All` — for the licensed users notebook
+   - `User.Read.All` — for the org data notebook
+   Grab three values: **Tenant ID**, **Application (client) ID**, **Client secret value** (not Secret ID).
+
+Helper scripts for app-registration setup live in [`archive/scripts/appreg/`](archive/scripts/appreg/) — they were written for the legacy flow but the resulting app registration works unchanged for the Direct Ingester notebooks.
 
 ## Quick start
 
 ### 1. Stand up the Lakehouse
 
 - Open a Fabric workspace assigned to a Fabric capacity (F2+ or trial)
-- **+ New → Lakehouse**, name it e.g. `CopilotAnalytics`
+- **+ New → Lakehouse**, name it (e.g. `CopilotAnalytics`)
 - Note the **SQL endpoint** under Lakehouse settings — looks like `<workspace-guid>.datawarehouse.fabric.microsoft.com`
 
-### 2. Land raw CSVs in three Lakehouse `Files/` sub-folders
+### 2. Import and configure the three Direct Ingester notebooks
 
-Create the folders if they don't exist (right-click `Files` → **New folder**), then drop the corresponding CSVs in:
-
-| Folder | Source | Required columns |
-|---|---|---|
-| `Files/audit_raw/` | M365 audit-log export (e.g. [`scripts/get-copilot-interactions.ps1`](../scripts/get-copilot-interactions.ps1) or any other audit pipeline) | `RecordId, CreationDate, RecordType, Operation, AuditData, AssociatedAdminUnits, AssociatedAdminUnitsNames` |
-| `Files/licensed_raw/` | MAC export of Copilot-licensed users | A UPN column (`User Principal Name`, `userPrincipalName`, `UserPrincipalName`, `User principal name`) and a licence column (`Has license`, `Has Licence`, `HasLicense`, `HasCopilot`, `Has Copilot License`, `Has Copilot license assigned`, `isUser`, etc.). The loader auto-detects which variant your export uses. |
-| `Files/org_raw/` | Entra / HRIS / Viva Insights export with org structure | A PersonId column (`User Principal Name` / `UPN` / `PersonId`) plus a `Department` column. The loader auto-renames `Department` → `Organization` and lowercase `jobTitle` → `JobTitle` for downstream consistency. Optional: `JobTitle`, `DisplayName`, `Email`, `Country`, plus any management-path / hierarchy columns you want to slice by. |
-
-For each, pick whichever ingestion path fits your environment:
-
-| If your export goes to… | Use… |
-|---|---|
-| SharePoint folder | A **Fabric Pipeline** with a Copy activity (SharePoint Online → Lakehouse Files) |
-| Azure Blob Storage / ADLS Gen2 | A **Lakehouse Shortcut** to the storage container (no copy needed) |
-| Local files | Direct upload via the Fabric portal, or pipeline Copy activity |
-
-### 3. Import and run all three notebooks
-
-For each of the three notebooks under `notebooks/`:
+For each of the three notebooks under [`notebooks/`](notebooks/):
 
 - In your Fabric workspace → **+ New → Import notebook** → upload the `.ipynb`
-- Attach the notebook to your `CopilotAnalytics` Lakehouse and **pin it as default** (📌 icon next to the name in the Lakehouses panel — this is what makes `saveAsTable` write to the right place)
-- Click **Run all**
+- Attach the notebook to your Lakehouse and **pin it as default** (📌 icon next to the name in the Lakehouses panel)
+- Open **cell 2 (`# === CONFIG ===`)** and paste your three values:
+
+  ```python
+  TENANT_ID     = '<your-tenant-guid>'
+  CLIENT_ID     = '<your-app-reg-client-id>'
+  CLIENT_SECRET = '<your-client-secret-value>'
+  ```
+
+  > **For production**: replace the literal `CLIENT_SECRET = '...'` with a Key Vault read using `notebookutils.credentials.getSecret(...)`. Each notebook's CONFIG cell has a commented-out example.
+
+### 3. Run the notebooks (manually or via the DataPipeline)
+
+**Option A — manual one-off run:**
 
 | Notebook | Run cadence | Output Delta table | Typical runtime |
 |---|---|---|---|
-| `Copilot_Audit_Log_Parser.ipynb` | Daily (matches audit-log export) | `dbo.copilot_interactions_parsed` | 30–60s for ~400K events |
-| `Copilot_Licensed_Users_Loader.ipynb` | Weekly / monthly (matches MAC export cadence) | `dbo.copilot_licensed_users` | Seconds |
-| `Copilot_Org_Data_Loader.ipynb` | Weekly (matches HRIS / Entra refresh) | `dbo.copilot_org_data` | Seconds |
+| `Copilot_Audit_Log_Direct_Ingester.ipynb` | Daily — Graph caps audit-log queries to a 7-day window per request | `dbo.copilot_interactions_parsed` | 1–3 min depending on tenant size; the audit-log job is async (poll loop in the notebook) |
+| `Copilot_Licensed_Users_Direct_Ingester.ipynb` | Weekly / monthly | `dbo.copilot_licensed_users` | Seconds |
+| `Copilot_Org_Data_Direct_Ingester.ipynb` | Weekly | `dbo.copilot_org_data` | 30–90s for ~10K users (paginated) |
 
-Use the **Schedule** button at the top of each notebook to set a cadence — or wire all three into a single Fabric Pipeline.
+Use the **Schedule** button at the top of each notebook to set a cadence.
+
+**Option B — orchestrated via the included DataPipeline:**
+
+- Workspace → **+ Import** → point at `pipelines/CopilotAdoptionPipeline.DataPipeline/` (or sync via Fabric Git Integration if you've connected the workspace to this repo)
+- The pipeline runs audit log first (slowest), then licensed users + org data in parallel
+- Configure a single schedule on the pipeline rather than three on the individual notebooks
 
 ### 4. Connect the PBIT
 
@@ -109,38 +125,36 @@ Use the **Schedule** button at the top of each notebook to set a cadence — or 
 |---|---|---|
 | **Fabric SQL Endpoint** | ✅ | `<workspace-guid>.datawarehouse.fabric.microsoft.com` |
 | **Lakehouse Database** | ✅ | `CopilotAnalytics` (or whatever you named your Lakehouse) |
-| Agent 365 (highly recommended) | Optional | **SharePoint URL** to your Agents 365 CSV — see note below |
+| Agent 365 | Optional | **Local file path** to your Agents 365 CSV export — see below |
 
-> **SharePoint URL only on the Fabric path** (e.g. `https://contoso.sharepoint.com/sites/copilot/Shared%20Documents/Agents365_latest.csv`). Local file paths aren't supported here: they don't work for Service refresh (no gateway access to user filesystems) and a dual local/URL pattern can trigger `Formula.Firewall` errors during static analysis. Upload your Agents 365 CSV to a SharePoint document library, paste the file URL, and the dataset will refresh cleanly in the Service. (This parameter will be replaced by a Graph API loader in a future iteration — at which point the file step goes away entirely.)
+> **Agent 365 is a manual upload for now.** The Direct Ingester notebooks cover audit + users + org data, but Agents 365 doesn't yet have a Graph API loader. The current workflow: download the Agents 365 CSV from your tenant, point the PBIT parameter at the local file path when you open the template, refresh, and republish. If you need Service-side scheduled refresh to pick up new versions of the CSV automatically, upload it to a SharePoint document library and use the URL instead — but that requires the on-premises data gateway or SharePoint connector setup, which the simplest deployment deliberately avoids. A future iteration will replace this parameter with a fourth Direct Ingester notebook that pulls Agents 365 data from Graph; at that point the manual step goes away.
 
 - Click **Load**. Refresh should complete in seconds
 - Publish to a Power BI workspace ideally **on the same Fabric capacity** so Direct Lake works without cross-capacity overhead
 
 ### 5. Schedule + secure the Service refresh
 
-- In the Service: workspace → dataset Settings → **Data source credentials** → sign in to the SQL endpoint with an account that has read access to the Lakehouse
-- **Scheduled refresh** → enable, match the cadence to your notebook schedule (the dataset only needs to refresh after the parser updates the Delta table)
+- Service → workspace → dataset Settings → **Data source credentials** → sign in to the SQL endpoint
+- **Scheduled refresh** → enable, match the cadence to your notebook schedule (or to the DataPipeline schedule if you went with Option B in step 3)
 
 ## Alternative platforms
 
-The four artifacts in this folder (PBIT + three loader notebooks) are deliberately portable:
+The artifacts in this folder (PBIT + three Direct Ingester notebooks) are deliberately portable:
 
-- **The notebooks** are plain PySpark — they run unchanged on any Spark engine (Fabric, Databricks, Synapse Spark) once two config lines are adjusted per environment
-- **The PBIT** uses the `Sql.Database()` connector, which works against any SQL endpoint that exposes the parsed Delta/SQL tables — Fabric Lakehouse, Databricks SQL Warehouse, Synapse SQL pool, Azure SQL DB, Fabric Warehouse, on-prem SQL Server
+- **The notebooks** are plain Python + PySpark — they call Microsoft Graph via `requests` and write Delta with `df.write.saveAsTable(...)`. They run unchanged on any Spark engine (Fabric, Databricks, Synapse Spark) once two config lines are adjusted per environment.
+- **The PBIT** uses the `Sql.Database()` connector, which works against any SQL endpoint that exposes the Delta/SQL tables — Fabric Lakehouse, Databricks SQL Warehouse, Synapse SQL pool, Azure SQL DB, Fabric Warehouse, on-prem SQL Server.
 
 So the same set of files supports the deployments below; only a couple of paths/parameter values change.
 
 ### 🧱 Azure Databricks
 
-The same three-notebook pattern applies. For each loader, two config lines change per environment:
+The same three-notebook pattern applies. For each Direct Ingester, one config line changes per environment:
 
-**Notebook changes (per loader):**
-
-| Loader | Adjust `RAW_PATH` from… | Adjust `OUTPUT_TABLE` from… |
-|---|---|---|
-| `Copilot_Audit_Log_Parser.ipynb` | `'Files/audit_raw/*.csv'` → e.g. `'/Volumes/main/copilot/audit_raw/*.csv'` | `'Copilot_Interactions_Parsed'` → e.g. `'main.copilot.interactions_parsed'` |
-| `Copilot_Licensed_Users_Loader.ipynb` | `'Files/licensed_raw/*.csv'` → equivalent UC volume | `'copilot_licensed_users'` → e.g. `'main.copilot.licensed_users'` |
-| `Copilot_Org_Data_Loader.ipynb` | `'Files/org_raw/*.csv'` → equivalent UC volume | `'copilot_org_data'` → e.g. `'main.copilot.org_data'` |
+| Notebook | Adjust `OUTPUT_TABLE` from… |
+|---|---|
+| `Copilot_Audit_Log_Direct_Ingester.ipynb` | `'dbo.Copilot_Interactions_Parsed'` → e.g. `'main.copilot.interactions_parsed'` |
+| `Copilot_Licensed_Users_Direct_Ingester.ipynb` | `'dbo.copilot_licensed_users'` → e.g. `'main.copilot.licensed_users'` |
+| `Copilot_Org_Data_Direct_Ingester.ipynb` | `'dbo.copilot_org_data'` → e.g. `'main.copilot.org_data'` |
 
 Schedule via **Databricks Workflows** instead of Fabric Pipelines (one job per notebook, or a single multi-task workflow).
 
@@ -153,36 +167,32 @@ Schedule via **Databricks Workflows** instead of Fabric Pipelines (one job per n
 
 For a more polished native-connector experience, swap the M-query's `Sql.Database(...)` line for `Databricks.Catalogs(...)`. The rest of the M-query is unchanged. The PBIT expects the three tables (`copilot_interactions_parsed`, `copilot_licensed_users`, `copilot_org_data`) to all live in the same database — adjust the `Item=` literals in the M-queries if you split them across catalogs.
 
-### 🪣 Azure Data Lake Gen2 (no Spark)
-
-You have **three** routes depending on what you're willing to stand up:
-
-1. **Easiest — Fabric Lakehouse Shortcut.** Create a Shortcut from your Fabric Lakehouse to the ADL container holding raw CSVs. The Shortcut makes the ADL data appear as a Lakehouse `Files/` reference. Run the notebook unchanged. Best of both worlds — your data stays in ADL, Fabric does the compute.
-
-2. **No Fabric — use the [`1. Manual/`](../1.%20Manual/) PBIT instead.** Point its `Copilot Interactions File` parameter at `https://<account>.dfs.core.windows.net/<container>/<path>/parsed.csv`. Skips the Spark step entirely; works for tenants that already pre-parse upstream and just need Power BI to consume the result.
-
-3. **Pure ADL + Databricks.** Mount the ADL container in Databricks (or use Unity Catalog external locations), then run the notebook from there as in the Databricks section above.
-
 ### 🔷 Azure Synapse / Azure SQL DB / Fabric Warehouse
 
-- Run the parsing notebook on a **Synapse Spark pool**, or replace it with an equivalent SQL stored procedure / dbt model that produces the same flat schema
+- Run the Direct Ingester notebooks on a **Synapse Spark pool**, or replace each with an equivalent SQL stored procedure / dbt model that produces the same flat schema
 - Land the output in any SQL table
 - Use the PBIT's existing `Sql.Database(...)` connector — supply your hostname + database name in the two parameters
 
 The PBIT only cares that the three tables (`dbo.copilot_interactions_parsed`, `dbo.copilot_licensed_users`, `dbo.copilot_org_data`) exist with their expected schemas — see [Schema reference](#schema-reference). If you rename any of them, adjust the corresponding `Item=` literal in the table's M-query.
 
+### 🪣 Already pre-parsing CSVs upstream?
+
+If you have an existing pipeline that produces parsed CSVs (matching the three Delta-table schemas below), the [`1. Manual/`](../1.%20Manual/) PBIT consumes them directly without any Spark step. Useful if you have an ETL platform you'd rather keep using.
+
 ## Troubleshooting
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| Refresh succeeds but interactions table is empty | Parsing notebook hasn't run yet, or failed silently | Check the notebook's last execution; run manually |
-| `Login failed` / `cannot open database` | SQL endpoint hostname or database name wrong | Re-check Lakehouse settings page for the exact SQL endpoint string |
-| `the key didn't match any rows in the table` | A loader notebook ran against the wrong (non-default) lakehouse, so the expected table name doesn't exist | In the notebook's Lakehouses panel, confirm `CopilotAnalytics` is **pinned** (📌) before re-running |
-| All users show as "Unlicensed" / `Total Licensed Users` empty | Licensed-users notebook hasn't been run yet, or its CSV used a UPN column-name variant the loader doesn't recognise | Check the notebook output for the detected UPN/licence column names; widen the variant list in the loader if needed |
+| `401 Unauthorized` from Graph in cell 2 | App reg secret expired or permissions not consented | Regenerate the secret in Entra; confirm admin consent is granted on all three Graph application permissions |
+| `403 Forbidden` from `/auditLog/auditLogQueries` | App reg missing `AuditLog.Read.All` (Application, not Delegated) | Add the application permission, grant admin consent, regenerate token |
+| Audit log query stays in `running` state forever | Tenant has a backlog of audit-log query jobs, or the date range is too wide | The notebook polls with backoff up to 30 min. If you hit the timeout, narrow `LOOKBACK_DAYS` in cell 2 |
+| `Login failed` / `cannot open database` (PBI side) | SQL endpoint hostname or database name wrong | Re-check Lakehouse settings page for the exact SQL endpoint string |
+| `the key didn't match any rows in the table` | A notebook ran against the wrong (non-default) Lakehouse, so the expected table name doesn't exist | In the notebook's Lakehouses panel, confirm your Lakehouse is **pinned** (📌) before re-running |
+| All users show as "Unlicensed" / `Total Licensed Users` empty | Licensed users notebook hasn't been run yet, or its Graph response was empty | Check the notebook output for the `HasCopilot` flag derivation; widen the report period if needed (`REPORT_PERIOD = 'D30'`) |
 | `Inactive Licensed Users` is 0 even with no filter | Every licensed user has audit activity (likely with synthetic / test data); or `UPN_Normalized` ↔ `PersonId_Normalized` casing mismatch | Run `SELECT COUNT(*) FROM dbo.copilot_licensed_users WHERE UPN_Normalized NOT IN (SELECT LOWER(LTRIM(RTRIM(Audit_UserId))) FROM dbo.copilot_interactions_parsed)` — if result is 0, your population is genuinely fully active |
 | `Formula.Firewall` error (only on non-Fabric variants) | Cross-source merge with privacy levels mismatched | Service → dataset Settings → Data source credentials → set **Privacy: None** for both sources |
-| Only some columns populated | Microsoft added new fields to the audit schema | Update `audit_schema` in the notebook (cell 2) to include them, re-run |
 | Refresh slow (more than a minute) | Dataset is in Import mode | Switch the workspace to a Fabric capacity and convert to **Direct Lake** for sub-second response |
+| Agents 365 data missing from the report | Agent 365 parameter not filled in, or the local file path moved | Re-open the PBIT in Desktop, set the Agent 365 parameter, refresh, republish — see [Quick start step 4](#4-connect-the-pbit) |
 
 ## Schema reference
 
@@ -192,7 +202,7 @@ The `dbo.copilot_interactions_parsed` Delta table has one row per **prompt × ac
 |---|---|---|
 | `CreationDate` | timestamp | Parsed from `AuditData.CreationTime` |
 | `Audit_UserId` | string | The user's UPN |
-| `AppHost` | string | `Teams`, `Word`, `Excel`, `Copilot Studio`, etc. |
+| `AppHost` | string | `Teams`, `Word`, `Excel`, `Copilot Studio`, `Office` (= standalone M365 Copilot hub), etc. |
 | `Workload` | string | Typically `Copilot` |
 | `AISystemPlugin_Id` | string | `BingWebSearch` indicates Bing grounding was used |
 | `AccessedResource_Type` | string | `WebSearchQuery`, `File`, `Email`, `EnterpriseSearch`, etc. |
@@ -202,8 +212,12 @@ The `dbo.copilot_interactions_parsed` Delta table has one row per **prompt × ac
 
 For the full audit-log JSON schema, see [Microsoft Learn — CopilotInteraction schema](https://learn.microsoft.com/en-us/office/office-365-management-api/copilot-schema).
 
-## Customising the parser
+## Customising the audit-log parser
 
-The notebook's `audit_schema` cell defines which JSON fields get extracted. Add fields by extending that struct — the rest of the notebook adapts automatically as long as the new field is referenced in the `flat.select(...)` block.
+The audit log notebook's `audit_schema` cell defines which JSON fields get extracted from `AuditData`. Add fields by extending that struct — the rest of the notebook adapts automatically as long as the new field is referenced in the `flat.select(...)` block.
 
-For incremental refresh (only parse new events since last run), change the `WRITE_MODE` config to `'append'` and add a watermark filter on `CreationTime` keyed off the max value already in the Delta table.
+For incremental refresh (only fetch new events since the last run), change `WRITE_MODE` to `'append'` and add a watermark filter on `CreationTime` keyed off the max value already in the Delta table. Then drop `LOOKBACK_DAYS` to 1–2 and run on a daily schedule.
+
+## Migration from the legacy flow
+
+If you were running the previous-generation PowerShell + Parser/Loader pipeline, see [`archive/README.md`](archive/README.md) for what changed and what to keep. The output schemas are identical, so the PBIT works either way.
