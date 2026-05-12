@@ -8,11 +8,11 @@ This folder contains the <strong>AI-in-One Dashboard (Rollup edition)</strong> P
 
 > ## 🟦 IMPORTANT — Required input file format
 >
-> **This template only works with rollup files produced by the PAX script** (the Purview audit data and the Entra/MAC user+licensing data, both pre-processed by PAX). Pointing the template at raw Purview CSVs, raw Entra exports, or files from any other source **will not work** — the template will fail to load or will return blank visuals.
+> **This template requires pre-processed rollup files — it cannot read raw Purview CSVs, raw Entra exports, or files from any other unprocessed source.** Pointing the template at raw files will result in load failures or blank visuals.
 >
-> See [**📦 What is PAX?**](#-what-is-pax) below for what PAX is and where to get it.
+> **The recommended way to produce these files is the PAX script.** See [**📦 What is PAX?**](#-what-is-pax) below for what PAX is and where to get it.
 >
-> 🛠️ **Coming soon**: A standalone Python rollup processor will be published for scenarios where customers prefer to export the raw data through a method other than PAX. It will produce the same rollup file format this template requires.
+> Customers who export raw Purview and Entra data through a method other than PAX can use the standalone processor script in the [`scripts/`](scripts/) folder to produce the same rollup files. See the **⚙️ Standalone processor** section below.
 
 ---
 
@@ -183,7 +183,7 @@ After PAX finishes, you'll have these files (filenames are timestamped automatic
 
 Agent 365 data is a **point-in-time catalog snapshot** of the agents registered in your tenant (name, host product, developer, status, version, etc.). Unlike Purview audit data and Entra/MAC user data, this file is **not** transformed by the embedded Python rollup processor — PAX produces it as a straight passthrough using the same column shape the dashboard expects.
 
-Because there's no processor step involved, this is the **one and only** input file the dashboard accepts directly from the Microsoft 365 Admin Center's manual UI export. Purview audit data and Entra/MAC user data **must** go through PAX — there is no manual-export path for those today. Coming soon we'll be providing a standalone Python processor script that can be used outside of the PAX script for those customers that want to manually export Entra and Purview data through their respective portals (or through an alternative script).
+Because there's no processor step involved, this is the **one and only** input file the dashboard accepts directly from the Microsoft 365 Admin Center's manual UI export. Purview audit data and Entra/MAC user data **must** go through a processor step — either PAX or the standalone processor script in the [`scripts/`](scripts/) folder. See the **⚙️ Standalone processor** section below for the non-PAX path.
 
 You have two options for getting the Agent 365 file:
 
@@ -267,6 +267,114 @@ That folder contains:
 
 ---
 
+## ⚙️ Standalone processor — processing raw data without PAX
+
+<details>
+<summary><strong>Show this section</strong> <em>(click to expand)</em></summary>
+
+<br>
+
+The [`scripts/`](scripts/) folder in this folder contains a Python script that produces the same two rollup files this dashboard requires — without needing PAX. Use this path if you export raw Purview audit data and Entra/MAC user data through your own tooling, portal exports, or an alternative script rather than through PAX.
+
+> **Note:** This processor handles the Purview interactions file and the Entra/MAC users file only. It does not produce the Agent 365 file. For Agent 365 data, see the **🤖 Agent 365** section above.
+
+### Requirements
+
+- **Python 3.9 or later**
+- The `orjson` package is optional but recommended for faster JSON parsing:
+  ```
+  pip install orjson
+  ```
+  The script falls back to the Python standard library `json` module if `orjson` is not installed.
+
+### What you need before running
+
+Two input files are required. Both must be CSV format.
+
+---
+
+#### Input 1 — Raw Purview audit CSV (`--purview`)
+
+This is the raw audit log export from Microsoft Purview. Export it from the **Microsoft Purview compliance portal → Audit → search/export**.
+
+The script filters the file automatically — only `CopilotInteraction` operation records are processed; all other record types are skipped.
+
+| Column | Required? | Notes |
+|---|---|---|
+| `AuditData` | ✅ Required | The JSON blob column that Purview includes in every audit export. All Copilot interaction detail is parsed from inside this column. If this column is absent, the script will produce no output. |
+| `Operation` or `Operations` | Used for filtering | Used to identify `CopilotInteraction` records when the value is not already inside the `AuditData` JSON. Purview exports typically include one of these. |
+
+All other columns in the Purview export are ignored — the script reads only `AuditData` and `Operation`/`Operations`.
+
+---
+
+#### Input 2 — Combined Entra + MAC users CSV (`--entra`)
+
+This file is **not** a direct export from a single portal. It is a combined file you assemble by joining two separate exports:
+
+1. **Microsoft Entra ID user export** — provides the user list with UPN, display name, department, job title, etc.
+2. **Microsoft 365 Admin Center (MAC) licensing export** — provides the per-user Copilot license assignment column
+
+You must add the license column from the MAC export into the Entra user export (for example, using Excel or Power Query) before passing the file to the script. If no recognized license column is present, the script will still process the file but every user will be tagged as `Unlicensed`.
+
+| Column | Required? | Accepted column names | Notes |
+|---|---|---|---|
+| User Principal Name | ✅ Required | `userPrincipalName`, `upn`, `personId` (case-insensitive) | Used to join Purview audit records to user data. Rows with a blank UPN are still written to the Users output but will not join to any audit activity. |
+| Copilot license flag | ✅ Strongly recommended | `Has license`, `Has License`, `hasLicense`, `HasLicense`, `Has Copilot License`, `Has Copilot license`, `HasCopilotLicense`, `Has Copilot License Assigned`, `Has Copilot license assigned`, `isUser` | Any truthy value (`Yes`, `True`, `Y`, `1`) is treated as licensed; everything else is unlicensed. If the column is missing entirely, all users default to unlicensed. |
+| Department | ✅ Required | Any casing of `department`, `organization`, or `organisation` — spaces, hyphens, and underscores in the column name are ignored when matching | Renamed to `Organization` in the output. Used for org-level segmentation in the dashboard. |
+| Job title | ✅ Required | Any casing of `jobtitle` or `job title` — spaces, hyphens, and underscores in the column name are ignored when matching | Renamed to `JobTitle` in the output. |
+| All other columns | Optional | Any | All other columns in your input file are passed through to the Users output as-is. |
+
+### Arguments
+
+| Argument | Required? | Description |
+|---|---|---|
+| `--purview <path>` | ✅ Required | Path to the raw Purview audit log CSV |
+| `--entra <path>` | ✅ Required | Path to the Entra users CSV |
+| `--out-dir <path>` or `-o <path>` | Optional | Directory where output files are written. Defaults to the same directory as the Purview input file |
+| `--quiet` or `-q` | Optional | Suppresses progress output. Useful in scheduled or automated contexts |
+
+### What the processor produces
+
+Two files are written to the output directory, named automatically based on your input filenames and a run timestamp:
+
+| Output file | What it is | Dashboard parameter |
+|---|---|---|
+| `<purview-filename>_Interactions_<timestamp>.csv` | Rolled-up Copilot interactions fact table | **Copilot Interactions File** |
+| `<entra-filename>_Users_<timestamp>.csv` | Users and licensing dimension table | **Org Data File** |
+
+Point the corresponding dashboard parameters at these two output files exactly as you would with PAX-produced files.
+
+### Usage examples
+
+Run the `.py` file found in the `scripts/` folder. In the examples below, replace `scripts/<processor>.py` with the actual filename.
+
+**Basic — output files are written to the same folder as the Purview input**
+
+```
+python scripts/<processor>.py --purview "C:\Data\Purview_Audit_20260510.csv" --entra "C:\Data\EntraUsers_20260510.csv"
+```
+
+**With an explicit output directory**
+
+```
+python scripts/<processor>.py --purview "C:\Data\Purview_Audit_20260510.csv" --entra "C:\Data\EntraUsers_20260510.csv" --out-dir "C:\Data\Rollup Output"
+```
+
+**Quiet mode — suppress progress output (useful in scheduled tasks)**
+
+```
+python scripts/<processor>.py --purview "C:\Data\Purview_Audit_20260510.csv" --entra "C:\Data\EntraUsers_20260510.csv" --out-dir "C:\Data\Rollup Output" --quiet
+```
+
+### Multi-month history with the standalone processor
+
+If you use PAX's `-AppendFile` switch to accumulate a growing raw Purview CSV over time, run the standalone processor against that accumulated file to produce a fresh rollup whenever you need to refresh the dashboard. See the **📚 Multi-month history** section below for the full pattern, including the recommended commands.
+
+</details>
+
+---
+
 ## 📚 Multi-month history & the `-AppendFile` switch — what works today
 
 <details>
@@ -289,11 +397,11 @@ PAX has an `-AppendFile` switch that appends new rows to an existing CSV instead
 
 This is the honest answer: as of today, PAX **blocks `-AppendFile` when `-Rollup` or `-RollupPlusRaw` is used**, and exits with an error. The rollup processor assigns INT surrogate keys (`Message_Id`, `ThreadId`, `UserKey`) per run, so appending rolled-up rows would produce mismatched keys and a broken file.
 
-> 🛠️ **Coming soon — rollup-aware appending**: A standalone Python rollup processor is in development. It will let you:
+> **Rollup-aware appending with the standalone processor:** Use the standalone processor in the [`scripts/`](scripts/) folder for this pattern:
 > 1. Use PAX with `-AppendFile` (no `-Rollup`) to accumulate a growing **raw** Purview audit CSV over time
-> 2. Run that accumulated raw file through the standalone Python processor to produce a freshly-keyed rollup file the dashboard can consume
+> 2. Run that accumulated raw file through the standalone processor to produce a freshly-keyed rollup file the dashboard can consume
 >
-> This gives you the best of both worlds — incremental daily/weekly raw appends from PAX, plus a clean dashboard-ready rollup whenever you need to refresh the report. Watch this repo and the PAX repo for the release.
+> This gives you the best of both worlds — incremental daily/weekly raw appends from PAX, plus a clean dashboard-ready rollup whenever you need to refresh the report. See the **⚙️ Standalone processor** section below for usage details.
 
 ### What to do right now if you want months of data
 
@@ -329,8 +437,8 @@ If you want to start building up multi-month raw history immediately so you're r
 
 Important points for Pattern B:
 - The accumulated **raw** file produced this way **cannot** be opened by this dashboard directly — it must be processed first.
-- When the standalone Python rollup processor ships, you'll run it once against the accumulated raw file to produce dashboard-ready rollup output.
-- Until then, this file is for future use / archival only; for current dashboards, also do a Pattern A run in parallel.
+- Run the standalone processor in the [`scripts/`](scripts/) folder against the accumulated raw file to produce dashboard-ready rollup output. See the **⚙️ Standalone processor** section below for usage details.
+- For current dashboards, also do a Pattern A run in parallel so you have a usable rollup file while you build up your raw history.
 - Don't forget: Entra/MAC user data and Agent 365 data still need to be fresh point-in-time exports — they cannot be appended.
 
 </details>
