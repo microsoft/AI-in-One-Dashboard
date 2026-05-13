@@ -1,10 +1,5 @@
 # ℹ️ **Agent Dashboard in Copilot Analytics**  
-The Agent Dashboard is now generally available, providing one-click visibility into agent usage. Work with your IT admin to enable it.
-
-> 🚨 **April 2026 — Microsoft Graph Audit Log Query API permission change**  
-> Microsoft began enforcing a new permission for the `/security/auditLog/queries` endpoint. The broader `AuditLog.Read.All` scope is **no longer sufficient on its own** — `AuditLogsQuery.Read.All` is now required.  
-> **Symptom**: scripts run successfully but `CopilotInteraction` queries silently return **0 records** even when activity exists.  
-> **Fix**: have your tenant admin grant `AuditLogsQuery.Read.All` to the app registration / consented account before running the scripts. See [`scripts/readme.md`](scripts/readme.md#permissions-april-2026-graph-api-change) for details.
+The Agent Dashboard is now generally available (GA), providing one-click visibility into agent usage. Work with your IT admin to enable it.
 
 > ⚠️ **Support Notice**  
 > This repository is not supported through Microsoft support channels. Please report issues by opening an issue in this repo.
@@ -12,7 +7,7 @@ The Agent Dashboard is now generally available, providing one-click visibility i
 # 🤖 AI-in-One Dashboard
 
 <p style="font-size:small; font-weight:normal;">
-This repository contains the <strong>AI-in-One Dashboard</strong> Power BI template. This report provides comprehensive insights into Microsoft Copilot and Agent adoption, empowering AI and business leaders to make informed decisions regarding AI implementation, licensing, and enablement strategies.
+This repository contains the <strong>AI-in-One Dashboard</strong> Power BI templates. The AIO report provides comprehensive insights into Microsoft Copilot and Agent adoption, empowering AI and business leaders to make informed decisions regarding AI implementation, licensing, and enablement strategies.
 </p>
 
 ---
@@ -49,18 +44,42 @@ Pick the path that matches your environment. Each folder is self-contained — R
 
 | Path | Folder | Best when… | Volume ceiling |
 |---|---|---|---|
-| **Manual** | [`1. Manual/`](1.%20Manual/) | One-off, ad-hoc, or single-user. Customer manually exports audit CSV from Purview UI, drops into the local PBIT | < ~100K events lifetime |
-| **SharePoint — Single File** *(recommended default)* | [`2. SharePoint/Single File/`](2.%20SharePoint/Single%20File/) | Scheduled refresh in PBI Service without a Gateway. Script overwrites one CSV per refresh — no folder iteration, no privacy firewall errors | Rolling 30 days, refreshes weekly or daily |
-| **SharePoint — Folder** *(advanced)* | [`2. SharePoint/Folder/`](2.%20SharePoint/Folder/) | Need > 30 days of accumulated history but no Fabric. Folder iteration auto-unions all daily CSVs | Up to 180 days (Graph cap), heavier PBI memory footprint |
-| **Fabric / Lakehouse** | [`3. Fabric/`](3.%20Fabric/) | Have Fabric capacity. JSON parsing happens upstream in a notebook → best performance, multi-year history, sub-second dashboard | Millions of events, multi-year |
+| **Rollup Edition** | [`4. Rollup Edition (Manual-SharePoint-Fabric)/`](4.%20Rollup%20Edition%20%28Manual-SharePoint-Fabric%29/) | Data is pre-processed before Power BI ever loads it — dramatically smaller files, near-instant dashboard opens, and no out-of-memory errors. Works with local files, SharePoint, or Fabric — one template covers all three | Any size tenant, including large enterprise |
+| **Manual** *(Classic Edition)* | [`1. Manual/`](1.%20Manual/) | One-off, ad-hoc, or single-user. Customer manually exports audit CSV from Purview UI, drops into the local PBIT | < ~100K events lifetime |
+| **SharePoint — Single File** *(Classic Edition)* | [`2. SharePoint/Single File/`](2.%20SharePoint/Single%20File/) | Scheduled refresh in PBI Service without a Gateway. Script overwrites one CSV per refresh — no folder iteration, no privacy firewall errors | Rolling 30 days, refreshes weekly or daily |
+| **SharePoint — Folder** *(Classic Edition)* | [`2. SharePoint/Folder/`](2.%20SharePoint/Folder/) | Need > 30 days of accumulated history but no Fabric. Folder iteration auto-unions all daily CSVs | Up to 180 days (Graph cap), heavier PBI memory footprint |
+| **Fabric / Lakehouse** *(Classic Edition)* | [`3. Fabric/`](3.%20Fabric/) | Have Fabric capacity. JSON parsing happens upstream in a notebook → best performance, multi-year history, sub-second dashboard | Millions of events, multi-year |
 
 Inside each path:
 - The PBIT for that pattern (and a README explaining what parameters to fill in)
-- `scripts/interactive/` — manual one-shot PowerShell (admin signs in via browser)
-- `scripts/appreg/` — unattended app-registration scripts (service principal for scheduled jobs)
-- `scripts/azure/` *(SharePoint / Single File only)* — Bicep + runbooks for Azure Automation
+- `scripts/` — automation scripts for data processing and export; contents vary by edition but may include data pre-processors, manual one-shot PowerShell (interactive browser sign-in), unattended app-registration scripts (service principal for scheduled jobs), and Azure Automation runbooks with Bicep deployment
 
-**Not sure which path?** Most customers should start with **SharePoint / Single File** — it covers 80% of real deployments and avoids the data-combination errors that the Folder pattern is prone to. If you have Fabric capacity, **Fabric / Lakehouse** is the long-term home for any serious volume.
+For customers whose dataset is growing or where Power BI load times and refresh failures are a concern, the **[Rollup Edition](4.%20Rollup%20Edition%20%28Manual-SharePoint-Fabric%29/)** pre-processes data upstream before Power BI ever sees it — typically reducing file sizes by 70%+ and cutting dashboard open times from hours to minutes - and sometimes seconds! It natively supports local files, SharePoint, and Fabric in a single template, making it the right fit regardless of your storage tier. The Manual, SharePoint, and Fabric Classic Editions remain available for existing deployments.
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│           Which edition is right for you?                       │
+└─────────────────────────────────────────────────────────────────┘
+
+New to the AI-in-One Dashboard?
+│
+├─ YES ──────────────────────────────────────────────────────────►  4. Rollup Edition
+│                                                                    One template · works with all storage tiers
+│                                                                    local files · SharePoint · Fabric
+│
+└─ NO — already running an existing edition?
+         │
+         Slow dashboard loads, refresh failures, or out-of-memory errors?
+         │
+         ├─ NO, performing fine ──────────────────────────────────►  Stay on your current edition
+         │                                                            1. Manual (local files) (Classic Edition)
+         │                                                            2. SharePoint (folder or file path) (Classic Edition)
+         │                                                            3. Fabric (Classic Edition)
+         │
+         └─ YES ──────────────────────────────────────────────────►  4. Rollup Edition
+                                                                      One template · works with all storage tiers
+                                                                      local files · SharePoint · Fabric
+```
 
 ---
 
@@ -91,12 +110,130 @@ Inside each path:
 
 ## ✅ What You'll Do
 
-**Quick Overview**: Export 4 data sources → Connect them to Power BI → Analyze your AI adoption
+**Quick Overview**:
+- **Rollup Edition:** Pre-process your Purview and Entra/MAC data (via PAX or standalone processor) → Open PBIT with 3 parameters → Analyze
+- **Classic Editions:** Export raw data sources → Connect to Power BI with 4 parameters → Analyze
 
 ### Choose Your Method
 
 <details>
-<summary>🖱️ Option A: Manual Export via Web Portal (Recommended for first-time setup)</summary>
+<summary>🚀 Option A: Rollup Edition — PAX or Standalone Processor (Recommended)</summary>
+
+The Rollup Edition requires pre-processed input files — the template cannot consume raw Purview or raw Entra/MAC exports directly. There are two ways to produce the required files:
+
+**PAX path (recommended):** Run PAX with `-Rollup` — PAX exports Purview audit data and Entra/MAC user+license data, and pre-processes both into the two files this template requires. Output can go to local, SharePoint, or OneLake.
+
+**Standalone processor path (alternative):** Export raw Purview audit data and raw Entra/MAC user+license data yourself (via portals or your own tooling), then run the standalone processor in `scripts/` against both raw files. Neither raw file can go directly into the template — both must be processed first. See the [Rollup Edition README](4.%20Rollup%20Edition%20%28Manual-SharePoint-Fabric%29/README.md) for full instructions on this path.
+
+**Agent 365 (optional, either path):** The only input that requires no pre-processing. Export manually from the M365 Admin Center (Step 1 below) or let PAX produce it as a convenience via `-IncludeAgent365Info`.
+
+👉 **See full details** in the [Rollup Edition README](4.%20Rollup%20Edition%20%28Manual-SharePoint-Fabric%29/README.md)
+
+#### Option A Detailed Steps
+
+<details>
+<summary>🤖 Step 1: Export Agent 365 Data (Optional)</summary>
+
+### What This Data Provides
+A catalogue of agents in your tenant from the [Agent Registry](https://learn.microsoft.com/en-us/microsoft-365/admin/manage/agent-registry) in the Microsoft 365 Admin Center. This input is optional — the template loads without it.
+
+### PAX path (recommended)
+If you ran PAX with `-IncludeAgent365Info`, PAX already exported this file. **Skip the manual steps below** — PAX output goes directly into the template parameter.
+
+### Manual export (if not using PAX, or running PAX without `-IncludeAgent365Info`)
+
+**Access required:** AI Admin or Global Reader
+
+1. Go to [admin.microsoft.com](https://admin.microsoft.com) → **Agents** → **All Agents**
+2. Click **Export to Excel** in the toolbar
+3. Save the `.xlsx` file to a known location (e.g., `C:\Data\Agent365_Inventory.xlsx`)
+
+### Expected File Format
+- **File format**: Excel (.xlsx)
+- **Columns**: Name, Host products, Created date, Developer user ID, Description, Status, Version
+- **Rows**: One row per agent in your tenant
+
+</details>
+
+<details>
+<summary>🔐 Step 2: Open and Configure the Power BI Template</summary>
+
+### Open the template
+
+Open `AI-In-One - Rollup Edition.pbit` in Power BI Desktop.
+
+### Parameters
+
+Each parameter accepts a local file path, SharePoint URL, or OneLake URL — the template auto-detects the source type.
+
+| Parameter | What to paste in | Required? |
+|---|---|---|
+| **Copilot Interactions File** | Full path or URL to `..._Interactions.csv` — the pre-processed output from PAX (`-Rollup`) or the standalone processor | ✅ Required |
+| **Org Data File** | Full path or URL to `..._Users.csv` — the pre-processed output from PAX (`-Rollup`) or the standalone processor | ✅ Required |
+| **Agent 365** | Full path or URL to `Agent365_....csv` (from Step 1, or PAX with `-IncludeAgent365Info`), or leave blank | Optional |
+
+Click **Load**. First refresh on a moderate dataset typically takes 5–15 minutes.
+
+See the [Rollup Edition README](4.%20Rollup%20Edition%20%28Manual-SharePoint-Fabric%29/README.md) for SharePoint URL conventions, OneLake path format, scheduled refresh setup, and full troubleshooting.
+
+### Common issues
+
+- **"File not found" / `DataSource.Error`** — local paths must be absolute (e.g. `C:\Data\file.csv`, not `.\file.csv`). For SharePoint URLs, copy the **document URL**, not the share link.
+- **`Formula.Firewall: Query references other queries…`** — privacy-level mismatch. In Power BI Desktop: **File → Options → Current File → Privacy → Combine data without privacy**. In Service: dataset Settings → Data source credentials → set **Privacy: None** for SharePoint sources.
+
+</details>
+
+<details>
+<summary>📊 Step 3: Review and Customize</summary>
+
+### What You'll Do
+Review the dashboard, customize visualizations, and share with stakeholders.
+
+### Recommended Actions
+
+1. **Review dashboard pages**
+   - Navigate through all report pages
+   - Verify data loaded correctly
+   - Check that filters and slicers work as expected
+
+2. **Customize for your organization**
+   - Update visuals to match your branding (colors, logos)
+   - Adjust hierarchies to match your org structure
+   - Add or remove pages based on your needs
+   - Create bookmarks for common views
+
+3. **Set up filters and parameters**
+   - Configure default date ranges
+   - Set up department/role filters
+   - Create user-specific views if needed
+
+4. **Publish and share**
+   - Publish to Power BI Service if not already done
+   - Set up Row-Level Security (RLS) if needed
+   - Share with stakeholders via workspace access or apps
+   - Create subscriptions for key reports
+
+5. **Document customizations**
+   - Keep notes on any changes you make
+   - Version your .pbix file if making significant updates
+   - Archive old versions in the `/Archived Templates` folder
+
+### Best Practices
+
+- 🔄 **Refresh schedule**: Schedule PAX (or your standalone processor run) and the Power BI dataset refresh on the same cadence so the report always reflects current data
+- 🔒 **Security**: Use Row-Level Security to restrict sensitive data by department or role
+- 📧 **Subscriptions**: Set up email subscriptions for executives who want regular updates
+- 📊 **Usage tracking**: Monitor dashboard usage in Power BI Service to understand what resonates
+
+</details>
+
+</details>
+
+<details>
+<summary>🖱️⚡ Options B & C: Classic Edition — Manual or Automated</summary>
+
+<details>
+<summary>🖱️ Option B: Manual Export via Web Portal *(Classic Edition)*</summary>
 
 Follow the traditional workflow using browser-based portals to export your data:
 
@@ -107,12 +244,10 @@ Follow the traditional workflow using browser-based portals to export your data:
 
 **Best for**: One-time setup, first-time users, or those who prefer GUI-based workflows
 
-👉 **See detailed instructions below** in the [Detailed Steps](#-detailed-steps) section
-
 </details>
 
 <details>
-<summary>⚡ Option B: Automated PowerShell Scripts (For regular refreshes)</summary>
+<summary>⚡ Option C: Automated PowerShell Scripts *(Classic Edition)*</summary>
 
 Use the PowerShell automation scripts in the [scripts](scripts/) folder for a faster, repeatable workflow. This method supports two execution modes:
 
@@ -153,12 +288,11 @@ cd scripts/automation
 - Azure Automation runbooks: [scripts/automation/README.md](scripts/automation/README.md)
 
 </details>
----
 
-## 📁 Detailed Steps
+#### Options B & C Detailed Steps
 
 <details>
-<summary>🔍 Step 1 (skip if using 'Option B'): Download Copilot Interactions Audit Logs (Microsoft Purview)</summary>
+<summary>🔍 Step 1: Download Copilot Interactions Audit Logs (Microsoft Purview)</summary>
 
 ### What This Data Provides
 This log provides detailed records of Copilot interactions across all surfaces (Chat, M365 apps, Agents), as well as interactions with **third-party and custom-built AI applications** (e.g., Confluence Cloud, Jira Cloud, Miro), enabling deep analysis of usage patterns and engagement across the full AI landscape.
@@ -217,7 +351,7 @@ This log provides detailed records of Copilot interactions across all surfaces (
 </details>
 
 <details>
-<summary>👤 Step 2 (skip if using 'Option B'): Download Copilot Licensed User List (Microsoft 365 Admin Center) </summary>
+<summary>👤 Step 2: Download Copilot Licensed User List (Microsoft 365 Admin Center)</summary>
 
 ### What This Data Provides
 This data provides a list of users with Copilot licenses, enabling you to track license utilization and identify licensed vs. unlicensed usage patterns.
@@ -348,20 +482,35 @@ Pick the deployment path that matches where your CSVs live, open the matching PB
 
 ### Pick the right template
 
-Refer back to the [**Choose your deployment path**](#-choose-your-deployment-path) table above. The three options:
+Refer back to the [**Choose your deployment path**](#-choose-your-deployment-path) table above. The available templates:
 
 | Path | PBIT | Setup guide |
 |---|---|---|
-| **Manual** | `1. Manual/AI-in-One Dashboard.pbit` (single local CSV) | [`1. Manual/README.md`](1.%20Manual/README.md) |
-| **SharePoint — Single File** *(recommended default for scheduled refresh)* | `2. SharePoint/Single File/AI-in-One Dashboard.pbit` | [`2. SharePoint/Single File/README.md`](2.%20SharePoint/Single%20File/README.md) |
-| **SharePoint — Folder** *(advanced; >30 days history without Fabric)* | `2. SharePoint/Folder/AI-in-One Dashboard - SP Folder.pbit` | [`2. SharePoint/Folder/README.md`](2.%20SharePoint/Folder/README.md) |
-| **Fabric / Lakehouse** *(upstream JSON parsing, large tenants)* | `3. Fabric/AI-in-One Dashboard - Fabric.pbit` | [`3. Fabric/README.md`](3.%20Fabric/README.md) |
+| **Rollup Edition** *(local · SharePoint · Fabric)* | `4. Rollup Edition (Manual-SharePoint-Fabric)/AI-In-One - Rollup Edition.pbit` | [`4. Rollup Edition (Manual-SharePoint-Fabric)/README.md`](4.%20Rollup%20Edition%20%28Manual-SharePoint-Fabric%29/README.md) |
+| **Manual** *(Classic Edition)* | `1. Manual/AI-in-One Dashboard.pbit` (single local CSV) | [`1. Manual/README.md`](1.%20Manual/README.md) |
+| **SharePoint — Single File** *(Classic Edition · recommended default for scheduled refresh)* | `2. SharePoint/Single File/AI-in-One Dashboard.pbit` | [`2. SharePoint/Single File/README.md`](2.%20SharePoint/Single%20File/README.md) |
+| **SharePoint — Folder** *(Classic Edition · advanced; >30 days history without Fabric)* | `2. SharePoint/Folder/AI-in-One Dashboard - SP Folder.pbit` | [`2. SharePoint/Folder/README.md`](2.%20SharePoint/Folder/README.md) |
+| **Fabric / Lakehouse** *(Classic Edition · upstream JSON parsing, large tenants)* | `3. Fabric/AI-in-One Dashboard - Fabric.pbit` | [`3. Fabric/README.md`](3.%20Fabric/README.md) |
 
 Each per-folder README has the **definitive setup steps, parameter values, and troubleshooting** for that variant — including SharePoint folder URL conventions, Service refresh / credential setup, and (for Fabric) the upstream notebook + Lakehouse provisioning.
 
 ### Common parameters across templates
 
-All four template paths share the same four parameters — only the *value format* changes (local path vs SharePoint URL vs SharePoint folder vs Lakehouse table):
+**Rollup Edition — 3 parameters:**
+
+Each parameter accepts a local file path, SharePoint URL, or OneLake URL — the template auto-detects the source type.
+
+| Parameter | What to paste in | Required? |
+|---|---|---|
+| **Copilot Interactions File** | Full path or URL to `..._Interactions.csv` — the pre-processed output from PAX (`-Rollup`) or the standalone processor | ✅ Required |
+| **Org Data File** | Full path or URL to `..._Users.csv` — the pre-processed output from PAX (`-Rollup`) or the standalone processor | ✅ Required |
+| **Agent 365** | Full path or URL to `Agent365_....csv` (manual M365 Admin Center export, or PAX with `-IncludeAgent365Info`), or leave blank | Optional |
+
+See the [Rollup Edition README](4.%20Rollup%20Edition%20%28Manual-SharePoint-Fabric%29/README.md) for full details on both PAX and standalone processor paths, SharePoint URL guidance, and scheduled refresh setup.
+
+**Classic Edition — 4 parameters:**
+
+Only the value format changes between Classic Edition paths (local path vs SharePoint URL vs SharePoint folder vs Lakehouse table). See each path's README for the parameter values specific to that variant.
 
 | Parameter | What it points at |
 |---|---|
@@ -422,6 +571,8 @@ Review the dashboard, customize visualizations, and share with stakeholders.
 - 🔒 **Security**: Use Row-Level Security to restrict sensitive data by department or role
 - 📧 **Subscriptions**: Set up email subscriptions for executives who want regular updates
 - 📊 **Usage tracking**: Monitor dashboard usage in Power BI Service to understand what resonates
+
+</details>
 
 </details>
 
