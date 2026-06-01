@@ -19,7 +19,7 @@
 
 <br>
 
-**[Dashboard Preview ↓](#-dashboard-preview)** &nbsp;·&nbsp; **[Deployment Paths ↓](#-choose-your-deployment-path)** &nbsp;·&nbsp; **[Instructions ↓](#-what-youll-do)** &nbsp;·&nbsp; **[Related Resources ↓](#-related-resources)** &nbsp;·&nbsp; **[Email your Admin ↓](#-email-your-admin)**
+**[Dashboard Preview ↓](#dashboard-preview)** &nbsp;·&nbsp; **[Deployment Paths ↓](#choose-your-deployment-path)** &nbsp;·&nbsp; **[Instructions ↓](#what-youll-do)** &nbsp;·&nbsp; **[Related Resources ↓](#related-resources)** &nbsp;·&nbsp; **[Email your Admin ↓](#email-your-admin)**
 
 <br>
 
@@ -500,7 +500,7 @@ Pick the deployment path that matches where your CSVs live, open the matching PB
 
 ### Pick the right template
 
-Refer back to the [**Choose your deployment path**](#-choose-your-deployment-path) table above. The available templates:
+Refer back to the [**Choose your deployment path**](#choose-your-deployment-path) table above. The available templates:
 
 | Path | PBIT | Setup guide |
 |---|---|---|
@@ -622,7 +622,7 @@ Please see [SECURITY.md](SECURITY.md) for information on reporting security vuln
 
 ---
 
-## ðŸ“§ Email Your Admin
+## 📧 Email Your Admin
 
 > 📧 **Before you begin, your IT admin needs to export data from Purview, Entra, and M365 Admin Center.**
 > This pre-written email covers all required data sources, field names, admin roles, permissions, and export steps — everything your admin needs in one click.
