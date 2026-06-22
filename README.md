@@ -1,3 +1,30 @@
+<div align="center">
+
+<br>
+
+# 🧠 AI-in-One Dashboard
+
+### One Power BI dashboard for all Microsoft Copilot and Agent adoption signals.
+
+<br>
+
+[![Built by Microsoft](https://img.shields.io/badge/Built%20by-Microsoft-0078d4?style=for-the-badge&logo=microsoft&logoColor=white)](https://microsoft.github.io/Analytics-Hub/team/)
+[![Analytics Hub](https://img.shields.io/badge/Analytics%20Hub-11%20Repositories-8661c5?style=for-the-badge&logo=github&logoColor=white)](https://microsoft.github.io/Analytics-Hub/)
+
+**All Reports:** [https://microsoft.github.io/Analytics-Hub/](https://microsoft.github.io/Analytics-Hub/)
+
+<br>
+
+**Found this useful? ⭐ Star this repo to help others discover it!**
+
+<br>
+
+**[Dashboard Preview ↓](#-dashboard-preview)** &nbsp;·&nbsp; **[What is PAX? ↓](#-what-is-pax)** &nbsp;·&nbsp; **[Get Your Data ↓](#-get-your-data--run-pax-to-produce-the-files)** &nbsp;·&nbsp; **[Instructions ↓](#-open-and-configure-the-power-bi-template)** &nbsp;·&nbsp; **[Related Resources ↓](#-related-resources)**
+
+<br>
+
+</div>
+
 # 🤖 AI-in-One Dashboard — Rollup Edition
 
 <p style="font-size:small; font-weight:normal;">
