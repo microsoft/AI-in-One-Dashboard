@@ -28,7 +28,7 @@
 # 🤖 AI-in-One Dashboard — Rollup Edition
 
 <p style="font-size:small; font-weight:normal;">
-This folder contains the <strong>AI-in-One Dashboard (Rollup edition)</strong> Power BI template. It provides comprehensive insights into Microsoft Copilot and Agent adoption, empowering AI and business leaders to make informed decisions about AI implementation, licensing, and enablement strategies — and it loads dramatically faster than previous versions thanks to a new pre-processed file format.
+This folder contains the <strong>AI-in-One Dashboard (Rollup edition)</strong> Power BI template, available in <strong>two editions</strong>: a flexible <strong>3-in-1 auto-detect</strong> edition (reads local, SharePoint, or OneLake files) and a <strong>SharePoint-only (PBI-SharePoint)</strong> edition built for automatic scheduled refresh in the Power BI Service. Both deliver the same comprehensive insights into Microsoft Copilot and Agent adoption, empowering AI and business leaders to make informed decisions about AI implementation, licensing, and enablement strategies — and both load dramatically faster than previous versions thanks to a new pre-processed file format. <strong>See <a href="#-which-edition-should-i-download">Which edition should I download</a> to pick the right one.</strong>
 </p>
 
 ---
@@ -48,6 +48,31 @@ This folder contains the <strong>AI-in-One Dashboard (Rollup edition)</strong> P
 See the dashboard in action:
 
 ![AI-in-One Dashboard animated preview](https://github.com/microsoft/AI-in-One-Dashboard/raw/main/Images/AIO%20v10%20Gif.gif)
+
+---
+
+## 🧭 Which edition should I download
+
+This Rollup release ships in **two editions** that share the *exact same pages, visuals, and numbers*. They differ only in **where they read your input files from** and **whether the Power BI Service can refresh them on a schedule.** Pick one:
+
+| | **Rollup Edition** (3-in-1, auto-detect) | **Rollup Edition — PBI-SharePoint** |
+|---|---|---|
+| **⬇️ Download** | **[AI-In-One Dashboard - Rollup Edition](https://github.com/microsoft/AI-in-One-Dashboard/raw/main/AI-In-One%20Dashboard%20-%20Rollup%20Edition%20-%202026-06-25.pbit)** | **[AI-In-One Dashboard - Rollup Edition - PBI-SharePoint](https://github.com/microsoft/AI-in-One-Dashboard/raw/main/AI-In-One%20Dashboard%20-%20Rollup%20Edition%20-%20PBI-SharePoint%20-%202026-06-25.pbit)** |
+| **Input file locations** | **Local path, SharePoint URL, _or_ OneLake URL** — auto-detected for each parameter | **SharePoint URLs only** (each input is validated as a SharePoint URL) |
+| **Best for** | Power BI Desktop analysis, quick local trials, OneLake/Fabric, or any mix of the above | Publishing to the Power BI Service when you want **automatic scheduled refresh** |
+| **Scheduled refresh in the Service** | ❌ Not supported _(see below)_ | ✅ Supported — no Gateway needed |
+| **Manual / on-demand refresh** | ✅ In Desktop (and on-demand in the Service) | ✅ |
+
+### Why are there two editions
+
+The Power BI Service decides whether it can schedule a dataset by **statically inspecting** how it connects to its sources — *before* it ever runs the query. A source whose location is computed at runtime — which is exactly how the 3-in-1 edition stays flexible enough to accept a local path **or** a SharePoint URL **or** a OneLake URL — is classified as a **dynamic data source**, and the Service **disables scheduled refresh for the entire dataset** when one is present. No M arrangement avoids this while keeping that flexibility; it's a platform rule, not a template bug.
+
+The **PBI-SharePoint** edition gives up that flexibility on purpose: every input is read through a single, **static SharePoint connector** that the Service is happy to schedule. That one change is the only difference under the hood — the report itself is identical.
+
+**Rule of thumb**
+- Exploring in Power BI Desktop, or your files are local / on OneLake → **3-in-1 edition.**
+- You want the report to refresh itself on a schedule in the Service and your files are on SharePoint → **PBI-SharePoint edition.**
+- Your files are on OneLake/Fabric **and** you need scheduled refresh → use the dedicated Fabric edition in [`Classic Editions/3. Fabric/`](Classic%20Editions/3.%20Fabric/), a Fabric-native thin client.
 
 ---
 
@@ -229,7 +254,7 @@ Use this path if you don't want to run PAX with elevated Agent 365 permissions, 
 3. Save the `.csv` to a known location
 4. Point the `Agent 365` parameter in the PBIT at that CSV
 
-> 💡 **Tip — for shared / scheduled refresh:** if your Purview Interactions and Org Data files live on SharePoint or OneLake, upload your manually-exported Agent 365 CSV to the **same folder** so all three parameters point at the same storage location. See the [mixed-source caveat](#-can-i-mix-file-locations-eg-sharepoint--local) further down.
+> 💡 **Tip — for scheduled refresh (PBI-SharePoint edition):** the PBI-SharePoint edition requires **all three** input files to be SharePoint URLs. Upload your manually-exported Agent 365 CSV to the **same SharePoint folder** as your Interactions and Org Data files so all three parameters point at SharePoint. See the [mixed-source caveat](#-can-i-mix-file-locations-eg-sharepoint--local) further down.
 
 ### Three example commands
 
@@ -481,7 +506,9 @@ Important points for Pattern B:
 
 ### What you'll do
 
-1. Open `AI-In-One - Rollup - PBIT.pbit` in **Power BI Desktop**
+1. Download and open **one of the two editions** in **Power BI Desktop** (see [Which edition should I download](#-which-edition-should-i-download)):
+   - **`AI-In-One Dashboard - Rollup Edition - 2026-06-25.pbit`** — accepts local, SharePoint, _or_ OneLake files; best for Desktop and manual refresh
+   - **`AI-In-One Dashboard - Rollup Edition - PBI-SharePoint - 2026-06-25.pbit`** — accepts SharePoint URLs only; use this one if you want scheduled refresh in the Service
 2. Fill in the three parameters when prompted
 3. Click **Load**
 
@@ -493,7 +520,9 @@ Important points for Pattern B:
 | **Org Data File** | The full path or URL to your `EntraUsers_MAClicensing_..._Users.csv` | ✅ Required |
 | **Agent 365 (highly recommended)** | The full path or URL to your `Agent365_....csv`, **or leave blank** to skip | Optional |
 
-### Auto-detection — paste any of three formats
+### Auto-detection — paste any of three formats *(3-in-1 edition)*
+
+> **PBI-SharePoint edition:** each parameter must be a **SharePoint URL** — the template checks that the value starts with `https://` and points at a SharePoint site. Paste a local path or OneLake URL into that edition and you'll get a friendly message telling you to use the 3-in-1 edition instead. The auto-detection described below applies to the **3-in-1 (auto-detect)** edition.
 
 Each parameter accepts whichever of these matches where your file lives. The template figures out the rest automatically:
 
@@ -535,14 +564,18 @@ Technically yes — each of the three parameters resolves its backend independen
 
 <br>
 
-Once the dashboard works in Power BI Desktop, publish the `.pbix` to a Power BI Service workspace and configure scheduled refresh so it stays current automatically.
+> ### ⚠️ Scheduled refresh requires the **PBI-SharePoint** edition
+> Automatic scheduled refresh in the Power BI Service is supported **only by the PBI-SharePoint edition**, with all three input files stored on SharePoint. The 3-in-1 (auto-detect) edition **cannot be scheduled** in the Service — its runtime-resolved connector is treated as a *dynamic data source*, which disables scheduled refresh for the entire dataset (a Power BI platform rule — see [Why are there two editions](#why-are-there-two-editions)). You can still refresh the 3-in-1 manually in Power BI Desktop. For OneLake/Fabric scheduled refresh, use the Fabric edition in [`Classic Editions/3. Fabric/`](Classic%20Editions/3.%20Fabric/).
 
-### For SharePoint-stored files (recommended for most customers — no Gateway needed)
+Once the dashboard works in Power BI Desktop, publish the report to a Power BI Service workspace and configure scheduled refresh so it stays current automatically.
 
-1. **Publish** the `.pbix` to a workspace from Power BI Desktop (`File → Publish → Publish to Power BI`)
+### For SharePoint-stored files — the PBI-SharePoint edition (recommended for most customers — no Gateway needed)
+
+1. **Publish** the **PBI-SharePoint edition** report to a workspace from Power BI Desktop (`File → Publish → Publish to Power BI`)
 2. In Power BI Service, go to the **dataset → Settings → Data source credentials**
 3. Click **Edit credentials** for the SharePoint source and sign in with **OAuth2** using an account that can read the SharePoint folder
 4. Set the **Privacy level** to **Organizational** (so PBI is allowed to combine your sources)
+   > **Cross-tenant SharePoint:** if the SharePoint site holding your files is in a **different tenant** than your Power BI Service, sign in here with a guest/B2B account that has access to those files. The scheduled-refresh toggle stays **grayed out until valid credentials are saved** for every source — saving them here is what enables it. Conditional Access / MFA policies on the file-hosting tenant can block the unattended token renewal that scheduled refresh relies on; if the toggle won't enable after you sign in, that's the likely cause (copy the files into your own tenant, or use an account not subject to those policies).
 5. Expand **Scheduled refresh** and turn it on. Pick a cadence (Daily / Weekly) that lines up with how often PAX runs
 6. **Tip:** have your admin configure PAX to overwrite the *same filename* each run (rather than a new timestamped file every time). This way the dataset just refreshes against a stable URL — no template edits needed
 7. **Limits to know:**
@@ -551,6 +584,8 @@ Once the dashboard works in Power BI Desktop, publish the `.pbix` to a Power BI 
    - Make sure PAX finishes writing the file *before* your scheduled refresh window starts
 
 ### For OneLake / Fabric-stored files (recommended for large tenants)
+
+> **For OneLake scheduled refresh, use the Fabric edition.** The 3-in-1 (auto-detect) edition reads OneLake files in Power BI Desktop, but it **can't be scheduled** in the Service (dynamic data source — see [Why are there two editions](#why-are-there-two-editions)), and the PBI-SharePoint edition only accepts SharePoint URLs. For Service-side **scheduled refresh against OneLake**, use the Fabric thin-client edition in [`Classic Editions/3. Fabric/`](Classic%20Editions/3.%20Fabric/). The steps below describe that Fabric pattern.
 
 1. Publish the `.pbix` to a **Fabric-enabled workspace** (PPU or Fabric capacity required)
 2. OneLake credentials are handled automatically via SSO if the workspace is in the same tenant — usually no manual credential setup needed
@@ -601,7 +636,14 @@ Once the dashboard loads:
 
 ## 🔄 Version History
 
-This dashboard is built for the rollup file format produced by PAX. As long as you're running a current version of PAX (v1.11.1+) with `-Rollup` (or `-RollupPlusRaw`), the output is compatible with this template.
+This release ships **two editions**, both built for the same PAX rollup file format:
+
+| Edition | File | Input locations | Scheduled refresh in the Service |
+|---|---|---|---|
+| Rollup Edition (3-in-1, auto-detect) | `AI-In-One Dashboard - Rollup Edition - 2026-06-25.pbit` | Local / SharePoint / OneLake | Desktop / manual only |
+| Rollup Edition — PBI-SharePoint | `AI-In-One Dashboard - Rollup Edition - PBI-SharePoint - 2026-06-25.pbit` | SharePoint only | ✅ Supported |
+
+As long as you're running a current version of PAX (v1.11.1+) with `-Rollup` (or `-RollupPlusRaw`), the output is compatible with both editions.
 
 ---
 
