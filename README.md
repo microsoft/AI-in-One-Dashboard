@@ -57,7 +57,7 @@ This Rollup release ships in **two editions** that share the *exact same pages, 
 
 | | **Rollup Edition** (3-in-1, auto-detect) | **Rollup Edition — PBI-SharePoint** |
 |---|---|---|
-| **⬇️ Download** | **[AI-In-One Dashboard - Rollup Edition](https://github.com/microsoft/AI-in-One-Dashboard/raw/main/AI-In-One%20Dashboard%20-%20Rollup%20Edition%20-%202026-06-25.pbit)** | **[AI-In-One Dashboard - Rollup Edition - PBI-SharePoint](https://github.com/microsoft/AI-in-One-Dashboard/raw/main/AI-In-One%20Dashboard%20-%20Rollup%20Edition%20-%20PBI-SharePoint%20-%202026-06-25.pbit)** |
+| **⬇️ Download** | **[AIO Dashboard - Rollup Edition](https://github.com/microsoft/AI-in-One-Dashboard/raw/main/AIO%20Dashboard%20-%20Rollup%20Edition%20-%202026-06-25.pbit)** | **[AIO Dashboard - Rollup Edition - PBI-SharePoint](https://github.com/microsoft/AI-in-One-Dashboard/raw/main/AIO%20Dashboard%20-%20Rollup%20Edition%20-%20PBI-SharePoint%20-%202026-06-25.pbit)** |
 | **Input file locations** | **Local path, SharePoint URL, _or_ OneLake URL** — auto-detected for each parameter | **SharePoint URLs only** (each input is validated as a SharePoint URL) |
 | **Best for** | Power BI Desktop analysis, quick local trials, OneLake/Fabric, or any mix of the above | Publishing to the Power BI Service when you want **automatic scheduled refresh** |
 | **Scheduled refresh in the Service** | ❌ Not supported _(see below)_ | ✅ Supported — no Gateway needed |
@@ -507,8 +507,8 @@ Important points for Pattern B:
 ### What you'll do
 
 1. Download and open **one of the two editions** in **Power BI Desktop** (see [Which edition should I download](#-which-edition-should-i-download)):
-   - **`AI-In-One Dashboard - Rollup Edition - 2026-06-25.pbit`** — accepts local, SharePoint, _or_ OneLake files; best for Desktop and manual refresh
-   - **`AI-In-One Dashboard - Rollup Edition - PBI-SharePoint - 2026-06-25.pbit`** — accepts SharePoint URLs only; use this one if you want scheduled refresh in the Service
+   - **`AIO Dashboard - Rollup Edition - 2026-06-25.pbit`** — accepts local, SharePoint, _or_ OneLake files; best for Desktop and manual refresh
+   - **`AIO Dashboard - Rollup Edition - PBI-SharePoint - 2026-06-25.pbit`** — accepts SharePoint URLs only; use this one if you want scheduled refresh in the Service
 2. Fill in the three parameters when prompted
 3. Click **Load**
 
@@ -640,8 +640,8 @@ This release ships **two editions**, both built for the same PAX rollup file for
 
 | Edition | File | Input locations | Scheduled refresh in the Service |
 |---|---|---|---|
-| Rollup Edition (3-in-1, auto-detect) | `AI-In-One Dashboard - Rollup Edition - 2026-06-25.pbit` | Local / SharePoint / OneLake | Desktop / manual only |
-| Rollup Edition — PBI-SharePoint | `AI-In-One Dashboard - Rollup Edition - PBI-SharePoint - 2026-06-25.pbit` | SharePoint only | ✅ Supported |
+| Rollup Edition (3-in-1, auto-detect) | `AIO Dashboard - Rollup Edition - 2026-06-25.pbit` | Local / SharePoint / OneLake | Desktop / manual only |
+| Rollup Edition — PBI-SharePoint | `AIO Dashboard - Rollup Edition - PBI-SharePoint - 2026-06-25.pbit` | SharePoint only | ✅ Supported |
 
 As long as you're running a current version of PAX (v1.11.1+) with `-Rollup` (or `-RollupPlusRaw`), the output is compatible with both editions.
 
