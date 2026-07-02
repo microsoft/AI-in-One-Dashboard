@@ -13,6 +13,8 @@
 
 **All Reports:** [https://microsoft.github.io/Analytics-Hub/](https://microsoft.github.io/Analytics-Hub/)
 
+**Cowork Billing:** [https://microsoft.github.io/Analytics-Hub/cowork-billing/](https://microsoft.github.io/Analytics-Hub/cowork-billing/)
+
 <br>
 
 **Found this useful? ⭐ Star this repo to help others discover it!**
