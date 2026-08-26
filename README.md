@@ -212,6 +212,29 @@ The Python helper joins these once, upstream, so Power BI doesn't have to do tha
 
 > **Reminder:** This template only consumes the rollup files produced by PAX. If you (or your admin) try to point it at a raw Purview audit CSV or a manually-exported Entra users CSV, it won't work.
 
+### ⚠️ Before you run anything — unified audit logging must be ON
+
+Every number in this dashboard comes from the Microsoft Purview unified audit log. If audit logging is switched off for the tenant, PAX has nothing to read and **every** audit query fails with:
+
+```
+"Status":"AuditingDisabledTenant"
+```
+
+It is on by default for most tenants, but frequently off in demo, dev, and newly provisioned tenants — so check before you start.
+
+**Turn it on — Purview portal**
+1. Go to [https://purview.microsoft.com/audit/auditsearch](https://purview.microsoft.com/audit/auditsearch)
+2. If you see **Start recording user and admin activity**, click it.
+
+**Turn it on — PowerShell**
+```powershell
+Connect-ExchangeOnline -Organization contoso.onmicrosoft.com
+Set-AdminAuditLogConfig -UnifiedAuditLogIngestionEnabled $true
+(Get-AdminAuditLogConfig).UnifiedAuditLogIngestionEnabled   # expect: True
+```
+
+> ⏳ **Enabling it does not backfill.** Collection starts from the moment it is switched on, and records can take up to 24 hours to show up. If you have just enabled auditing, your first export will be near-empty and the dashboard will look sparse until usage accumulates. That is expected — it is not a broken deployment, and no date range will recover data from before auditing was enabled.
+
 ### The two rollup switches
 
 PAX exposes two switches that produce the file format this template needs:
