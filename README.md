@@ -21,7 +21,7 @@
 
 <br>
 
-**[Dashboard Preview ↓](#-dashboard-preview)** &nbsp;·&nbsp; **[What is PAX? ↓](#-what-is-pax)** &nbsp;·&nbsp; **[Get Your Data ↓](#-get-your-data--run-pax-to-produce-the-files)** &nbsp;·&nbsp; **[Instructions ↓](#-open-and-configure-the-power-bi-template)** &nbsp;·&nbsp; **[Related Resources ↓](#-related-resources)** &nbsp;·&nbsp; **[Email your Admin ↓](#-email-your-admin)**
+**[Dashboard Preview ↓](#-dashboard-preview)** &nbsp;·&nbsp; **[Watch First ↓](#-watch-first)** &nbsp;·&nbsp; **[What is PAX? ↓](#-what-is-pax)** &nbsp;·&nbsp; **[Get Your Data ↓](#-get-your-data--run-pax-to-produce-the-files)** &nbsp;·&nbsp; **[Instructions ↓](#-open-and-configure-the-power-bi-template)** &nbsp;·&nbsp; **[Related Resources ↓](#-related-resources)** &nbsp;·&nbsp; **[Email your Admin ↓](#-email-your-admin)**
 
 <br>
 
@@ -50,6 +50,22 @@ This folder contains the <strong>AI-in-One Dashboard (Rollup edition)</strong> P
 See the dashboard in action:
 
 ![AI-in-One Dashboard animated preview](https://github.com/microsoft/AI-in-One-Dashboard/raw/main/Images/AIO%20v10%20Gif.gif)
+
+---
+
+<a id="-watch-first"></a>
+
+## 🎬 Watch First
+
+Both play here in the page — no download.
+
+**Overview — what the dashboard measures, page by page** *(2m 40s)*
+
+https://github.com/user-attachments/assets/67eb6d4c-4cd7-483c-a5dd-02e16917524e
+
+**Setup guide — getting your own data in, every source, start to finish** *(10m 12s)*
+
+https://github.com/user-attachments/assets/036ab946-7fa2-411b-b70a-e512e2028778
 
 ---
 
