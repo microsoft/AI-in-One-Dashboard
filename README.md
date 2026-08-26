@@ -67,7 +67,7 @@ https://github.com/user-attachments/assets/67eb6d4c-4cd7-483c-a5dd-02e16917524e
 
 https://github.com/user-attachments/assets/036ab946-7fa2-411b-b70a-e512e2028778
 
-📄 **[Video Guide & Chapter Reference (Word)](docs/AI-in-One-Dashboard-Video-Guide.docx?raw=1)** — timestamped chapters for both videos, so you can jump straight to any topic.
+📄 **[Video Guide & Chapter Reference](docs/Video-Guide.md)** — timestamped chapters for both videos, so you can jump straight to any topic. *(Also available as a [downloadable Word document](docs/AI-in-One-Dashboard-Video-Guide.docx?raw=1).)*
 
 ---
 
