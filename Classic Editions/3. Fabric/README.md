@@ -65,9 +65,12 @@ The PBIT exposes three parameters: **Fabric SQL Endpoint**, **Lakehouse Database
 Before running the notebooks, you need:
 
 1. **A Fabric workspace** assigned to a Fabric capacity (F2+ or trial), or Premium / PPU.
-2. **A Lakehouse** in that workspace (any name; `CopilotAnalytics` is the convention used in examples).
+2. **A Lakehouse** in that workspace, created with **schemas enabled** (any name; `CopilotAnalytics` is the convention used in examples).
+
+   > ⚠️ **The Lakehouse must be schema-enabled.** All three notebooks write with `saveAsTable('dbo.<table>')`, and a Lakehouse created without schema support has no `dbo` schema in Spark. Every notebook then fails with `System cancelled the Spark session due to statement execution failures`, which mentions neither the schema nor the table. Tick **Lakehouse schemas** in the creation dialog, or pass `creationPayload: { enableSchemas: true }` if you create it via the Fabric REST API.
+
 3. **An Entra app registration** with these Microsoft Graph **application** permissions (admin consent required):
-   - `AuditLog.Read.All` — for the audit log notebook
+   - `AuditLogsQuery.Read.All` — for the audit log notebook, which queries the Purview audit API (`/security/auditLog/queries`). This is **not** the Entra `AuditLog.Read.All` scope, which the notebook never calls.
    - `Reports.Read.All` — for the licensed users notebook
    - `User.Read.All` — for the org data notebook
    Grab three values: **Tenant ID**, **Application (client) ID**, **Client secret value** (not Secret ID).
@@ -79,7 +82,7 @@ Helper scripts for app-registration setup live in [`archive/scripts/appreg/`](ar
 ### 1. Stand up the Lakehouse
 
 - Open a Fabric workspace assigned to a Fabric capacity (F2+ or trial)
-- **+ New → Lakehouse**, name it (e.g. `CopilotAnalytics`)
+- **+ New → Lakehouse**, name it (e.g. `CopilotAnalytics`), and **enable Lakehouse schemas** — the notebooks write to `dbo.*` and will fail without it (see [Prerequisites](#prerequisites))
 - Note the **SQL endpoint** under Lakehouse settings — looks like `<workspace-guid>.datawarehouse.fabric.microsoft.com`
 
 ### 2. Import and configure the three Direct Ingester notebooks
@@ -184,7 +187,9 @@ If you have an existing pipeline that produces parsed CSVs (matching the three D
 | Symptom | Likely cause | Fix |
 |---|---|---|
 | `401 Unauthorized` from Graph in cell 2 | App reg secret expired or permissions not consented | Regenerate the secret in Entra; confirm admin consent is granted on all three Graph application permissions |
-| `403 Forbidden` from `/auditLog/auditLogQueries` | App reg missing `AuditLog.Read.All` (Application, not Delegated) | Add the application permission, grant admin consent, regenerate token |
+| `System cancelled the Spark session due to statement execution failures` on **every** notebook | The Lakehouse was created without schemas, so `saveAsTable('dbo.<table>')` has no `dbo` schema to write into. The message names neither the schema nor the table | Recreate the Lakehouse with **schemas enabled** (see [Prerequisites](#prerequisites)) and re-run. Existing Lakehouses cannot be converted |
+| `403 Forbidden` from `/auditLog/auditLogQueries` | App reg missing `AuditLogsQuery.Read.All` (Application, not Delegated). Note this is the Purview audit scope — the Entra `AuditLog.Read.All` scope is a different permission and is not used by this notebook | Add `AuditLogsQuery.Read.All` as an application permission, grant admin consent, regenerate token |
+| `400 Client Error: Bad Request for url: .../security/auditLog/queries/<id>` | Too many concurrent Purview audit queries. The defaults split the lookback into `LOOKBACK_DAYS × 24 / CHUNK_HOURS` windows and run `MAX_CONCURRENT_QUERIES` at once — 7 days at the defaults is 21 windows, 6 at a time. The notebook raises on the first bad response rather than retrying that window | In cell 2, raise `CHUNK_HOURS` (e.g. `24`) and lower `MAX_CONCURRENT_QUERIES` (e.g. `2`). Fewer, wider windows are gentler on the API and just as complete |
 | Audit log query stays in `running` state forever | Tenant has a backlog of audit-log query jobs, or the date range is too wide | The notebook polls with backoff up to 30 min. If you hit the timeout, narrow `LOOKBACK_DAYS` in cell 2 |
 | `Login failed` / `cannot open database` (PBI side) | SQL endpoint hostname or database name wrong | Re-check Lakehouse settings page for the exact SQL endpoint string |
 | `the key didn't match any rows in the table` | A notebook ran against the wrong (non-default) Lakehouse, so the expected table name doesn't exist | In the notebook's Lakehouses panel, confirm your Lakehouse is **pinned** (📌) before re-running |
