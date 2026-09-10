@@ -61,7 +61,7 @@ Both play here in the page — no download.
 
 **Overview — what the dashboard measures, page by page** *(2m 40s)*
 
-<video src="https://github.com/microsoft/AI-in-One-Dashboard/raw/main/media/AI-in-One-Overview.mp4" controls muted width="100%"></video>
+https://github.com/user-attachments/assets/37f84c0c-125d-4814-890d-14001d5a3127
 
 **Setup guide — getting your own data in, every source, start to finish** *(10m 12s)*
 
