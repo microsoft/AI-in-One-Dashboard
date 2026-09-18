@@ -1,0 +1,2 @@
+# Keep the synthetic rollup CSVs byte-stable across platforms.
+sample-data/*.csv text eol=lf
