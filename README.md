@@ -230,6 +230,8 @@ The Python helper joins these once, upstream, so Power BI doesn't have to do tha
 
 > **Reminder:** This template only consumes the rollup files produced by PAX. If you (or your admin) try to point it at a raw Purview audit CSV or a manually-exported Entra users CSV, it won't work.
 
+> 🧪 **No tenant access yet? Use the synthetic sample data.** The [`sample-data/`](sample-data/) folder contains fully fictional demo files in the exact rollup format, so you can open the template and explore every page without Purview, PAX, or a tenant. See [`sample-data/README.md`](sample-data/README.md).
+
 ### ⚠️ Before you run anything — unified audit logging must be ON
 
 Every number in this dashboard comes from the Microsoft Purview unified audit log. If audit logging is switched off for the tenant, PAX has nothing to read and **every** audit query fails with:
