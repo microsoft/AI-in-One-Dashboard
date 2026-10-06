@@ -6,14 +6,14 @@
 
 ### A picture tour of all 17 report pages, in order
 
-**[⬅️ Back to README](README.md)** &nbsp;·&nbsp; **[📘 Interpretation Guide](AI-in-One%20-%20v2.0.0%20-%20Interpretation%20Guide.pdf)** &nbsp;·&nbsp; **[🎞️ Storyboard](AI-in-One%20-%20v2.0.0%20-%20Storyboard.pptx)** &nbsp;·&nbsp; **[⬇️ Download the dashboard](README.md#-choose-your-edition)**
+**[⬅️ Back to README](README.md)** &nbsp;·&nbsp; **[📘 Interpretation Guide](AI-in-One-v2.0.0-Interpretation-Guide.pdf)** &nbsp;·&nbsp; **[🎞️ Storyboard](AI-in-One-v2.0.0-Storyboard.pptx)** &nbsp;·&nbsp; **[⬇️ Download the dashboard](README.md#-choose-your-edition)**
 
 </div>
 
 > [!NOTE]
 > Every screenshot uses **made-up example data**. The numbers show how the pages work; they aren't benchmarks or targets for your organization.
 
-This tour shows what each page looks like and what it's for, so you know where to go for each question. For deeper guidance on reading the numbers, use the **[Interpretation Guide](AI-in-One%20-%20v2.0.0%20-%20Interpretation%20Guide.pdf)**. To present the dashboard to leaders, use the **[Storyboard](AI-in-One%20-%20v2.0.0%20-%20Storyboard.pptx)**.
+This tour shows what each page looks like and what it's for, so you know where to go for each question. For deeper guidance on reading the numbers, use the **[Interpretation Guide](AI-in-One-v2.0.0-Interpretation-Guide.pdf)**. To present the dashboard to leaders, use the **[Storyboard](AI-in-One-v2.0.0-Storyboard.pptx)**.
 
 ## 🗺️ Jump to a page
 
@@ -412,7 +412,7 @@ These controls work the same way on every analytical page.
 
 ### 🚀 Ready to see your own data?
 
-**[⬇️ Download the dashboard and set it up](README.md#-choose-your-edition)** &nbsp;·&nbsp; **[📘 Interpretation Guide](AI-in-One%20-%20v2.0.0%20-%20Interpretation%20Guide.pdf)** &nbsp;·&nbsp; **[🎞️ Storyboard](AI-in-One%20-%20v2.0.0%20-%20Storyboard.pptx)**
+**[⬇️ Download the dashboard and set it up](README.md#-choose-your-edition)** &nbsp;·&nbsp; **[📘 Interpretation Guide](AI-in-One-v2.0.0-Interpretation-Guide.pdf)** &nbsp;·&nbsp; **[🎞️ Storyboard](AI-in-One-v2.0.0-Storyboard.pptx)**
 
 Explore more free reports at **[aka.ms/Analytics-Hub](https://aka.ms/Analytics-Hub)**
 

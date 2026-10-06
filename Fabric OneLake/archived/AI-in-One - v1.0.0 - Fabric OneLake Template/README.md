@@ -1,7 +1,7 @@
-# Fabric / Lakehouse deployment
+# Fabric / Lakehouse deployment (v1.0.0, archived)
 
-> [!NOTE]
-> **Not part of v2.0.0.** The v1.0.0 Fabric OneLake edition (formerly Classic Fabric) isn't receiving the v2.0.0 updates. It stays available here as is, and a PAX Fabric-native solution is on the way. For the v2.0.0 dashboard, use the SharePoint or Local CSV edition in the [main README](../../README.md#-choose-your-edition).
+> [!WARNING]
+> **Archived.** This is the v1.0.0 Fabric OneLake package (formerly Classic Fabric), kept for reference and for deployments that still run it. It's no longer updated. For the current Fabric OneLake edition, see the [Fabric OneLake guide](../../../README.md). Don't mix these notebooks, tables or template with the current edition.
 
 > **Not just Fabric.** This folder is named "Fabric" because that's the simplest deployment, but the same PBIT + ingester notebooks also work on **Azure Databricks**, **Synapse Spark**, **Azure SQL / Fabric Warehouse**, or **ADLS Gen2** with no real changes — see [Alternative platforms](#alternative-platforms) below.
 
@@ -11,7 +11,7 @@ This is the **fastest, most reliable** way to run the AI-in-One Dashboard on rea
 
 | Item | Purpose |
 |---|---|
-| [`AI-in-One - v1.0.0 - Fabric OneLake Template.pbit`](AI-in-One%20-%20v1.0.0%20-%20Fabric%20OneLake%20Template.pbit) | The Power BI template (thin client — sources all three input tables from a Lakehouse SQL endpoint) |
+| [`AI-in-One-v1.0.0-Fabric-OneLake-Template.pbit`](AI-in-One-v1.0.0-Fabric-OneLake-Template.pbit) | The Power BI template (thin client — sources all three input tables from a Lakehouse SQL endpoint) |
 | [`notebooks/Copilot_Audit_Log_Direct_Ingester.ipynb`](notebooks/Copilot_Audit_Log_Direct_Ingester.ipynb) | Calls the Graph audit-log API → `dbo.copilot_interactions_parsed` |
 | [`notebooks/Copilot_Licensed_Users_Direct_Ingester.ipynb`](notebooks/Copilot_Licensed_Users_Direct_Ingester.ipynb) | Calls the Graph M365 active-user report → `dbo.copilot_licensed_users` |
 | [`notebooks/Copilot_Org_Data_Direct_Ingester.ipynb`](notebooks/Copilot_Org_Data_Direct_Ingester.ipynb) | Calls Graph `/users` (with manager expand) → `dbo.copilot_org_data` |
@@ -22,7 +22,7 @@ This is the **fastest, most reliable** way to run the AI-in-One Dashboard on rea
 
 | Pick this path if… | Pick another path instead if… |
 |---|---|
-| You have Fabric capacity (F2+ or trial) | Power BI Pro only with no Fabric / Premium → use the v2.0.0 [SharePoint or Local CSV edition](../../README.md#-choose-your-edition) |
+| You have Fabric capacity (F2+ or trial) | Power BI Pro only with no Fabric / Premium → use the v2.0.0 [SharePoint or Local CSV edition](../../../README.md#-choose-your-edition) |
 | Audit volume > 100K events / week | Audit volume is small enough to refresh in the Power BI dataset directly |
 | You want scheduled, hands-off ingestion | You're happy running scripts ad-hoc |
 | You hit the 1 GB dataset cap or 2-hour refresh timeout in Service | Refresh has always succeeded for you |
@@ -124,7 +124,7 @@ Use the **Schedule** button at the top of each notebook to set a cadence.
 
 ### 4. Connect the PBIT
 
-- Open `AI-in-One - v1.0.0 - Fabric OneLake Template.pbit` in Power BI Desktop
+- Open `AI-in-One-v1.0.0-Fabric-OneLake-Template.pbit` in Power BI Desktop
 - Supply the parameters when prompted:
 
 | Parameter | Required? | Value |

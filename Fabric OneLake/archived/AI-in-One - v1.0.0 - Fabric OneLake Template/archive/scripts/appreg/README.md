@@ -16,7 +16,7 @@ Lakehouse notebook (../../notebooks/) parses + writes Delta tables
 PBI Direct Lake reads Delta tables → near-instant refresh
 ```
 
-For SharePoint-based reporting, use the v2.0.0 SharePoint edition with PAX; see the [main README](../../../../../README.md#-choose-your-edition).
+For SharePoint-based reporting, use the v2.0.0 SharePoint edition with PAX; see the [main README](../../../../../../README.md#-choose-your-edition).
 
 ## Scripts in this folder
 

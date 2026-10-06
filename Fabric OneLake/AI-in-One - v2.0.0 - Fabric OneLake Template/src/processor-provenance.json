@@ -1,0 +1,6 @@
+{
+  "source": "scripts/Purview_CopilotInteraction_Processor_v4.2.3.py",
+  "sha256": "f6672db6e70bce19babf8297ea55455a4058081fddac6d649ee6861f57a8060d",
+  "profile": "aio",
+  "note": "Only the transitive pure classifier dependencies and schema constants are embedded. LRU decorators are omitted for Spark worker serialization. Stable keys and Spark publication are provided by this package; the source processor is unchanged."
+}

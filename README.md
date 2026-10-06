@@ -11,7 +11,7 @@
 
 **Built and maintained by the Microsoft Copilot Analytics team** · Free · Open source · Your data never leaves your tenant
 
-**[⬇️ Download](#-choose-your-edition)** &nbsp;·&nbsp; **[⚡ Quick start](#-quick-start)** &nbsp;·&nbsp; **[🖼️ Screenshot tour](Report%20Screenshots.md)** &nbsp;·&nbsp; **[📘 Interpretation Guide](AI-in-One%20-%20v2.0.0%20-%20Interpretation%20Guide.pdf)** &nbsp;·&nbsp; **[🎞️ Storyboard](AI-in-One%20-%20v2.0.0%20-%20Storyboard.pptx)** &nbsp;·&nbsp; **[📰 What's New](AI-in-One%20-%20v2.0.0%20-%20What%27s%20New.pdf)** &nbsp;·&nbsp; **[📑 Contents](#-contents)**
+**[⬇️ Download](#-choose-your-edition)** &nbsp;·&nbsp; **[⚡ Quick start](#-quick-start)** &nbsp;·&nbsp; **[🖼️ Screenshot tour](Report%20Screenshots.md)** &nbsp;·&nbsp; **[📘 Interpretation Guide](AI-in-One-v2.0.0-Interpretation-Guide.pdf)** &nbsp;·&nbsp; **[🎞️ Storyboard](AI-in-One-v2.0.0-Storyboard.pptx)** &nbsp;·&nbsp; **[📰 What's New](AI-in-One-v2.0.0-Whats-New.pdf)** &nbsp;·&nbsp; **[📑 Contents](#-contents)**
 
 </div>
 
@@ -21,7 +21,7 @@
 
 https://github.com/user-attachments/assets/e66ac19e-d4bd-45d3-85ef-485d0707c155
 
-<sub>▶️ Plays right here with captions · 🔇 GitHub starts videos muted: select the speaker icon, or **[🔊 open it with sound](https://github.com/user-attachments/assets/e66ac19e-d4bd-45d3-85ef-485d0707c155)** · 4:56 · 📰 **[Read the What's New PDF](AI-in-One%20-%20v2.0.0%20-%20What%27s%20New.pdf)**</sub>
+<sub>▶️ Plays right here with captions · 🔇 GitHub starts videos muted: select the speaker icon, or **[🔊 open it with sound](https://github.com/user-attachments/assets/e66ac19e-d4bd-45d3-85ef-485d0707c155)** · 4:56 · 📰 **[Read the What's New PDF](AI-in-One-v2.0.0-Whats-New.pdf)**</sub>
 
 <a id="-whats-new-in-v200"></a>
 
@@ -37,26 +37,26 @@ The AI-in-One dashboard has helped many organizations understand how people use 
 | ✅ **Health Check that follows you.** Agent review figures now respect your team and date choices. | 📖 **Metric Glossary & Guide.** Definitions and reading tips for all 17 pages. |
 | ⚡ **Fast loads, growing history.** PAX prepares the data first and can add each new day automatically. | 🧹 **One-click reset.** **Clear filters** resets selections and expanded tables without leaving the page. |
 
-📰 **Prefer to read it?** The **[What's New in v2.0.0 overview (PDF)](AI-in-One%20-%20v2.0.0%20-%20What%27s%20New.pdf)** walks through every change with screenshots. It's easy to share with stakeholders.
+📰 **Prefer to read it?** The **[What's New in v2.0.0 overview (PDF)](AI-in-One-v2.0.0-Whats-New.pdf)** walks through every change with screenshots. It's easy to share with stakeholders.
 
 <a id="-choose-your-edition"></a>
 
 ## ⬇️ Choose your edition
 
-Both editions share the same v2.0.0 report: the same 17 pages, metrics and privacy controls. They differ only in where the report reads its data and how it refreshes.
+All three editions share the same v2.0.0 report: the same 17 pages, metrics, privacy controls and row-level security. They differ only in where the report reads its data and how it refreshes.
 
-| | 🟦 **SharePoint** | 💻 **Local CSV** |
-|---|:---:|:---:|
-| **Recommended for** | Most organizations | Analysts, pilots and trials |
-| **Reads data from** | PAX files in a SharePoint library | PAX files on your PC or a network share |
-| **Scheduled refresh in Power BI Service** | ✅ No gateway needed | ⚙️ Needs an on-premises data gateway |
-| **Download** | **[SharePoint template](templates/AI-in-One%20-%20v2.0.0%20-%20SharePoint%20Template.pbit)** | **[Local CSV template](templates/AI-in-One%20-%20v2.0.0%20-%20Local%20CSV%20Template.pbit)** |
+| | 🟦 **SharePoint** | 💻 **Local CSV** | 🟪 **Fabric OneLake** |
+|---|:---:|:---:|:---:|
+| **Recommended for** | Most organizations | Analysts, pilots and trials | Organizations with Microsoft Fabric capacity |
+| **Reads data from** | PAX files in a SharePoint library | PAX files on your PC or a network share | Delta tables in a Fabric Lakehouse, filled by Fabric notebooks |
+| **Scheduled refresh in Power BI Service** | ✅ No gateway needed | ⚙️ Needs an on-premises data gateway | ✅ No gateway needed |
+| **Download** | **[SharePoint template](templates/AI-in-One-v2.0.0-SharePoint-Template.pbit)** | **[Local CSV template](templates/AI-in-One-v2.0.0-Local-CSV-Template.pbit)** | **[Fabric OneLake template](templates/AI-in-One-v2.0.0-Fabric-OneLake-Template.pbit)** |
 
 > [!TIP]
-> **Not sure?** Choose **SharePoint**: it refreshes itself on a schedule with no gateway. Choose **Local CSV** to explore in Power BI Desktop first, or when your files stay on your PC or a file share.
+> **Not sure?** Choose **SharePoint**: it refreshes itself on a schedule with no gateway. Choose **Local CSV** to explore in Power BI Desktop first, or when your files stay on your PC or a file share. Choose **Fabric OneLake** when your organization already runs Microsoft Fabric and wants the data in a Lakehouse.
 
 > [!NOTE]
-> **Using Fabric?** The [v1.0.0 Fabric OneLake template](templates/AI-in-One%20-%20v1.0.0%20-%20Fabric%20OneLake%20Template.pbit) (formerly Classic Fabric) isn't part of v2.0.0 and stays available as is. Set it up with its [Fabric OneLake guide](Fabric%20OneLake/README.md). A PAX Fabric-native solution is on the way.
+> **Using Fabric OneLake?** This edition doesn't use PAX. Fabric notebooks collect the data from Microsoft Graph into your Lakehouse, so follow the **[Fabric OneLake setup guide](Fabric%20OneLake/README.md)** instead of Steps 1 to 3 below, then come back to [Step 4](#-step-4-publish-share-and-refresh) to set up row-level security and share. A PAX Fabric-native solution is on the way.
 
 <a id="-quick-start"></a>
 
@@ -81,6 +81,8 @@ flowchart LR
 
 > [!NOTE]
 > **No data yet?** Try the report first with the made-up files in [`sample-data`](sample-data/README.md).
+>
+> **Fabric OneLake edition?** Start with the [Fabric OneLake setup guide](Fabric%20OneLake/README.md) for Steps 1 to 3, then use [Step 4](#-step-4-publish-share-and-refresh) here.
 
 <a id="-learn-the-dashboard"></a>
 
@@ -97,14 +99,14 @@ A quick picture walkthrough of all 17 pages, in order, with what each one shows.
 </td>
 <td width="33%" valign="top">
 
-### 📘 [Interpretation Guide](AI-in-One%20-%20v2.0.0%20-%20Interpretation%20Guide.pdf)
+### 📘 [Interpretation Guide](AI-in-One-v2.0.0-Interpretation-Guide.pdf)
 
 How to read every page: what each number means, how filters and Minimum Group Size work, and how to turn what you see into a useful conversation. **Read it before you share the report.**
 
 </td>
 <td width="33%" valign="top">
 
-### 🎞️ [Storyboard](AI-in-One%20-%20v2.0.0%20-%20Storyboard.pptx)
+### 🎞️ [Storyboard](AI-in-One-v2.0.0-Storyboard.pptx)
 
 A ready-to-present walkthrough for leadership reviews, adoption councils and stakeholder briefings. **Use it to tell your adoption story.**
 
@@ -246,7 +248,7 @@ The dashboard turns scattered activity records into a shared, trusted picture th
 | **Adoption and change lead** | Is Copilot becoming a habit, or did people try it once and stop? | Habit Formation pages | Target training at groups that are stuck at 1–5 active days a month, then check next month whether they moved into a higher range. |
 | **Agent owner / Center of Excellence** | Which agents earn repeat use, and which should be retired or improved? | Agents: Health Check, Agent Details, Use Cases | Use **Keep** and **Review** labels to plan agent reviews, invest in agents people return to, and tidy up ones nobody uses. |
 | **HR, privacy and works councils** | Is reporting appropriately protected? | Minimum Group Size, Metric Glossary | Confirm reporting stays at team level by default; individual detail appears only after an approved change. |
-| **Microsoft account teams and partners** | How can we help this customer succeed with Copilot? | The full report and the [Storyboard](AI-in-One%20-%20v2.0.0%20-%20Storyboard.pptx) | Run a data-backed adoption review, agree on the next three enablement actions, and measure progress at the next meeting. |
+| **Microsoft account teams and partners** | How can we help this customer succeed with Copilot? | The full report and the [Storyboard](AI-in-One-v2.0.0-Storyboard.pptx) | Run a data-backed adoption review, agree on the next three enablement actions, and measure progress at the next meeting. |
 
 > ❗ **Important:** Activity shows **where to start a conversation**. It doesn't prove time saved, answer quality, business value or individual performance.
 
@@ -327,13 +329,12 @@ The [PAX documentation](https://aka.ms/PAX) covers each sign-in option, includin
 
 ## 2️⃣ Step 2: Export your data with PAX
 
-> [!TIP]
-> **Use [PAX](https://aka.ms/PAX), Microsoft's free Portable Audit eXporter.** It collects activity, people, licensing and agent data in one run and writes files that are ready for this dashboard. Prefer not to type commands? **[⌨️ Mini-Kitchen](https://PAXcookbook.com/Mini-Kitchen)** builds them for you.
-
 <details>
-<summary><b>Expand: why PAX, and how Mini-Kitchen helps</b></summary>
+<summary><b>Expand: PAX, Mini-Kitchen, and the seed and watermark commands</b></summary>
 
 <br>
+
+> 💡 **Tip:** **Use [PAX](https://aka.ms/PAX), Microsoft's free Portable Audit eXporter.** It collects activity, people, licensing and agent data in one run and writes files that are ready for this dashboard. Prefer not to type commands? **[⌨️ Mini-Kitchen](https://PAXcookbook.com/Mini-Kitchen)** builds them for you.
 
 ### ⚙️ Why PAX
 
@@ -353,8 +354,6 @@ Download the latest PAX script and its documentation from **[aka.ms/PAX](https:/
 - **Nothing to install.** It runs in your browser.
 - **Never touches your tenant.** No sign-in, no credentials and no access to your audit, user or file data.
 - **Saves your choices.** Keep recipes in your browser and come back to them next time.
-
-</details>
 
 ### 🌱 Seed once, then keep it current
 
@@ -480,6 +479,8 @@ Run `python .\scripts\Purview_CopilotInteraction_Processor_v4.2.3.py --help` for
 
 </details>
 
+</details>
+
 <a id="-step-3-open-the-template"></a>
 
 ## 3️⃣ Step 3: Open the template
@@ -500,6 +501,8 @@ Run `python .\scripts\Purview_CopilotInteraction_Processor_v4.2.3.py --help` for
    | **Minimum Group Size** *(required)* | A whole number; see below | A whole number; see below |
 
    For the Local CSV edition, select the file in File Explorer, choose **Copy as path**, paste it and remove the quotation marks. For example: `C:\PAX\AIO\AIO_EntraUsers_MAClicensing_20261001_020000_Users.csv`.
+
+   The Fabric OneLake edition asks for **Fabric SQL Endpoint** (the Lakehouse's SQL analytics endpoint hostname), **Fabric Lakehouse** (the Lakehouse name), **Agent 365** (optional SharePoint path, as above) and **Minimum Group Size** instead. See its [setup guide](Fabric%20OneLake/README.md).
 
 3. **Choose a Minimum Group Size.** It's the smallest number of eligible people a group must have before the report shows its results:
 
@@ -548,6 +551,14 @@ Publish as usual. Power BI Service can't reach files on your PC by itself, so ch
 
 Use the SharePoint edition if you'd rather not run a gateway.
 
+### 🟪 Fabric OneLake edition: refresh from the Lakehouse, no gateway
+
+1. In Power BI Desktop, select **Publish** and choose a workspace, ideally on the same Fabric capacity as the Lakehouse.
+2. In Power BI Service, open the semantic model's **Settings → Data source credentials** and sign in to the Lakehouse SQL endpoint with **OAuth2** and your organizational account. If you use the Agent 365 file, sign in to its SharePoint source too.
+3. Turn on **Scheduled refresh** and set it to run after the preparation notebook (or the pipeline) has finished and the SQL endpoint shows the new data.
+
+The [Fabric OneLake setup guide](Fabric%20OneLake/README.md) covers the notebook and pipeline schedule.
+
 <a id="-row-level-security"></a>
 
 ### 🔐 Set up row-level security before you share
@@ -573,7 +584,7 @@ The template includes two roles:
 
 - After assigning the [RLS roles](#-row-level-security), share through a **Power BI app** or give people **Viewer** access to the workspace.
 - Set up **email subscriptions** for leaders who want a regular update without opening the report.
-- Pair the report with the **[Storyboard](AI-in-One%20-%20v2.0.0%20-%20Storyboard.pptx)** for leadership reviews and the **[Interpretation Guide](AI-in-One%20-%20v2.0.0%20-%20Interpretation%20Guide.pdf)** for everyone else.
+- Pair the report with the **[Storyboard](AI-in-One-v2.0.0-Storyboard.pptx)** for leadership reviews and the **[Interpretation Guide](AI-in-One-v2.0.0-Interpretation-Guide.pdf)** for everyone else.
 
 </details>
 
@@ -615,7 +626,7 @@ The template includes two roles:
 - **Unknown licensing stays Unknown.** Missing license information is never treated as "unlicensed".
 - **Counts can differ from other reports.** Audit-based prompt counts can differ from Viva Insights and Microsoft 365 admin center reports because coverage, timing and calculations differ.
 - **Use Cases are clues, not outcomes.** Discuss possible uses with the people doing the work.
-- **When in doubt,** open **📖 Metric Glossary & Guide** or the **[Interpretation Guide](AI-in-One%20-%20v2.0.0%20-%20Interpretation%20Guide.pdf)**.
+- **When in doubt,** open **📖 Metric Glossary & Guide** or the **[Interpretation Guide](AI-in-One-v2.0.0-Interpretation-Guide.pdf)**.
 
 </details>
 
@@ -634,6 +645,7 @@ The template includes two roles:
 | PAX reports `AuditingDisabledTenant` | Unified audit logging is off. See [Step 1](#-step-1-prepare). |
 | SharePoint path is rejected | Use **Details → Path → Copy**, not the address bar or a sharing link. |
 | Local CSV edition won't refresh in Power BI Service | Power BI Service needs an on-premises data gateway that can open the same CSV paths. Set one up, or switch to the SharePoint edition. |
+| Fabric OneLake edition can't connect or shows no data | Check the SQL endpoint hostname and Lakehouse name, and confirm the preparation notebook finished successfully. See the [Fabric OneLake setup guide](Fabric%20OneLake/README.md) for more fixes. |
 | Viewers see a blank report or no data | The row-level security roles aren't assigned. Add people or groups under the semantic model's **Security** settings; see [row-level security](#-row-level-security). |
 | Names are hidden on user views | Minimum Group Size is above 1. That's expected; see [Privacy](#-privacy-and-minimum-group-size). |
 | Watermark says the target is already current | Every whole UTC day is already collected. Nothing to do until tomorrow. |
@@ -664,7 +676,7 @@ The Microsoft Purview audit log is intended to support security and compliance s
 
 ## 📧 Email your admin
 
-Need someone else to run the export? **[📨 Send your IT admin the setup request](mailto:?subject=Request%3A%20data%20export%20for%20the%20AI-in-One%20dashboard%20%28Power%20BI%29&body=Hi%2C%0A%0AI%27d%20like%20to%20set%20up%20the%20AI-in-One%20dashboard%20v2.0.0%2C%20a%20free%20Power%20BI%20report%20from%20the%20Microsoft%20Copilot%20Analytics%20team%20that%20shows%20Microsoft%20365%20Copilot%2C%20Copilot%20Chat%20and%20agent%20adoption%3A%20https%3A//github.com/microsoft/AI-in-One-Dashboard%0A%0ACould%20you%20help%20export%20the%20data%20with%20PAX%2C%20Microsoft%27s%20free%20audit%20exporter%3F%0A%0A1.%20Confirm%20unified%20audit%20logging%20is%20on%3A%20https%3A//purview.microsoft.com/audit/auditsearch%0A%0A2.%20Grant%20these%20Microsoft%20Graph%20permissions%20to%20the%20account%20or%20app%20that%20runs%20PAX%20%28delegated%20or%20application%29%3A%0A-%20AuditLogsQuery.Read.All%20%28Copilot%20and%20agent%20activity%29%0A-%20User.Read.All%20and%20Organization.Read.All%20%28people%20and%20licensing%29%0A-%20CopilotPackages.Read.All%20and%20Application.Read.All%20%28Agent%20365%20catalog%29%0A-%20Sites.Selected%20plus%20a%20one-time%20write%20grant%20to%20the%20target%20site%2C%20only%20if%20saving%20to%20SharePoint%20%28see%20the%20README%29%0A%0A3.%20Install%20PowerShell%207%2B%20and%20Python%203.10%2B%2C%20then%20download%20PAX%3A%20https%3A//aka.ms/PAX%0A%0A4.%20Build%20the%20command%20with%20the%20AI-in-One%20preset%20in%20Mini-Kitchen%20%28runs%20in%20the%20browser%2C%20no%20tenant%20connection%29%3A%20https%3A//PAXcookbook.com/Mini-Kitchen%0A%0A5.%20Run%20one%20seed%20export%2C%20then%20schedule%20a%20watermark%20run%20to%20add%20new%20days.%20Save%20the%20output%20to%3A%20%5BSharePoint%20folder%20/%20local%20or%20network%20folder%5D%0A%0AThe%20README%20has%20the%20exact%20commands%20under%20Step%202.%0A%0AThank%20you%21)** with everything they need: audit logging, Microsoft Graph permissions, the PAX link and the Mini-Kitchen preset.
+Need someone else to run the export? **[📨 Send your IT admin the setup request](mailto:?subject=Request%3A%20data%20export%20for%20the%20AI-in-One%20dashboard%20%28Power%20BI%29&body=Hi%2C%0A%0AI%27d%20like%20to%20set%20up%20the%20AI-in-One%20dashboard%20v2.0.0%2C%20a%20free%20Power%20BI%20report%20from%20the%20Microsoft%20Copilot%20Analytics%20team%20that%20shows%20Microsoft%20365%20Copilot%2C%20Copilot%20Chat%20and%20agent%20adoption%3A%20https%3A//github.com/microsoft/AI-in-One-Dashboard/tree/preview%0A%0ACould%20you%20help%20export%20the%20data%20with%20PAX%2C%20Microsoft%27s%20free%20audit%20exporter%3F%0A%0A1.%20Confirm%20unified%20audit%20logging%20is%20on%3A%20https%3A//purview.microsoft.com/audit/auditsearch%0A%0A2.%20Grant%20these%20Microsoft%20Graph%20permissions%20to%20the%20account%20or%20app%20that%20runs%20PAX%20%28delegated%20or%20application%29%3A%0A-%20AuditLogsQuery.Read.All%20%28Copilot%20and%20agent%20activity%29%0A-%20User.Read.All%20and%20Organization.Read.All%20%28people%20and%20licensing%29%0A-%20CopilotPackages.Read.All%20and%20Application.Read.All%20%28Agent%20365%20catalog%29%0A-%20Sites.Selected%20plus%20a%20one-time%20write%20grant%20to%20the%20target%20site%2C%20only%20if%20saving%20to%20SharePoint%20%28see%20the%20README%29%0A%0A3.%20Install%20PowerShell%207%2B%20and%20Python%203.10%2B%2C%20then%20download%20PAX%3A%20https%3A//aka.ms/PAX%0A%0A4.%20Build%20the%20command%20with%20the%20AI-in-One%20preset%20in%20Mini-Kitchen%20%28runs%20in%20the%20browser%2C%20no%20tenant%20connection%29%3A%20https%3A//PAXcookbook.com/Mini-Kitchen%0A%0A5.%20Run%20one%20seed%20export%2C%20then%20schedule%20a%20watermark%20run%20to%20add%20new%20days.%20Save%20the%20output%20to%3A%20%5BSharePoint%20folder%20/%20local%20or%20network%20folder%5D%0A%0AThe%20README%20has%20the%20exact%20commands%20under%20Step%202.%0A%0AThank%20you%21)** with everything they need: audit logging, Microsoft Graph permissions, the PAX link and the Mini-Kitchen preset.
 
 ---
 
@@ -672,7 +684,7 @@ Need someone else to run the export? **[📨 Send your IT admin the setup reques
 
 ### 🌐 Explore more free reports at **[aka.ms/Analytics-Hub](https://aka.ms/Analytics-Hub)**
 
-**[PAX](https://aka.ms/PAX)** &nbsp;·&nbsp; **[Mini-Kitchen](https://PAXcookbook.com/Mini-Kitchen)** &nbsp;·&nbsp; **[Screenshot tour](Report%20Screenshots.md)** &nbsp;·&nbsp; **[Interpretation Guide](AI-in-One%20-%20v2.0.0%20-%20Interpretation%20Guide.pdf)** &nbsp;·&nbsp; **[Storyboard](AI-in-One%20-%20v2.0.0%20-%20Storyboard.pptx)** &nbsp;·&nbsp; **[What's New](AI-in-One%20-%20v2.0.0%20-%20What%27s%20New.pdf)** &nbsp;·&nbsp; **[License](LICENSE.md)** &nbsp;·&nbsp; **[Security](SECURITY.md)**
+**[PAX](https://aka.ms/PAX)** &nbsp;·&nbsp; **[Mini-Kitchen](https://PAXcookbook.com/Mini-Kitchen)** &nbsp;·&nbsp; **[Screenshot tour](Report%20Screenshots.md)** &nbsp;·&nbsp; **[Interpretation Guide](AI-in-One-v2.0.0-Interpretation-Guide.pdf)** &nbsp;·&nbsp; **[Storyboard](AI-in-One-v2.0.0-Storyboard.pptx)** &nbsp;·&nbsp; **[What's New](AI-in-One-v2.0.0-Whats-New.pdf)** &nbsp;·&nbsp; **[License](LICENSE.md)** &nbsp;·&nbsp; **[Security](SECURITY.md)**
 
 Built and maintained by the **Microsoft Copilot Analytics team**.
 

@@ -1,0 +1,265 @@
+{
+  "properties": {
+    "description": "AIO v2: parallel collection, then validated preparation. Refresh the Import semantic model only after this pipeline succeeds and SQL endpoint synchronization completes. Do not overlap runs.",
+    "activities": [
+      {
+        "name": "Run_Audit_Log_Ingester",
+        "type": "TridentNotebook",
+        "dependsOn": [],
+        "policy": {
+          "timeout": "7.00:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 60,
+          "secureInput": true,
+          "secureOutput": true
+        },
+        "typeProperties": {
+          "notebookId": "REPLACE_WITH_AUDIT_LOG_NOTEBOOK_ID",
+          "workspaceId": "REPLACE_WITH_WORKSPACE_ID",
+          "parameters": {
+            "TENANT_ID": {
+              "value": {
+                "value": "@pipeline().parameters.TENANT_ID",
+                "type": "Expression"
+              },
+              "type": "string"
+            },
+            "CLIENT_ID": {
+              "value": {
+                "value": "@pipeline().parameters.CLIENT_ID",
+                "type": "Expression"
+              },
+              "type": "string"
+            },
+            "KEY_VAULT_URL": {
+              "value": {
+                "value": "@pipeline().parameters.KEY_VAULT_URL",
+                "type": "Expression"
+              },
+              "type": "string"
+            },
+            "SECRET_NAME": {
+              "value": {
+                "value": "@pipeline().parameters.SECRET_NAME",
+                "type": "Expression"
+              },
+              "type": "string"
+            },
+            "RUN_ID": {
+              "value": {
+                "value": "@if(empty(pipeline().parameters.RunId), pipeline().RunId, pipeline().parameters.RunId)",
+                "type": "Expression"
+              },
+              "type": "string"
+            }
+          }
+        }
+      },
+      {
+        "name": "Run_Licensed_Users_Ingester",
+        "type": "TridentNotebook",
+        "dependsOn": [],
+        "policy": {
+          "timeout": "0.02:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 60,
+          "secureInput": true,
+          "secureOutput": true
+        },
+        "typeProperties": {
+          "notebookId": "REPLACE_WITH_LICENSED_USERS_NOTEBOOK_ID",
+          "workspaceId": "REPLACE_WITH_WORKSPACE_ID",
+          "parameters": {
+            "TENANT_ID": {
+              "value": {
+                "value": "@pipeline().parameters.TENANT_ID",
+                "type": "Expression"
+              },
+              "type": "string"
+            },
+            "CLIENT_ID": {
+              "value": {
+                "value": "@pipeline().parameters.CLIENT_ID",
+                "type": "Expression"
+              },
+              "type": "string"
+            },
+            "KEY_VAULT_URL": {
+              "value": {
+                "value": "@pipeline().parameters.KEY_VAULT_URL",
+                "type": "Expression"
+              },
+              "type": "string"
+            },
+            "SECRET_NAME": {
+              "value": {
+                "value": "@pipeline().parameters.SECRET_NAME",
+                "type": "Expression"
+              },
+              "type": "string"
+            },
+            "RUN_ID": {
+              "value": {
+                "value": "@if(empty(pipeline().parameters.RunId), pipeline().RunId, pipeline().parameters.RunId)",
+                "type": "Expression"
+              },
+              "type": "string"
+            }
+          }
+        }
+      },
+      {
+        "name": "Conditionally_Run_Org_Data",
+        "type": "IfCondition",
+        "dependsOn": [],
+        "typeProperties": {
+          "expression": {
+            "value": "@pipeline().parameters.EnableOrgDataPull",
+            "type": "Expression"
+          },
+          "ifTrueActivities": [
+            {
+              "name": "Run_Org_Data_Ingester",
+              "type": "TridentNotebook",
+              "dependsOn": [],
+              "policy": {
+                "timeout": "0.02:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 60,
+                "secureInput": true,
+                "secureOutput": true
+              },
+              "typeProperties": {
+                "notebookId": "REPLACE_WITH_ORG_DATA_NOTEBOOK_ID",
+                "workspaceId": "REPLACE_WITH_WORKSPACE_ID",
+                "parameters": {
+                  "TENANT_ID": {
+                    "value": {
+                      "value": "@pipeline().parameters.TENANT_ID",
+                      "type": "Expression"
+                    },
+                    "type": "string"
+                  },
+                  "CLIENT_ID": {
+                    "value": {
+                      "value": "@pipeline().parameters.CLIENT_ID",
+                      "type": "Expression"
+                    },
+                    "type": "string"
+                  },
+                  "KEY_VAULT_URL": {
+                    "value": {
+                      "value": "@pipeline().parameters.KEY_VAULT_URL",
+                      "type": "Expression"
+                    },
+                    "type": "string"
+                  },
+                  "SECRET_NAME": {
+                    "value": {
+                      "value": "@pipeline().parameters.SECRET_NAME",
+                      "type": "Expression"
+                    },
+                    "type": "string"
+                  },
+                  "RUN_ID": {
+                    "value": {
+                      "value": "@if(empty(pipeline().parameters.RunId), pipeline().RunId, pipeline().parameters.RunId)",
+                      "type": "Expression"
+                    },
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          ],
+          "ifFalseActivities": []
+        }
+      },
+      {
+        "name": "Prepare_Report_Data",
+        "type": "TridentNotebook",
+        "dependsOn": [
+          {
+            "activity": "Run_Audit_Log_Ingester",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          },
+          {
+            "activity": "Run_Licensed_Users_Ingester",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          },
+          {
+            "activity": "Conditionally_Run_Org_Data",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "policy": {
+          "timeout": "0.02:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 60,
+          "secureInput": true,
+          "secureOutput": true
+        },
+        "typeProperties": {
+          "notebookId": "REPLACE_WITH_PREPARATION_NOTEBOOK_ID",
+          "workspaceId": "REPLACE_WITH_WORKSPACE_ID",
+          "parameters": {
+            "TENANT_ID": {
+              "value": {
+                "value": "@pipeline().parameters.TENANT_ID",
+                "type": "Expression"
+              },
+              "type": "string"
+            },
+            "RUN_ID": {
+              "value": {
+                "value": "@if(empty(pipeline().parameters.RunId), pipeline().RunId, pipeline().parameters.RunId)",
+                "type": "Expression"
+              },
+              "type": "string"
+            },
+            "USE_EXISTING_ORG": {
+              "value": {
+                "value": "@not(pipeline().parameters.EnableOrgDataPull)",
+                "type": "Expression"
+              },
+              "type": "bool"
+            }
+          }
+        }
+      }
+    ],
+    "annotations": [],
+    "parameters": {
+      "TENANT_ID": {
+        "type": "String",
+        "defaultValue": "<source-tenant-guid>"
+      },
+      "CLIENT_ID": {
+        "type": "String",
+        "defaultValue": "<app-registration-client-id>"
+      },
+      "KEY_VAULT_URL": {
+        "type": "String",
+        "defaultValue": "https://<your-vault>.vault.azure.net/"
+      },
+      "SECRET_NAME": {
+        "type": "String",
+        "defaultValue": "<client-secret-name>"
+      },
+      "RunId": {
+        "type": "String",
+        "defaultValue": ""
+      },
+      "EnableOrgDataPull": {
+        "type": "Boolean",
+        "defaultValue": true
+      }
+    }
+  }
+}
