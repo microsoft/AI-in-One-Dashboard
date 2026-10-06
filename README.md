@@ -1,718 +1,681 @@
 <div align="center">
 
-<br>
-
 # 🧠 AI-in-One Dashboard
 
-### One Power BI dashboard for all Microsoft Copilot and Agent adoption signals.
+### Every Microsoft 365 Copilot, Copilot Chat and agent signal, in one Power BI dashboard.
 
-<br>
+[![Version](https://img.shields.io/badge/version-v2.0.0-7c4dff?style=for-the-badge)](#-whats-new-in-v200)
+[![Power BI](https://img.shields.io/badge/Power%20BI-template-F2C811?style=for-the-badge&logo=powerbi&logoColor=black)](#-choose-your-edition)
+[![Data by PAX](https://img.shields.io/badge/data%20by-PAX-0078d4?style=for-the-badge)](https://aka.ms/PAX)
+[![Analytics Hub](https://img.shields.io/badge/Analytics%20Hub-more%20free%20reports-8661c5?style=for-the-badge&logo=github&logoColor=white)](https://aka.ms/Analytics-Hub)
 
-[![Built by Microsoft](https://img.shields.io/badge/Built%20by-Microsoft-0078d4?style=for-the-badge&logo=microsoft&logoColor=white)](https://microsoft.github.io/Analytics-Hub/team/)
-[![Analytics Hub](https://img.shields.io/badge/Analytics%20Hub-11%20Repositories-8661c5?style=for-the-badge&logo=github&logoColor=white)](https://microsoft.github.io/Analytics-Hub/)
+**Built and maintained by the Microsoft Copilot Analytics team** · Free · Open source · Your data never leaves your tenant
 
-**All Reports:** [https://microsoft.github.io/Analytics-Hub/](https://microsoft.github.io/Analytics-Hub/)
-
-**Cowork Billing:** [https://microsoft.github.io/Analytics-Hub/cowork-billing/](https://microsoft.github.io/Analytics-Hub/cowork-billing/)
-
-<br>
-
-**Found this useful? ⭐ Star this repo to help others discover it!**
-
-<br>
-
-**[Dashboard Preview ↓](#-dashboard-preview)** &nbsp;·&nbsp; **[Watch First ↓](#-watch-first)** &nbsp;·&nbsp; **[What is PAX? ↓](#-what-is-pax)** &nbsp;·&nbsp; **[Get Your Data ↓](#-get-your-data--run-pax-to-produce-the-files)** &nbsp;·&nbsp; **[Instructions ↓](#-open-and-configure-the-power-bi-template)** &nbsp;·&nbsp; **[Related Resources ↓](#-related-resources)** &nbsp;·&nbsp; **[Email your Admin ↓](#-email-your-admin)**
-
-<br>
+**[⬇️ Download](#-choose-your-edition)** &nbsp;·&nbsp; **[⚡ Quick start](#-quick-start)** &nbsp;·&nbsp; **[🖼️ Screenshot tour](Report%20Screenshots.md)** &nbsp;·&nbsp; **[📘 Interpretation Guide](AI-in-One%20-%20v2.0.0%20-%20Interpretation%20Guide.pdf)** &nbsp;·&nbsp; **[🎞️ Storyboard](AI-in-One%20-%20v2.0.0%20-%20Storyboard.pptx)** &nbsp;·&nbsp; **[📰 What's New](AI-in-One%20-%20v2.0.0%20-%20What%27s%20New.pdf)** &nbsp;·&nbsp; **[📑 Contents](#-contents)**
 
 </div>
 
-# 🤖 AI-in-One Dashboard — Rollup Edition
+<a id="-watch"></a>
 
-<p style="font-size:small; font-weight:normal;">
-This folder contains the <strong>AI-in-One Dashboard (Rollup edition)</strong> Power BI template, available in <strong>two editions</strong>: a flexible <strong>3-in-1 auto-detect</strong> edition (reads local, SharePoint, or OneLake files) and a <strong>SharePoint-only (PBI-SharePoint)</strong> edition built for automatic scheduled refresh in the Power BI Service. Both deliver the same comprehensive insights into Microsoft Copilot and Agent adoption, empowering AI and business leaders to make informed decisions about AI implementation, licensing, and enablement strategies — and both load dramatically faster than previous versions thanks to a new pre-processed file format. <strong>See <a href="#-which-edition-should-i-download">Which edition should I download</a> to pick the right one.</strong>
-</p>
+## 🎬 See what's new in 5 minutes
+
+https://github.com/user-attachments/assets/e66ac19e-d4bd-45d3-85ef-485d0707c155
+
+<sub>▶️ Plays right here with captions · 🔇 GitHub starts videos muted: select the speaker icon, or **[🔊 open it with sound](https://github.com/user-attachments/assets/e66ac19e-d4bd-45d3-85ef-485d0707c155)** · 4:56 · 📰 **[Read the What's New PDF](AI-in-One%20-%20v2.0.0%20-%20What%27s%20New.pdf)**</sub>
+
+<a id="-whats-new-in-v200"></a>
+
+## ✨ What's new in v2.0.0
+
+The AI-in-One dashboard has helped many organizations understand how people use Copilot and agents. As adoption grows, so do the questions. **v2.0.0 is a major upgrade built for the next ones.**
+
+| | |
+|---|---|
+| 🧭 **Copilot Usage Explorer.** A new starting page: search for any manager, choose a team or pick an agent. | 🎛️ **Org filters.** Set company, division, department, team, user and license once; your choices follow you across pages. |
+| 🤖 **Agent Details.** A new page for any agent, reached from the tab or by right-clicking an agent name. | 🔒 **Minimum Group Size.** Team-level reporting by default; individual detail only when you approve it. |
+| 📊 **Clearer comparisons.** Side-by-side bars, plain percentage definitions and month labels on every habit page. | 💬 **Prompts and sessions together.** See how much people ask, not just how often they start a conversation. |
+| ✅ **Health Check that follows you.** Agent review figures now respect your team and date choices. | 📖 **Metric Glossary & Guide.** Definitions and reading tips for all 17 pages. |
+| ⚡ **Fast loads, growing history.** PAX prepares the data first and can add each new day automatically. | 🧹 **One-click reset.** **Clear filters** resets selections and expanded tables without leaving the page. |
+
+📰 **Prefer to read it?** The **[What's New in v2.0.0 overview (PDF)](AI-in-One%20-%20v2.0.0%20-%20What%27s%20New.pdf)** walks through every change with screenshots. It's easy to share with stakeholders.
+
+<a id="-choose-your-edition"></a>
+
+## ⬇️ Choose your edition
+
+Both editions share the same v2.0.0 report: the same 17 pages, metrics and privacy controls. They differ only in where the report reads its data and how it refreshes.
+
+| | 🟦 **SharePoint** | 💻 **Local CSV** |
+|---|:---:|:---:|
+| **Recommended for** | Most organizations | Analysts, pilots and trials |
+| **Reads data from** | PAX files in a SharePoint library | PAX files on your PC or a network share |
+| **Scheduled refresh in Power BI Service** | ✅ No gateway needed | ⚙️ Needs an on-premises data gateway |
+| **Download** | **[SharePoint template](templates/AI-in-One%20-%20v2.0.0%20-%20SharePoint%20Template.pbit)** | **[Local CSV template](templates/AI-in-One%20-%20v2.0.0%20-%20Local%20CSV%20Template.pbit)** |
+
+> [!TIP]
+> **Not sure?** Choose **SharePoint**: it refreshes itself on a schedule with no gateway. Choose **Local CSV** to explore in Power BI Desktop first, or when your files stay on your PC or a file share.
+
+> [!NOTE]
+> **Using Fabric?** The [v1.0.0 Fabric OneLake template](templates/AI-in-One%20-%20v1.0.0%20-%20Fabric%20OneLake%20Template.pbit) (formerly Classic Fabric) isn't part of v2.0.0 and stays available as is. Set it up with its [Fabric OneLake guide](Fabric%20OneLake/README.md). A PAX Fabric-native solution is on the way.
+
+<a id="-quick-start"></a>
+
+## ⚡ Quick start
+
+```mermaid
+flowchart LR
+    A["🛡️ Microsoft Purview<br/>audit log"] --> P
+    B["👥 Microsoft Entra ID<br/>+ Copilot licensing"] --> P
+    C["🤖 Agent 365<br/>catalog"] --> P
+    P{{"⚙️ PAX<br/>-Dashboard AIO"}} --> F[("📁 Dashboard-ready data<br/>SharePoint · Local folder")]
+    F --> T["📊 AI-in-One v2.0.0<br/>Power BI template"]
+    T --> S["☁️ Power BI Service<br/>share and refresh"]
+```
+
+| Step | What you do | Time |
+|:---:|---|---|
+| **1** | **[Prepare](#-step-1-prepare):** confirm audit logging is on and that the person running PAX has the required permissions. | 10 min |
+| **2** | **[Export with PAX](#-step-2-export-your-data-with-pax):** run one seed command, then add new days automatically with a watermark. | One command |
+| **3** | **[Open the template](#-step-3-open-the-template):** paste the file paths, choose a Minimum Group Size and select **Load**. | 5 min |
+| **4** | **[Publish and share](#-step-4-publish-share-and-refresh):** publish to Power BI Service, schedule refresh and assign the row-level security roles. | 15 min |
+
+> [!NOTE]
+> **No data yet?** Try the report first with the made-up files in [`sample-data`](sample-data/README.md).
+
+<a id="-learn-the-dashboard"></a>
+
+## 📚 Learn the dashboard
+
+<table>
+<tr>
+<td width="33%" valign="top">
+
+### 🖼️ [Screenshot tour](Report%20Screenshots.md)
+
+A quick picture walkthrough of all 17 pages, in order, with what each one shows. **Start here to get your bearings.**
+
+</td>
+<td width="33%" valign="top">
+
+### 📘 [Interpretation Guide](AI-in-One%20-%20v2.0.0%20-%20Interpretation%20Guide.pdf)
+
+How to read every page: what each number means, how filters and Minimum Group Size work, and how to turn what you see into a useful conversation. **Read it before you share the report.**
+
+</td>
+<td width="33%" valign="top">
+
+### 🎞️ [Storyboard](AI-in-One%20-%20v2.0.0%20-%20Storyboard.pptx)
+
+A ready-to-present walkthrough for leadership reviews, adoption councils and stakeholder briefings. **Use it to tell your adoption story.**
+
+</td>
+</tr>
+</table>
+
+<table>
+<tr>
+<td width="33%" align="center"><a href="Report%20Screenshots.md#page-1"><img src="media/v2.0.0/pages/01-copilot-usage-explorer.png" alt="Copilot Usage Explorer" width="100%"></a><br><sub><b>🧭 Copilot Usage Explorer</b></sub></td>
+<td width="33%" align="center"><a href="Report%20Screenshots.md#page-3"><img src="media/v2.0.0/pages/03-combined-trends.png" alt="Copilot Overall: Combined Trends" width="100%"></a><br><sub><b>🔍 Combined Trends</b></sub></td>
+<td width="33%" align="center"><a href="Report%20Screenshots.md#page-7"><img src="media/v2.0.0/pages/07-agents-leaderboard.png" alt="Agents: Leaderboard" width="100%"></a><br><sub><b>🤖 Agents: Leaderboard</b></sub></td>
+</tr>
+<tr>
+<td width="33%" align="center"><a href="Report%20Screenshots.md#page-10"><img src="media/v2.0.0/pages/10-agent-details.png" alt="Agent Details" width="100%"></a><br><sub><b>🤖 Agent Details</b></sub></td>
+<td width="33%" align="center"><a href="Report%20Screenshots.md#page-12"><img src="media/v2.0.0/pages/12-m365-copilot-habit-formation.png" alt="M365 Copilot: Habit Formation" width="100%"></a><br><sub><b>📈 M365 Copilot: Habit Formation</b></sub></td>
+<td width="33%" align="center"><a href="Report%20Screenshots.md#page-14"><img src="media/v2.0.0/pages/14-chat-usage-trends.png" alt="Chat (Web): Usage Trends" width="100%"></a><br><sub><b>📊 Chat (Web): Usage Trends</b></sub></td>
+</tr>
+</table>
+
+<div align="center"><b><a href="Report%20Screenshots.md">🖼️ See all 17 pages in the screenshot tour →</a></b></div>
 
 ---
 
-> ## 🟦 IMPORTANT — Required input file format
->
-> **This template requires pre-processed rollup files — it cannot read raw Purview CSVs, raw Entra exports, or files from any other unprocessed source.** Pointing the template at raw files will result in load failures or blank visuals.
->
-> **The recommended way to produce these files is the PAX script.** See [**📦 What is PAX?**](#-what-is-pax) below for what PAX is and where to get it.
->
-> Customers who export raw Purview and Entra data through a method other than PAX can use the standalone processor script in the [`scripts/`](scripts/) folder to produce the same rollup files. See the **⚙️ Standalone processor** section below.
+<a id="-contents"></a>
 
----
+## 📑 Contents
 
-## 📸 Dashboard Preview
-
-See the dashboard in action:
-
-![AI-in-One Dashboard animated preview](https://github.com/microsoft/AI-in-One-Dashboard/raw/main/Images/AIO%20v10%20Gif.gif)
-
----
-
-<a id="-watch-first"></a>
-
-## 🎬 Watch First
-
-Both play here in the page — no download.
-
-**Overview — what the dashboard measures, page by page** *(2m 40s)*
-
-https://github.com/user-attachments/assets/37f84c0c-125d-4814-890d-14001d5a3127
-
-**Setup guide — getting your own data in, every source, start to finish** *(10m 12s)*
-
-https://github.com/user-attachments/assets/036ab946-7fa2-411b-b70a-e512e2028778
-
-📄 **[Video Guide & Chapter Reference](docs/Video-Guide.md)** — timestamped chapters for both videos, so you can jump straight to any topic. *(Also available as a [downloadable Word document](docs/AI-in-One-Dashboard-Video-Guide.docx?raw=1).)*
-
----
-
-## 🧭 Which edition should I download
-
-This Rollup release ships in **two editions** that share the *exact same pages, visuals, and numbers*. They differ only in **where they read your input files from** and **whether the Power BI Service can refresh them on a schedule.** Pick one:
-
-| | **Rollup Edition** (3-in-1, auto-detect) | **Rollup Edition — PBI-SharePoint** |
+| About the dashboard | Set it up | Use it well |
 |---|---|---|
-| **⬇️ Download** | **[AIO Dashboard - Rollup Edition](https://github.com/microsoft/AI-in-One-Dashboard/raw/main/AIO%20Dashboard%20-%20Rollup%20Edition%20-%202026-06-25.pbit)** | **[AIO Dashboard - Rollup Edition - PBI-SharePoint](https://github.com/microsoft/AI-in-One-Dashboard/raw/main/AIO%20Dashboard%20-%20Rollup%20Edition%20-%20PBI-SharePoint%20-%202026-06-25.pbit)** |
-| **Input file locations** | **Local path, SharePoint URL, _or_ OneLake URL** — auto-detected for each parameter | **SharePoint URLs only** (each input is validated as a SharePoint URL) |
-| **Best for** | Power BI Desktop analysis, quick local trials, OneLake/Fabric, or any mix of the above | Publishing to the Power BI Service when you want **automatic scheduled refresh** |
-| **Scheduled refresh in the Service** | ❌ Not supported _(see below)_ | ✅ Supported — no Gateway needed |
-| **Manual / on-demand refresh** | ✅ In Desktop (and on-demand in the Service) | ✅ |
+| [🧠 What the dashboard is](#-what-the-dashboard-is) | [1️⃣ Prepare](#-step-1-prepare) | [🔒 Privacy and Minimum Group Size](#-privacy-and-minimum-group-size) |
+| [🗺️ The 17 report pages](#-the-17-report-pages) | [2️⃣ Export your data with PAX](#-step-2-export-your-data-with-pax) | [🧭 Tips for reading the numbers](#-tips-for-reading-the-numbers) |
+| [🚀 Why leaders use it](#-why-leaders-use-it) | [3️⃣ Open the template](#-step-3-open-the-template) | [🛠️ Troubleshooting](#-troubleshooting) |
+| [⚠️ Usage and compliance](#-usage-and-compliance) | [4️⃣ Publish, share and refresh](#-step-4-publish-share-and-refresh) | [📧 Email your admin](#-email-your-admin) |
+| [🖼️ Screenshot tour](Report%20Screenshots.md) | [🔐 Row-level security](#-row-level-security) | |
 
-### Why are there two editions
-
-The Power BI Service decides whether it can schedule a dataset by **statically inspecting** how it connects to its sources — *before* it ever runs the query. A source whose location is computed at runtime — which is exactly how the 3-in-1 edition stays flexible enough to accept a local path **or** a SharePoint URL **or** a OneLake URL — is classified as a **dynamic data source**, and the Service **disables scheduled refresh for the entire dataset** when one is present. No M arrangement avoids this while keeping that flexibility; it's a platform rule, not a template bug.
-
-The **PBI-SharePoint** edition gives up that flexibility on purpose: every input is read through a single, **static SharePoint connector** that the Service is happy to schedule. That one change is the only difference under the hood — the report itself is identical.
-
-**Rule of thumb**
-- Exploring in Power BI Desktop, or your files are local / on OneLake → **3-in-1 edition.**
-- You want the report to refresh itself on a schedule in the Service and your files are on SharePoint → **PBI-SharePoint edition.**
-- Your files are on OneLake/Fabric **and** you need scheduled refresh → use the dedicated Fabric edition in [`Classic Editions/3. Fabric/`](Classic%20Editions/3.%20Fabric/), a Fabric-native thin client.
+Select a section to jump to it, then expand it for the details.
 
 ---
 
-<details>
-<summary>⚠️ <strong>Important usage & compliance disclaimer</strong></summary>
+<a id="-what-the-dashboard-is"></a>
 
-Please note:
-
-While this tool helps customers better understand their AI usage data, Microsoft has **no visibility** into the data that customers input into this template/tool, nor does Microsoft have any control over how customers will use this template/tool in their environment.
-
-Customers are solely responsible for ensuring that their use of the template tool complies with all applicable laws and regulations, including those related to data privacy and security.
-
-**Microsoft disclaims any and all liability** arising from or related to customers' use of the template tool.
-
-**Experimental Template Notice:**
-This is an experimental template with audit logs as the primary source. The audit logs from Microsoft Purview are intended to support security and compliance use cases. While they provide visibility into Copilot and Agent interactions, they are not intended to serve as the sole source of truth for licensing or full-fidelity reporting on Copilot or Agent activity. For the most accurate and reliable usage insights, users are encouraged to refer to data from the Microsoft 365 Admin Center and Viva Insights. Currently available in English only.
-
-</details>
-
----
-
-## 📦 What is PAX?
+## 🧠 What the dashboard is
 
 <details>
-<summary><strong>Show this section</strong> <em>(click to expand)</em></summary>
+<summary><b>Expand: a Power BI view of Copilot and agent activity across your organization</b></summary>
 
 <br>
 
-**PAX** stands for **Portable Audit eXporter**. It's a free, open-source PowerShell script from the Microsoft Copilot Growth ROI Advisory team that:
+The AI-in-One dashboard is a free Power BI template that brings together three sources of information:
 
-- Pulls Microsoft 365 Copilot audit data out of Microsoft Purview
-- Pulls user, organization, and licensing data out of Microsoft Entra and the Microsoft 365 Admin Center (MAC)
-- Pull additional agent details from Agent 365
-- Writes the results as CSV files — locally, to SharePoint, or to OneLake/Fabric
-- When run with one of the **rollup switches** (see below), it also pre-processes the Purview and Entra/MAC CSVs into the exact format this dashboard template expects. The optional Agent 365 data does not need any pre-processing for use in this dashboard.
+- **What people did:** Microsoft 365 Copilot, Copilot Chat and agent activity from the Microsoft Purview audit log.
+- **Who they are:** departments, reporting lines, job titles and Copilot licensing from Microsoft Entra ID and the Microsoft 365 admin center.
+- **Which agents exist:** names, types, creators and status from the Agent 365 catalog.
 
-**PAX repo (bookmark this):** **https://github.com/microsoft/PAX**
+Together, they answer the questions leaders ask most:
 
-Throughout this README, "run PAX" means running the script from that repo. PAX is the recommended (and currently only supported) way to produce input files for this dashboard.
+- Who is using Copilot, how often, and is it becoming a habit?
+- Which teams are ahead, and which need more support?
+- How are licensed Microsoft 365 Copilot, Copilot Chat and agents each being used?
+- Which agents are people coming back to, and which need a review?
+- Where would more licenses or training make the biggest difference?
 
-</details>
+[![Copilot Usage Explorer with made-up example data](media/v2.0.0/pages/01-copilot-usage-explorer.png)](Report%20Screenshots.md)
 
----
-
-## ⚡ How this version is different — and why it loads so much faster
-
-<details>
-<summary><strong>Show this section</strong> <em>(click to expand)</em></summary>
-
-<br>
-
-If you've used a previous version of the AI-in-One Dashboard, here's what changed and why it matters.
-
-### The old way (and why it hurt)
-
-In previous versions, Power BI did all of the heavy lifting itself. It opened large raw Purview audit files (often hundreds of megabytes — sometimes gigabytes), picked apart the messy nested data inside each row, looked up who each user was, figured out their licenses, and computed dozens of derived fields on the fly. For a small tenant, this was fine. For real-world tenants, this meant:
-
-- Power BI Desktop loads of an hour or more
-- Frequent "out of memory" errors
-- Refresh failures and timeouts in the Power BI Service
-- Dashboards that were effectively unusable for large organizations
-
-### The new way
-
-All of that prep work now happens **once, ahead of time**, in a small Python helper that runs as an embedded part of the PAX script. By the time Power BI ever opens the file, the hard work is already done. Power BI just reads a clean, ready-to-use file and shows you the dashboard.
-
-### What "rollup" actually means here
-
-The Python helper does the following, in order:
-
-1. Reads the raw Purview audit file and the Entra/MAC user + licensing file
-2. Expands the raw audit data into its full detail (one row per interaction × prompt × resource)
-3. Merges in user, organization, and license information
-4. Pre-calculates a long list of fields that the dashboard used to compute on the fly (things like agent identifiers, behavior categories, value outcomes, activity dates, etc.)
-5. **Groups the result back together** at exactly the level the dashboard needs
-
-A note on file size: the final rollup file usually has **more rows than the raw input** (because the raw was packed/compressed and we expanded it before regrouping). That sounds counterintuitive — but every row in the rollup file is already shaped *exactly* the way the dashboard wants it, so Power BI doesn't have to do any of the expensive work itself. And the processed files are only a fraction of their original size!
-
-### Why two input files
-
-- **Purview audit data** tells you *what people did with Copilot*
-- **Entra + MAC user/license data** tells you *who they are and what licenses they have*
-
-The Python helper joins these once, upstream, so Power BI doesn't have to do that join across millions of rows every time the dashboard refreshes.
-
-### The result
-
-- Typically **~80%+ reduction in Power BI load times**
-- Reliable scheduled refresh in the Power BI Service
-- No more wrestling with timeouts on large tenants
-- Same pages, same visuals, same numbers — just calculated upstream so PBI doesn't have to
+*The screenshots use made-up example data, not targets for your organization. **[🖼️ Take the full screenshot tour →](Report%20Screenshots.md)***
 
 </details>
 
----
+<a id="-the-17-report-pages"></a>
 
-## 📊 What This Dashboard Provides
+## 🗺️ The 17 report pages
 
 <details>
-<summary><strong>Show this section</strong> <em>(click to expand)</em></summary>
+<summary><b>Expand: every page and the question it answers</b></summary>
 
 <br>
 
-- **Comprehensive visibility into M365 Copilot, unlicensed Copilot Chat, and Agent usage** across your organization
-- **User engagement tracking over time** to identify adoption patterns and trends across all Copilot surfaces
-- **Data-driven insights** to optimize AI investments, license allocation, and employee enablement
-- **Customizable views** to segment data by department, role, or other organizational dimensions
-
-</details>
-
----
-
-## 🚀 How This Helps Leaders
-
-<details>
-<summary><strong>Show this section</strong> <em>(click to expand)</em></summary>
-
-<br>
-
-- **Make informed AI and Microsoft Copilot investment decisions** using comprehensive usage data and analytics consolidated in one place
-- **Identify Copilot and Agent adoption champions** and areas needing additional enablement
-- **Optimize enablement and change management efforts** based on actual usage patterns across M365 Copilot, unlicensed Copilot Chat, and Agents
-- **Accelerate AI readiness, adoption, and impact** across the organization — from licensed Copilot experiences to emerging Agent capabilities
-
-</details>
-
----
-
-## 📥 Get your data — run PAX to produce the files
-
-<details>
-<summary><strong>Show this section</strong> <em>(click to expand)</em></summary>
-
-<br>
-
-> **Reminder:** This template only consumes the rollup files produced by PAX. If you (or your admin) try to point it at a raw Purview audit CSV or a manually-exported Entra users CSV, it won't work.
-
-> 🧪 **No tenant access yet? Use the synthetic sample data.** The [`sample-data/`](sample-data/) folder contains fully fictional demo files in the exact rollup format, so you can open the template and explore every page without Purview, PAX, or a tenant. See [`sample-data/README.md`](sample-data/README.md).
-
-### ⚠️ Before you run anything — unified audit logging must be ON
-
-Every number in this dashboard comes from the Microsoft Purview unified audit log. If audit logging is switched off for the tenant, PAX has nothing to read and **every** audit query fails with:
-
-```
-"Status":"AuditingDisabledTenant"
-```
-
-It is on by default for most tenants, but frequently off in demo, dev, and newly provisioned tenants — so check before you start.
-
-**Turn it on — Purview portal**
-1. Go to [https://purview.microsoft.com/audit/auditsearch](https://purview.microsoft.com/audit/auditsearch)
-2. If you see **Start recording user and admin activity**, click it.
-
-**Turn it on — PowerShell**
-```powershell
-Connect-ExchangeOnline -Organization contoso.onmicrosoft.com
-Set-AdminAuditLogConfig -UnifiedAuditLogIngestionEnabled $true
-(Get-AdminAuditLogConfig).UnifiedAuditLogIngestionEnabled   # expect: True
-```
-
-> ⏳ **Enabling it does not backfill.** Collection starts from the moment it is switched on, and records can take up to 24 hours to show up. If you have just enabled auditing, your first export will be near-empty and the dashboard will look sparse until usage accumulates. That is expected — it is not a broken deployment, and no date range will recover data from before auditing was enabled.
-
-### The two rollup switches
-
-PAX exposes two switches that produce the file format this template needs:
-
-| Switch | What it does | When to use it |
+| Area | Page | The question it answers |
 |---|---|---|
-| **`-Rollup`** | Runs the rollup post-processor and produces only the rolled-up output files. The raw intermediate CSVs are deleted. | Recommended default. Smallest footprint. Use this if the dashboard is the only thing you'll use the data for. |
-| **`-RollupPlusRaw`** | Same as `-Rollup` but **keeps** the raw Purview and Entra CSVs alongside the rollup output. | Use this if you also want the raw data for other purposes (custom reporting, archival, troubleshooting). |
+| **Start here** | [🧭 Copilot Usage Explorer](Report%20Screenshots.md#page-1) | How is my team, a manager's organization or one agent using Copilot right now? |
+| **Overall** | [📊 License Prioritization](Report%20Screenshots.md#page-2) | Which groups show patterns that could support a licensing conversation? |
+| | [🔍 Copilot Overall: Combined Trends](Report%20Screenshots.md#page-3) | How do M365 Copilot, Copilot Chat and agents compare over time? |
+| | [🔍 Copilot Overall: Combined Leaderboard](Report%20Screenshots.md#page-4) | Which departments use each experience, and how many chat users also use agents? |
+| **Agents** | [🤖 Agents: Usage Trends](Report%20Screenshots.md#page-5) | How many people try agents, and how many come back? |
+| | [🤖 Agents: Habit Formation](Report%20Screenshots.md#page-6) | How often do people use agents in a month: lightly, moderately, frequently or daily? |
+| | [🤖 Agents: Leaderboard](Report%20Screenshots.md#page-7) | Which agents and people lead on sessions and prompts? |
+| | [🤖 Agents: Health Check](Report%20Screenshots.md#page-8) | Which agents should we keep and which should we review with their owners? |
+| | [🤖 Agents: Use Cases](Report%20Screenshots.md#page-9) | What might each agent be used for? |
+| | [🤖 Agent Details](Report%20Screenshots.md#page-10) | Who uses this agent, how much, where and how often do they return? |
+| **M365 Copilot** | [📈 M365 Copilot: Usage Trends](Report%20Screenshots.md#page-11) | How is licensed Copilot use trending? |
+| | [📈 M365 Copilot: Habit Formation](Report%20Screenshots.md#page-12) | Is licensed Copilot becoming a monthly habit? |
+| | [📈 M365 Copilot: Leaderboard](Report%20Screenshots.md#page-13) | Which departments, applications and (when approved) people lead? |
+| **Copilot Chat** | [📊 Chat (Web): Usage Trends](Report%20Screenshots.md#page-14) | How often do people without a Copilot license use Copilot Chat, and do they return the same day? |
+| | [📊 Chat (Web): Habit Formation](Report%20Screenshots.md#page-15) | Is Copilot Chat becoming a habit? |
+| | [📊 Chat (Web): Leaderboard](Report%20Screenshots.md#page-16) | Who leads on prompts and conversations, and when were they last active? |
+| **Reference** | [📖 Metric Glossary & Guide](Report%20Screenshots.md#page-17) | What does this number mean, and how should I read it? |
 
-The two switches are mutually exclusive — pick one.
+🖼️ **Select any page name to see its screenshot in the [Screenshot tour](Report%20Screenshots.md).**
 
-### What you get back
+<table>
+<tr>
+<td width="30%" valign="top">
 
-After PAX finishes, you'll have these files (filenames are timestamped automatically):
+<img src="media/v2.0.0/pages/org-filters-panel.png" alt="The Org filters panel" width="100%">
 
-| File | What it is | Required by template? |
-|---|---|---|
-| `Purview_Audit_..._Interactions.csv` | The main "what happened" file — rolled-up Copilot interactions | ✅ Required |
-| `EntraUsers_MAClicensing_..._Users.csv` | The "who they are" file — user, organization, and license info | ✅ Required |
-| `Agent365_....csv` | Agent catalog snapshot (only produced if you also pass `-IncludeAgent365Info`) | Optional but **highly recommended** |
+</td>
+<td width="70%" valign="top">
 
-### 🤖 Agent 365 — the one source you can also export manually
+**Moving around the report**
 
-Agent 365 data is a **point-in-time catalog snapshot** of the agents registered in your tenant (name, host product, developer, status, version, etc.). Unlike Purview audit data and Entra/MAC user data, this file is **not** transformed by the embedded Python rollup processor — PAX produces it as a straight passthrough using the same column shape the dashboard expects.
+- Open **Org filters** on any analytical page to set company, division, department, reporting team, user and license. Your choices carry across pages.
+- In **Reporting team**, search for a manager's name to include their whole organization: direct and indirect reports, without the manager's own record.
+- Right-click an agent name and choose **Drill through → Agent drillthrough** to open that agent's details.
+- **Clear filters** resets selections and expanded tables. In Power BI Desktop, hold **Ctrl** while clicking report buttons.
 
-Because there's no processor step involved, this is the **one and only** input file the dashboard accepts directly from the Microsoft 365 Admin Center's manual UI export. Purview audit data and Entra/MAC user data **must** go through a processor step — either PAX or the standalone processor script in the [`scripts/`](scripts/) folder. See the **⚙️ Standalone processor** section below for the non-PAX path.
-
-You have two options for getting the Agent 365 file:
-
-**Option 1 — let PAX produce it**
-
-Add the `-IncludeAgent365Info` switch to your PAX command. PAX will produce `Agent365_<timestamp>.csv` alongside the rollup files. This is the simplest path and keeps all three input files together. (`-IncludeAgent365Info` is fully compatible with `-Rollup` and `-RollupPlusRaw`.)
-
-Note: producing the Agent 365 file requires additional permissions — typically **AI Admin** or **Global Reader** — on top of the Purview/Entra permissions PAX already needs. If your admin doesn't have these, Option 2 below works just as well.
-
-**Option 2 — manual export from the Microsoft 365 Admin Center**
-
-Use this path if you don't want to run PAX with elevated Agent 365 permissions, or if a different person owns Agent 365 governance in your org. Steps:
-
-1. Go to **[admin.microsoft.com](https://admin.microsoft.com)** → in the left nav, **Agents** → **All Agents**
-2. Click **Export** in the toolbar (the button is sometimes labeled "Export to Excel", but the file it produces is **CSV** — see [Microsoft Learn: Manage agent registry](https://learn.microsoft.com/en-us/microsoft-365/admin/manage/agent-registry))
-3. Save the `.csv` to a known location
-4. Point the `Agent 365` parameter in the PBIT at that CSV
-
-> 💡 **Tip — for scheduled refresh (PBI-SharePoint edition):** the PBI-SharePoint edition requires **all three** input files to be SharePoint URLs. Upload your manually-exported Agent 365 CSV to the **same SharePoint folder** as your Interactions and Org Data files so all three parameters point at SharePoint. See the [mixed-source caveat](#-can-i-mix-file-locations-eg-sharepoint--local) further down.
-
-### Three example commands
-
-These are the most common patterns. Your admin can copy-paste them, adjusting paths/URLs for your environment. (See the PAX repo for the full set of switches and options.)
-
-**1. Local CSVs — single-user / quick try**
-
-```powershell
-.\PAX_Purview_Audit_Log_Processor.ps1 -Rollup -IncludeAgent365Info -OutputPath "C:\Data\PAX"
-```
-
-**2. SharePoint — recommended for scheduled refresh (no Gateway required)**
-
-```powershell
-.\PAX_Purview_Audit_Log_Processor.ps1 -Rollup -IncludeAgent365Info `
-  -OutputPath "https://contoso.sharepoint.com/sites/CopilotAnalytics/Shared Documents/PAX Output"
-```
-
-> ### 📋 How to get the *correct* SharePoint URL (this trips everyone up)
->
-> **Do NOT copy the URL from your browser's address bar.** That URL includes view parameters (`?...`), session tokens, and a path layout that won't work for either PAX output or the PBIT parameters.
->
-> **Do this instead — for a folder URL** (used as PAX `-OutputPath`):
-> 1. In SharePoint, navigate to the document library and into the target folder
-> 2. Click the **three-dot menu (`⋮`)** next to the folder name, or right-click the folder → **Details**
-> 3. In the details pane on the right, scroll to **Path**
-> 4. Click the **📋 copy icon** next to the path
-> 5. Paste somewhere — you'll get a clean URL like `https://contoso.sharepoint.com/sites/CopilotAnalytics/Shared Documents/PAX Output` (no `?...`, no view state)
->
-> **For a file URL** (used in the PBIT parameters):
-> 1. Navigate into the folder so you see the file in the list
-> 2. Click the **three-dot menu (`⋮`)** next to the file name → **Details**
-> 3. Copy the **Path** the same way
-> 4. Paste — you should get something ending in `.../filename.csv`
->
-> If your URL looks like `https://contoso.sharepoint.com/:x:/r/sites/.../filename.csv?d=w...&csf=1&web=1&e=...` — that's the **browser address bar URL** (or a "Copy link" share link). It will not work. Go back and use the Details pane Path instead.
-
-**3. OneLake / Fabric — large tenants, multi-year retention**
-
-```powershell
-.\PAX_Purview_Audit_Log_Processor.ps1 -Rollup -IncludeAgent365Info `
-  -OutputPath "https://onelake.dfs.fabric.microsoft.com/<workspace>/<lakehouse>.Lakehouse/Files/PAX"
-```
-
-### Fabric setup (Azure Container Apps Job) — read this if you're a Fabric customer
-
-If you have Fabric capacity, the recommended pattern is to run PAX inside an **Azure Container Apps Job** on a schedule, writing the rollup files directly to a Lakehouse in OneLake. The Power BI dataset then refreshes against OneLake via SSO with no Gateway, no laptop dependency, and no manual file-copy step.
-
-Everything you need to set this up is in the **`fabric_resources/`** folder of the PAX repo:
-
-👉 **https://github.com/microsoft/PAX** → `fabric_resources/`
-
-That folder contains:
-- A **Dockerfile** for building the PAX container image
-- **Detailed step-by-step instructions** for deploying the Azure Container Apps Job
-- Prereq checklists (capacity, identity, RBAC, secret management)
-- Configuration templates
-
-**If you're a Fabric customer, do not skip this folder** — it has the canonical Fabric deployment guidance.
+</td>
+</tr>
+</table>
 
 </details>
 
----
+<a id="-why-leaders-use-it"></a>
 
-## ⚙️ Standalone processor — processing raw data without PAX
+## 🚀 Why leaders use it
 
 <details>
-<summary><strong>Show this section</strong> <em>(click to expand)</em></summary>
+<summary><b>Expand: real ways executives and stakeholders use the dashboard</b></summary>
 
 <br>
 
-The [`scripts/`](scripts/) folder in this folder contains a Python script that produces the same two rollup files this dashboard requires — without needing PAX. Use this path if you export raw Purview audit data and Entra/MAC user data through your own tooling, portal exports, or an alternative script rather than through PAX.
+The dashboard turns scattered activity records into a shared, trusted picture that everyone from the CIO to an agent owner can act on.
 
-> **Note:** This processor handles the Purview interactions file and the Entra/MAC users file only. It does not produce the Agent 365 file. For Agent 365 data, see the **🤖 Agent 365** section above.
-
-### Requirements
-
-- **Python 3.9 or later**
-- The `orjson` package is optional but recommended for faster JSON parsing:
-  ```
-  pip install orjson
-  ```
-  The script falls back to the Python standard library `json` module if `orjson` is not installed.
-
-### What you need before running
-
-Two input files are required. Both must be CSV format.
-
----
-
-#### Input 1 — Raw Purview audit CSV (`--purview`)
-
-This is the raw audit log export from Microsoft Purview. Export it from the **Microsoft Purview compliance portal → Audit → search/export**.
-
-The script filters the file automatically — only `CopilotInteraction` operation records are processed; all other record types are skipped.
-
-| Column | Required? | Notes |
-|---|---|---|
-| `AuditData` | ✅ Required | The JSON blob column that Purview includes in every audit export. All Copilot interaction detail is parsed from inside this column. If this column is absent, the script will produce no output. |
-| `Operation` or `Operations` | Used for filtering | Used to identify `CopilotInteraction` records when the value is not already inside the `AuditData` JSON. Purview exports typically include one of these. |
-
-All other columns in the Purview export are ignored — the script reads only `AuditData` and `Operation`/`Operations`.
-
----
-
-#### Input 2 — Combined Entra + MAC users CSV (`--entra`)
-
-This file is **not** a direct export from a single portal. It is a combined file you assemble by joining two separate exports:
-
-1. **Microsoft Entra ID user export** — provides the user list with UPN, display name, department, job title, etc.
-2. **Microsoft 365 Admin Center (MAC) licensing export** — provides the per-user Copilot license assignment column
-
-You must add the license column from the MAC export into the Entra user export (for example, using Excel or Power Query) before passing the file to the script. If no recognized license column is present, the script will still process the file but every user will be tagged as `Unlicensed`.
-
-| Column | Required? | Accepted column names | Notes |
+| Who | What they want to know | Where to look | What they do next |
 |---|---|---|---|
-| User Principal Name | ✅ Required | `userPrincipalName`, `upn`, `personId` (case-insensitive) | Used to join Purview audit records to user data. Rows with a blank UPN are still written to the Users output but will not join to any audit activity. |
-| Copilot license flag | ✅ Strongly recommended | `Has license`, `Has License`, `hasLicense`, `HasLicense`, `Has Copilot License`, `Has Copilot license`, `HasCopilotLicense`, `Has Copilot License Assigned`, `Has Copilot license assigned`, `isUser` | Any truthy value (`Yes`, `True`, `Y`, `1`) is treated as licensed; everything else is unlicensed. If the column is missing entirely, all users default to unlicensed. |
-| Department | ✅ Required | Any casing of `department`, `organization`, or `organisation` — spaces, hyphens, and underscores in the column name are ignored when matching | Renamed to `Organization` in the output. Used for org-level segmentation in the dashboard. |
-| Job title | ✅ Required | Any casing of `jobtitle` or `job title` — spaces, hyphens, and underscores in the column name are ignored when matching | Renamed to `JobTitle` in the output. |
-| All other columns | Optional | Any | All other columns in your input file are passed through to the Users output as-is. |
+| **CIO / CTO** | Is our Copilot investment being used broadly, and is use growing? | Combined Trends, M365 Copilot: Usage Trends | Report adoption to the board with month-over-month trends instead of anecdotes. |
+| **CFO / licensing owner** | Where would more licenses, or a different license mix, have the most impact? | License Prioritization, Chat (Web) pages | Find departments with heavy Copilot Chat use and no license, and start a business-case conversation with their leaders. |
+| **Business unit leader** | How is *my* organization doing compared with the rest of the company? | Copilot Usage Explorer, Org filters | Search for their own name in **Reporting team**, compare the team's seven-day trend before and after a rollout, and celebrate the teams that lead. |
+| **Adoption and change lead** | Is Copilot becoming a habit, or did people try it once and stop? | Habit Formation pages | Target training at groups that are stuck at 1–5 active days a month, then check next month whether they moved into a higher range. |
+| **Agent owner / Center of Excellence** | Which agents earn repeat use, and which should be retired or improved? | Agents: Health Check, Agent Details, Use Cases | Use **Keep** and **Review** labels to plan agent reviews, invest in agents people return to, and tidy up ones nobody uses. |
+| **HR, privacy and works councils** | Is reporting appropriately protected? | Minimum Group Size, Metric Glossary | Confirm reporting stays at team level by default; individual detail appears only after an approved change. |
+| **Microsoft account teams and partners** | How can we help this customer succeed with Copilot? | The full report and the [Storyboard](AI-in-One%20-%20v2.0.0%20-%20Storyboard.pptx) | Run a data-backed adoption review, agree on the next three enablement actions, and measure progress at the next meeting. |
 
-### Arguments
-
-| Argument | Required? | Description |
-|---|---|---|
-| `--purview <path>` | ✅ Required | Path to the raw Purview audit log CSV |
-| `--entra <path>` | ✅ Required | Path to the Entra users CSV |
-| `--out-dir <path>` or `-o <path>` | Optional | Directory where output files are written. Defaults to the same directory as the Purview input file |
-| `--quiet` or `-q` | Optional | Suppresses progress output. Useful in scheduled or automated contexts |
-
-### What the processor produces
-
-Two files are written to the output directory, named automatically based on your input filenames and a run timestamp:
-
-| Output file | What it is | Dashboard parameter |
-|---|---|---|
-| `<purview-filename>_Interactions_<timestamp>.csv` | Rolled-up Copilot interactions fact table | **Copilot Interactions File** |
-| `<entra-filename>_Users_<timestamp>.csv` | Users and licensing dimension table | **Org Data File** |
-
-Point the corresponding dashboard parameters at these two output files exactly as you would with PAX-produced files.
-
-### Usage examples
-
-Run the `.py` file found in the `scripts/` folder. In the examples below, replace `scripts/<processor>.py` with the actual filename.
-
-**Basic — output files are written to the same folder as the Purview input**
-
-```
-python scripts/<processor>.py --purview "C:\Data\Purview_Audit_20260510.csv" --entra "C:\Data\EntraUsers_20260510.csv"
-```
-
-**With an explicit output directory**
-
-```
-python scripts/<processor>.py --purview "C:\Data\Purview_Audit_20260510.csv" --entra "C:\Data\EntraUsers_20260510.csv" --out-dir "C:\Data\Rollup Output"
-```
-
-**Quiet mode — suppress progress output (useful in scheduled tasks)**
-
-```
-python scripts/<processor>.py --purview "C:\Data\Purview_Audit_20260510.csv" --entra "C:\Data\EntraUsers_20260510.csv" --out-dir "C:\Data\Rollup Output" --quiet
-```
-
-### Multi-month history with the standalone processor
-
-If you use PAX's `-AppendFile` switch to accumulate a growing raw Purview CSV over time, run the standalone processor against that accumulated file to produce a fresh rollup whenever you need to refresh the dashboard. See the **📚 Multi-month history** section below for the full pattern, including the recommended commands.
+> ❗ **Important:** Activity shows **where to start a conversation**. It doesn't prove time saved, answer quality, business value or individual performance.
 
 </details>
 
 ---
 
-## 📚 Multi-month history & the `-AppendFile` switch — what works today
+<a id="-step-1-prepare"></a>
+
+## 1️⃣ Step 1: Prepare
 
 <details>
-<summary><strong>Show this section</strong> <em>(click to expand)</em></summary>
+<summary><b>Expand: audit logging, permissions and software</b></summary>
 
 <br>
 
-Many customers want **months of trailing data** in this dashboard, not just a single PAX run. Here's the current state of how to get there.
+### ✅ Turn on unified audit logging
 
-### What `-AppendFile` does in PAX
+Every number in the dashboard comes from the Microsoft Purview unified audit log. It is on by default in most tenants, but it is often off in demo, development and new tenants. If it is off, every audit query fails with `"Status":"AuditingDisabledTenant"`.
 
-PAX has an `-AppendFile` switch that appends new rows to an existing CSV instead of writing a fresh timestamped file. It's designed for exactly this scenario — running PAX on a schedule, accumulating audit history into one growing file over time. Key facts:
+- **In the portal:** open [purview.microsoft.com/audit/auditsearch](https://purview.microsoft.com/audit/auditsearch). If you see **Start recording user and admin activity**, select it.
+- **In PowerShell:**
 
-- **The target file must already exist.** Run PAX **once without** `-AppendFile` to create the initial seed file, then use `-AppendFile <name>` on every subsequent run.
-- **CSV headers must match exactly** between the existing file and the new run. PAX validates this and exits with a clear error on mismatch.
-- **Only Purview audit data is appendable.** `-AppendFile` is **incompatible with `-IncludeUserInfo` / `-OnlyUserInfo`** because Entra/MAC user+licensing data is a **point-in-time snapshot** — appending old user state on top of new state would corrupt the picture. Same logic applies to Agent 365.
-- Each run still produces fresh timestamped log / telemetry / metrics files alongside the appended output.
+  ```powershell
+  Connect-ExchangeOnline -Organization contoso.onmicrosoft.com
+  Set-AdminAuditLogConfig -UnifiedAuditLogIngestionEnabled $true
+  (Get-AdminAuditLogConfig).UnifiedAuditLogIngestionEnabled   # expect: True
+  ```
 
-### The catch: `-AppendFile` cannot currently be combined with `-Rollup` / `-RollupPlusRaw`
+> ⚠️ **Warning:** Turning on audit logging doesn't recover the past. Records start from that moment and can take up to 24 hours to appear, so a first export after turning it on will look sparse.
 
-This is the honest answer: as of today, PAX **blocks `-AppendFile` when `-Rollup` or `-RollupPlusRaw` is used**, and exits with an error. The rollup processor assigns INT surrogate keys (`Message_Id`, `ThreadId`, `UserKey`) per run, so appending rolled-up rows would produce mismatched keys and a broken file.
+### 🔑 Microsoft Graph permissions for PAX
 
-> **Rollup-aware appending with the standalone processor:** Use the standalone processor in the [`scripts/`](scripts/) folder for this pattern:
-> 1. Use PAX with `-AppendFile` (no `-Rollup`) to accumulate a growing **raw** Purview audit CSV over time
-> 2. Run that accumulated raw file through the standalone processor to produce a freshly-keyed rollup file the dashboard can consume
->
-> This gives you the best of both worlds — incremental daily/weekly raw appends from PAX, plus a clean dashboard-ready rollup whenever you need to refresh the report. See the **⚙️ Standalone processor** section below for usage details.
+PAX needs **Microsoft Graph API permissions only**, and only for the features a run uses. Grant them as **delegated** permissions when you sign in yourself, or as **application** permissions (with admin consent) for an app registration or managed identity. The names are the same either way.
 
-### What to do right now if you want months of data
+| Needed when | Microsoft Graph permission |
+|---|---|
+| Every run (Copilot and agent activity) | `AuditLogsQuery.Read.All` |
+| Every AI-in-One run (people, departments and licensing) | `User.Read.All` and `Organization.Read.All` |
+| Collecting the Agent 365 catalog (recommended) | `CopilotPackages.Read.All` and `Application.Read.All` |
+| Saving to SharePoint | `Sites.Selected` *(recommended)*, plus a one-time grant to the target site. See below. |
+| Filtering to security groups with `-GroupNames` | `GroupMember.Read.All` |
 
-Until rollup-append lands, use one of these patterns:
+<a id="-sharepoint-site-access"></a>
 
-**Pattern A — full re-run of a rolling window (simplest, recommended for most)**
+**Saving to SharePoint with `Sites.Selected`.** `Sites.Selected` gives the app registration or managed identity access to **no** sites until an admin grants it one. An admin runs this once with [Microsoft Graph PowerShell](https://aka.ms/graph/sdk/powershell), signing in with the Graph permission `Sites.FullControl.All`:
 
-Schedule PAX with `-Rollup` over a rolling window (e.g. last 60 or 90 days, depending on your Purview retention). Each run replaces the previous rollup output. Power BI just refreshes against the latest file. Trade-off: every run does a full export, which on large tenants takes longer than an incremental append would.
+**1. Sign in and find the site's ID.** Use the host name, a colon, then the site path:
 
 ```powershell
-# Example: weekly run, last 90 days
-.\PAX_Purview_Audit_Log_Processor.ps1 -Rollup -IncludeAgent365Info `
-  -StartDate (Get-Date).AddDays(-90).ToString('yyyy-MM-dd') `
-  -EndDate   (Get-Date).ToString('yyyy-MM-dd') `
-  -OutputPath "https://contoso.sharepoint.com/sites/CopilotAnalytics/Shared Documents/PAX Output"
+Connect-MgGraph -Scopes "Sites.FullControl.All"
+Get-MgSite -SiteId "contoso.sharepoint.com:/sites/CopilotAnalytics" | Select-Object Id, WebUrl
 ```
 
-**Pattern B — accumulate raw with `-AppendFile` now, convert to rollup when the standalone processor ships**
-
-If you want to start building up multi-month raw history immediately so you're ready the day the standalone processor releases, run PAX **without** `-Rollup` and use `-AppendFile` to grow a single raw Purview CSV over time.
+**2. Grant write access to that site only.** Paste the site **Id** from step 1, and the **Application (client) ID** of the app registration or managed identity that runs PAX:
 
 ```powershell
-# Step 1 (run ONCE) — create the initial seed file
-.\PAX_Purview_Audit_Log_Processor.ps1 -StartDate 2026-02-01 -EndDate 2026-02-28 `
-  -ActivityTypes CopilotInteraction -CombineOutput -OutputPath "C:\Data\PAX"
-
-# Step 2 (run on a schedule) — append each new day/week into the same file
-.\PAX_Purview_Audit_Log_Processor.ps1 -StartDate 2026-03-01 -EndDate 2026-03-07 `
-  -ActivityTypes CopilotInteraction -CombineOutput `
-  -AppendFile "Purview_Audit_UsageActivity_CombinedActivityTypes_<seed-timestamp>.csv" `
-  -OutputPath "C:\Data\PAX"
+New-MgSitePermission -SiteId "contoso.sharepoint.com,11111111-1111-1111-1111-111111111111,22222222-2222-2222-2222-222222222222" -BodyParameter @{
+    roles               = @("write")
+    grantedToIdentities = @(@{ application = @{ id = "33333333-3333-3333-3333-333333333333"; displayName = "PAX" } })
+}
 ```
 
-Important points for Pattern B:
-- The accumulated **raw** file produced this way **cannot** be opened by this dashboard directly — it must be processed first.
-- Run the standalone processor in the [`scripts/`](scripts/) folder against the accumulated raw file to produce dashboard-ready rollup output. See the **⚙️ Standalone processor** section below for usage details.
-- For current dashboards, also do a Pattern A run in parallel so you have a usable rollup file while you build up your raw history.
-- Don't forget: Entra/MAC user data and Agent 365 data still need to be fresh point-in-time exports — they cannot be appended.
+Repeat for each site PAX writes to. When you run PAX interactively instead, PAX requests `Sites.ReadWrite.All` at sign-in, which can only reach sites your own account can already edit.
+
+The [PAX documentation](https://aka.ms/PAX) covers each sign-in option, including app registrations and managed identities for unattended runs.
+
+### 💻 Software
+
+- **[PowerShell 7 or later](https://aka.ms/powershell)** to run PAX.
+- **[Python 3.10 or later](https://python.org/downloads)**, which PAX uses to prepare the dashboard files. If it's missing, PAX installs it on first use.
+- **[Power BI Desktop](https://aka.ms/pbidesktop)** to open the template.
+- A **SharePoint document library** or a **local or network folder** for the output.
 
 </details>
 
----
+<a id="-step-2-export-your-data-with-pax"></a>
 
-## 🔐 Open and Configure the Power BI Template
+## 2️⃣ Step 2: Export your data with PAX
+
+> [!TIP]
+> **Use [PAX](https://aka.ms/PAX), Microsoft's free Portable Audit eXporter.** It collects activity, people, licensing and agent data in one run and writes files that are ready for this dashboard. Prefer not to type commands? **[⌨️ Mini-Kitchen](https://PAXcookbook.com/Mini-Kitchen)** builds them for you.
 
 <details>
-<summary><strong>Show this section</strong> <em>(click to expand)</em></summary>
+<summary><b>Expand: why PAX, and how Mini-Kitchen helps</b></summary>
 
 <br>
 
-### What you'll do
+### ⚙️ Why PAX
 
-1. Download and open **one of the two editions** in **Power BI Desktop** (see [Which edition should I download](#-which-edition-should-i-download)):
-   - **`AIO Dashboard - Rollup Edition - 2026-06-25.pbit`** — accepts local, SharePoint, _or_ OneLake files; best for Desktop and manual refresh
-   - **`AIO Dashboard - Rollup Edition - PBI-SharePoint - 2026-06-25.pbit`** — accepts SharePoint URLs only; use this one if you want scheduled refresh in the Service
-2. Fill in the three parameters when prompted
-3. Click **Load**
+| | |
+|---|---|
+| 🧩 **One run, every input.** Copilot and agent activity, people and licensing, and the Agent 365 catalog, all from one command. | ⚡ **Dashboard-ready output.** `-Dashboard AIO` prepares compact files before Power BI reads them, so reports load fast. |
+| 📈 **History that grows itself.** A watermark adds only the days you don't have yet, with no gaps and no double counting. | ☁️ **Save where you work.** Write to a SharePoint library or to a local or network folder. |
+| 🛟 **Built for big tenants.** Checkpoint and resume, parallel collection and adaptive time-slicing keep long exports on track. | 🛡️ **Protects your history.** Every file is checked before and after it is replaced, so a failed run never leaves you with half a dataset. |
+| 🔐 **Optional de-identification.** `-Deidentify` replaces names and other identifiers with consistent stand-ins. | 🆓 **Free and open source.** Published by Microsoft on [GitHub](https://aka.ms/PAX). |
 
-### The three parameters
+Download the latest PAX script and its documentation from **[aka.ms/PAX](https://aka.ms/PAX)**.
 
-| Parameter | What to paste in | Required? |
+### ⌨️ Build your command with Mini-Kitchen
+
+**[Mini-Kitchen](https://PAXcookbook.com/Mini-Kitchen)** builds a clean, copy-ready PAX command in your browser. Choose the **AI-in-One** preset, pick your dates and where to save the files, then copy the command and run it yourself.
+
+- **Nothing to install.** It runs in your browser.
+- **Never touches your tenant.** No sign-in, no credentials and no access to your audit, user or file data.
+- **Saves your choices.** Keep recipes in your browser and come back to them next time.
+
+</details>
+
+### 🌱 Seed once, then keep it current
+
+| | What it does | How often |
 |---|---|---|
-| **Copilot Interactions File** | The full path or URL to your `Purview_Audit_..._Interactions.csv` | ✅ Required |
-| **Org Data File** | The full path or URL to your `EntraUsers_MAClicensing_..._Users.csv` | ✅ Required |
-| **Agent 365 (highly recommended)** | The full path or URL to your `Agent365_....csv`, **or leave blank** to skip | Optional |
+| **🌱 Seed** | Collects your starting history, for example the last 90 days, and creates the dashboard data. | **Once** |
+| **💧 Keep it current** | Adds new days to the **same** data, so the template's paths never change. | **Daily or weekly, on a schedule** |
 
-### Auto-detection — paste any of three formats *(3-in-1 edition)*
+`-Dashboard AIO` prepares the AI-in-One data. Every output gets its own destination: activity (`-OutputPath`), people and licensing (`-OutputPathUserInfo`) and the Agent 365 catalog (`-OutputPathAgent365Info`). Watermark runs then use the matching `-AppendFile`, `-AppendUserInfo` and `-AppendAgent365Info` switches. Replace the example paths, dates and file names with your own, and replace `PAX_Purview_Audit_Log_Processor_v2.0.0.ps1` with the file name of the PAX script you downloaded.
 
-> **PBI-SharePoint edition:** each parameter must be a **SharePoint URL** — the template checks that the value starts with `https://` and points at a SharePoint site. Paste a local path or OneLake URL into that edition and you'll get a friendly message telling you to use the 3-in-1 edition instead. The auto-detection described below applies to the **3-in-1 (auto-detect)** edition.
-
-Each parameter accepts whichever of these matches where your file lives. The template figures out the rest automatically:
-
-- **Local file path** — e.g. `C:\Data\PAX\Purview_Audit_20260510_120000_Interactions.csv`
-- **SharePoint URL** — e.g. `https://contoso.sharepoint.com/sites/CopilotAnalytics/Shared Documents/PAX Output/Purview_Audit_20260510_120000_Interactions.csv`
-- **OneLake URL** — e.g. `https://onelake.dfs.fabric.microsoft.com/<workspace>/<lakehouse>.Lakehouse/Files/PAX/Purview_Audit_20260510_120000_Interactions.csv`
-
-The template is tolerant of common copy-paste mistakes:
-- Surrounding quotes (single or double, including "smart quotes" from email clients) are stripped automatically
-- URL-encoded spaces (`%20`) and trailing query strings (`?...`) are handled
-- SharePoint URLs are matched case-insensitively and tolerate trailing slashes
-
-> ⚠️ **SharePoint URL gotcha** — the URL you paste into these parameters must be the **document path** from the SharePoint details pane, **NOT** the URL in your browser's address bar and **NOT** a "Copy link" share link. See [How to get the correct SharePoint URL](#-how-to-get-the-correct-sharepoint-url-this-trips-everyone-up) above for step-by-step instructions.
-
-### ❓ Can I mix file locations (e.g. SharePoint + local)?
-
-Technically yes — each of the three parameters resolves its backend independently, so the template will accept (say) a SharePoint URL for Interactions, a SharePoint URL for Org Data, and a local path for Agent 365. In practice, **mixing source types is awkward and we recommend against it**:
-
-- Power BI Desktop will throw `Formula.Firewall` errors when combining different source types unless you set Privacy → "Combine data without privacy"
-- Power BI Service requires you to configure credentials separately for **each** source type, and Privacy levels must be set consistently
-- Any local-path source requires an **On-premises Data Gateway** in the Power BI Service — but SharePoint and OneLake do not
-
-**Strong recommendation: keep all three files in the same storage location.** The most common mismatch is a manually-exported Agent 365 file sitting on someone's laptop while the Purview/Entra rollup files live on SharePoint or OneLake. Easy fix: upload the Agent 365 CSV to the same SharePoint/OneLake folder.
-
-### Troubleshooting
-
-- **"File not found" / `DataSource.Error`** — double-check the path or URL is exactly what PAX wrote. Local paths must be absolute (e.g. `C:\Data\file.csv`, not `.\file.csv`). For SharePoint, copy the full document URL.
-- **`Formula.Firewall: Query references other queries…`** — privacy-level mismatch when combining sources. In Power BI Desktop: **File → Options → Current File → Privacy → Combine data without privacy**. In Power BI Service: dataset Settings → Data source credentials → set **Privacy: Organizational** (or **None**) for SharePoint and OneLake sources.
-- **Blank visuals after load** — the most common cause is that the input file is **not** a PAX rollup file. Confirm the filename matches the `..._Interactions.csv` / `..._Users.csv` pattern and was produced by PAX with `-Rollup` or `-RollupPlusRaw`.
-
-</details>
-
----
-
-## 🔄 Set up scheduled refresh in Power BI Service
+Choose where the data should live:
 
 <details>
-<summary><strong>Show this section</strong> <em>(click to expand)</em></summary>
+<summary><b>🟦 SharePoint library</b> &nbsp;·&nbsp; for the SharePoint edition (recommended)</summary>
 
 <br>
 
-> ### ⚠️ Scheduled refresh requires the **PBI-SharePoint** edition
-> Automatic scheduled refresh in the Power BI Service is supported **only by the PBI-SharePoint edition**, with all three input files stored on SharePoint. The 3-in-1 (auto-detect) edition **cannot be scheduled** in the Service — its runtime-resolved connector is treated as a *dynamic data source*, which disables scheduled refresh for the entire dataset (a Power BI platform rule — see [Why are there two editions](#why-are-there-two-editions)). You can still refresh the 3-in-1 manually in Power BI Desktop. For OneLake/Fabric scheduled refresh, use the Fabric edition in [`Classic Editions/3. Fabric/`](Classic%20Editions/3.%20Fabric/).
+**🌱 Seed: run once**
 
-Once the dashboard works in Power BI Desktop, publish the report to a Power BI Service workspace and configure scheduled refresh so it stays current automatically.
+```powershell
+pwsh -NoProfile -ExecutionPolicy Bypass -File .\PAX_Purview_Audit_Log_Processor_v2.0.0.ps1 `
+    -Dashboard AIO -IncludeUserInfo -IncludeAgent365Info `
+    -StartDate 2026-07-01 -EndDate 2026-10-01 `
+    -OutputPath             "https://contoso.sharepoint.com/sites/CopilotAnalytics/Shared Documents/PAX/AIO" `
+    -OutputPathUserInfo     "https://contoso.sharepoint.com/sites/CopilotAnalytics/Shared Documents/PAX/AIO" `
+    -OutputPathAgent365Info "https://contoso.sharepoint.com/sites/CopilotAnalytics/Shared Documents/PAX/AIO"
+```
 
-### For SharePoint-stored files — the PBI-SharePoint edition (recommended for most customers — no Gateway needed)
+The library folder then holds three files, one for each template parameter:
 
-1. **Publish** the **PBI-SharePoint edition** report to a workspace from Power BI Desktop (`File → Publish → Publish to Power BI`)
-2. In Power BI Service, go to the **dataset → Settings → Data source credentials**
-3. Click **Edit credentials** for the SharePoint source and sign in with **OAuth2** using an account that can read the SharePoint folder
-4. Set the **Privacy level** to **Organizational** (so PBI is allowed to combine your sources)
-   > **Cross-tenant SharePoint:** if the SharePoint site holding your files is in a **different tenant** than your Power BI Service, sign in here with a guest/B2B account that has access to those files. The scheduled-refresh toggle stays **grayed out until valid credentials are saved** for every source — saving them here is what enables it. Conditional Access / MFA policies on the file-hosting tenant can block the unattended token renewal that scheduled refresh relies on; if the toggle won't enable after you sign in, that's the likely cause (copy the files into your own tenant, or use an account not subject to those policies).
-5. Expand **Scheduled refresh** and turn it on. Pick a cadence (Daily / Weekly) that lines up with how often PAX runs
-6. **Tip:** have your admin configure PAX to overwrite the *same filename* each run (rather than a new timestamped file every time). This way the dataset just refreshes against a stable URL — no template edits needed
-7. **Limits to know:**
-   - Power BI Pro: up to 8 scheduled refreshes per day
-   - Premium / PPU: up to 48 scheduled refreshes per day
-   - Make sure PAX finishes writing the file *before* your scheduled refresh window starts
+- **Copilot Interactions File:** `AIO_Purview_Audit_UsageActivity_CopilotInteraction_<timestamp>_Interactions.csv`
+- **Org Data File:** `AIO_EntraUsers_MAClicensing_<timestamp>_Users.csv`
+- **Agent 365:** `Agent365_<timestamp>.csv`
 
-### For OneLake / Fabric-stored files (recommended for large tenants)
+**💧 Keep it current: schedule this**
 
-> **For OneLake scheduled refresh, use the Fabric edition.** The 3-in-1 (auto-detect) edition reads OneLake files in Power BI Desktop, but it **can't be scheduled** in the Service (dynamic data source — see [Why are there two editions](#why-are-there-two-editions)), and the PBI-SharePoint edition only accepts SharePoint URLs. For Service-side **scheduled refresh against OneLake**, use the Fabric thin-client edition in [`Classic Editions/3. Fabric/`](Classic%20Editions/3.%20Fabric/). The steps below describe that Fabric pattern.
+Point each append switch at the matching seed file, using the file names exactly as they appear. The seed records where it ended, so every run picks up from there automatically.
 
-1. Publish the `.pbix` to a **Fabric-enabled workspace** (PPU or Fabric capacity required)
-2. OneLake credentials are handled automatically via SSO if the workspace is in the same tenant — usually no manual credential setup needed
-3. Configure scheduled refresh the same way as above
-4. **Recommended pattern:** schedule PAX to run via an Azure Container Apps Job → PAX writes the rollup files directly to OneLake → the Power BI dataset's scheduled refresh fires shortly after.
+```powershell
+pwsh -NoProfile -ExecutionPolicy Bypass -File .\PAX_Purview_Audit_Log_Processor_v2.0.0.ps1 `
+    -Dashboard AIO -Watermark `
+    -AppendFile         "https://contoso.sharepoint.com/sites/CopilotAnalytics/Shared Documents/PAX/AIO/AIO_Purview_Audit_UsageActivity_CopilotInteraction_20261001_020000_Interactions.csv" `
+    -AppendUserInfo     "https://contoso.sharepoint.com/sites/CopilotAnalytics/Shared Documents/PAX/AIO/AIO_EntraUsers_MAClicensing_20261001_020000_Users.csv" `
+    -AppendAgent365Info "https://contoso.sharepoint.com/sites/CopilotAnalytics/Shared Documents/PAX/AIO/Agent365_20261001_020000.csv"
+```
 
-> 🏭 **Fabric customers \u2014 use the `fabric_resources/` folder in the PAX repo.** It has the Dockerfile, detailed deployment instructions, prereq checklists, and configuration templates for setting up the Azure Container Apps Job end-to-end. Do not try to piece this together from scratch \u2014 the resources folder is the canonical guide.
->
-> 👉 **https://github.com/microsoft/PAX** → `fabric_resources/`
-
-### For local files
-
-Power BI Service can't reach files on your laptop without an **On-premises Data Gateway**. If you're going to schedule refresh, use SharePoint or OneLake instead — both work without a Gateway and are simpler to maintain.
+> ❗ **Important:** Copy SharePoint folder and file paths from the **Details** pane: select the item, choose **⋮ → Details**, then copy **Path**. Viewer or sharing links, such as addresses containing `?`, `/:x:/r/` or `&web=1`, won't work.
 
 </details>
 
----
-
-## 📊 Review and Customize
-
 <details>
-<summary><strong>Show this section</strong> <em>(click to expand)</em></summary>
+<summary><b>💻 Local or network folder</b> &nbsp;·&nbsp; for the Local CSV edition</summary>
 
 <br>
 
-Once the dashboard loads:
+**🌱 Seed: run once**
 
-1. **Walk through the report pages** — verify data loaded correctly and that filters/slicers behave as expected
-2. **Customize for your organization** — adjust colors/branding, organizational hierarchies, default date ranges, and bookmarks
-3. **Publish and share** — publish to Power BI Service, optionally configure Row-Level Security, then share via workspace access or apps
-4. **Set up subscriptions** — email subscriptions for executives who want regular updates without opening the dashboard
+```powershell
+pwsh -NoProfile -ExecutionPolicy Bypass -File .\PAX_Purview_Audit_Log_Processor_v2.0.0.ps1 `
+    -Dashboard AIO -IncludeUserInfo -IncludeAgent365Info `
+    -StartDate 2026-07-01 -EndDate 2026-10-01 `
+    -OutputPath             "C:\PAX\AIO\" `
+    -OutputPathUserInfo     "C:\PAX\AIO\" `
+    -OutputPathAgent365Info "C:\PAX\AIO\"
+```
 
-### Best practices
+`C:\PAX\AIO\` then holds the same three files as the SharePoint example.
 
-- 🔄 **Refresh schedule** — match it to how often PAX runs (typically weekly or daily)
-- 🔒 **Row-Level Security** — restrict sensitive data by department or role if needed
-- 📊 **Usage tracking** — monitor dashboard usage in Power BI Service to understand which views resonate
+**💧 Keep it current: schedule this**
+
+```powershell
+pwsh -NoProfile -ExecutionPolicy Bypass -File .\PAX_Purview_Audit_Log_Processor_v2.0.0.ps1 `
+    -Dashboard AIO -Watermark `
+    -AppendFile         "C:\PAX\AIO\AIO_Purview_Audit_UsageActivity_CopilotInteraction_20261001_020000_Interactions.csv" `
+    -AppendUserInfo     "C:\PAX\AIO\AIO_EntraUsers_MAClicensing_20261001_020000_Users.csv" `
+    -AppendAgent365Info "C:\PAX\AIO\Agent365_20261001_020000.csv"
+```
+
+</details>
+
+<details>
+<summary><b>💡 How the dates and watermark work</b></summary>
+
+<br>
+
+- **Dates are whole UTC days.** `-StartDate` is the first day collected. `-EndDate` is the day collection stops *before*. So `-StartDate 2026-07-01 -EndDate 2026-10-01` collects July 1 through September 30.
+- **No gaps, no overlap.** The seed records where it ended, so the first watermark run starts on the seed's `-EndDate` (here `2026-10-01`) automatically.
+- **Watermark runs pick their own dates.** Don't add `-StartDate` or `-EndDate`. Each run collects every whole day since the last one, up to the start of today (UTC).
+- **Already current?** PAX says so and finishes without contacting any service.
+- **Overlap is safe.** If a day is collected twice, PAX removes the duplicates, so nothing is counted twice.
+- **Same files, every time.** Appends update the seed's files in place, so the template's paths never change.
+- **Schedule it.** Run the watermark command daily or weekly with Windows Task Scheduler or an Azure automation job.
+
+</details>
+
+<details>
+<summary><b>🧰 Not using PAX?</b></summary>
+
+<br>
+
+The template needs **dashboard-ready** files; it can't read raw Purview or Entra exports. If you already have a raw Purview audit CSV and an Entra users CSV with a Copilot license column, the standalone processor in [`scripts/`](scripts/) produces the same two files PAX does. It's the same processor PAX runs internally. PAX remains the recommended path: it also collects the data, keeps history growing and protects your files.
+
+1. Install **[Python 3.10 or later](https://python.org/downloads)**.
+2. Create a folder for temporary working files, such as `C:\Data\Temp`, and point `PAX_TEMP_ROOT` at it. The processor requires this setting.
+3. Run the processor with the `aio` profile:
+
+```powershell
+setx PAX_TEMP_ROOT "C:\Data\Temp"
+```
+
+Open a new PowerShell window so the setting takes effect, then run:
+
+```powershell
+python .\scripts\Purview_CopilotInteraction_Processor_v4.2.3.py --profile aio `
+    --purview "C:\Data\PurviewAudit.csv" `
+    --entra   "C:\Data\EntraUsers.csv" `
+    --out-dir "C:\Data\AIO"
+```
+
+4. Use `PurviewAudit_Interactions.csv` for **Copilot Interactions File** and `EntraUsers_Users.csv` for **Org Data File**.
+
+Run `python .\scripts\Purview_CopilotInteraction_Processor_v4.2.3.py --help` for every option.
+
+</details>
+
+<a id="-step-3-open-the-template"></a>
+
+## 3️⃣ Step 3: Open the template
+
+<details>
+<summary><b>Expand: parameters, Minimum Group Size and first load</b></summary>
+
+<br>
+
+1. **Download** the template for your [edition](#-choose-your-edition) and open the `.pbit` in Power BI Desktop.
+2. **Fill in the parameters** in the dialog that opens:
+
+   | Parameter | SharePoint edition | Local CSV edition |
+   |---|---|---|
+   | **Copilot Interactions File** *(required)* | SharePoint path of `AIO_…_Interactions.csv` | Full local or network path of `AIO_…_Interactions.csv` |
+   | **Org Data File** *(required)* | SharePoint path of `AIO_…_Users.csv` | Full local or network path of `AIO_…_Users.csv` |
+   | **Agent 365** *(highly recommended)* | SharePoint path of `Agent365_….csv`, or blank | Full local or network path of `Agent365_….csv`, or blank |
+   | **Minimum Group Size** *(required)* | A whole number; see below | A whole number; see below |
+
+   For the Local CSV edition, select the file in File Explorer, choose **Copy as path**, paste it and remove the quotation marks. For example: `C:\PAX\AIO\AIO_EntraUsers_MAClicensing_20261001_020000_Users.csv`.
+
+3. **Choose a Minimum Group Size.** It's the smallest number of eligible people a group must have before the report shows its results:
+
+   | Value | What the report shows |
+   |:---:|---|
+   | **3** *(default)* | Team-level reporting. Groups need at least three eligible people, and individual activity stays hidden. |
+   | **1** | Individual detail, such as **By user** views. Use it only when individual-level reporting is approved. |
+   | **Any whole number** | Your own threshold. For example, **10** shows only groups of ten or more people. |
+
+4. **Select Load.** With the SharePoint edition, sign in with your **organizational account** when prompted. The Local CSV edition reads the files directly.
+5. **Explore.** The report opens on **Copilot Usage Explorer**.
+
+| **When you first open the template** | **To change it later in Power BI Desktop** |
+|---|---|
+| <img src="media/v2.0.0/minimum-group-size-first-load.png" alt="Minimum Group Size in the first-load dialog, above the Load button" width="100%"> | <img src="media/v2.0.0/03-select-minimum.png" alt="Manage parameters with Minimum Group Size selected" width="100%"> |
+| Enter **Minimum Group Size** with the file paths, then select **Load**. | **Home → Transform data → Manage parameters**, choose **Minimum Group Size**, change **Current value**, then **OK → Close & Apply** and **Clear filters**. |
+
+> 💡 **Tip:** To change Minimum Group Size later, edit the existing parameter as shown. Don't use *Modeling → New parameter*.
+
+</details>
+
+<a id="-step-4-publish-share-and-refresh"></a>
+
+## 4️⃣ Step 4: Publish, share and refresh
+
+<details>
+<summary><b>Expand: scheduled refresh, row-level security and sharing</b></summary>
+
+<br>
+
+### 🟦 SharePoint edition: automatic refresh, no gateway
+
+1. In Power BI Desktop, select **Publish** and choose a workspace.
+2. In Power BI Service, open the semantic model's **Settings → Data source credentials**. Sign in to each SharePoint source with **OAuth2** and your organizational account.
+3. Select **Refresh now** and confirm the report loads.
+4. Turn on **Scheduled refresh**. Set it to run a little after your PAX watermark job, for example PAX at 2:00 AM and refresh at 4:00 AM.
+
+Because watermark runs update the same files, every scheduled refresh picks up the newest days automatically.
+
+### 💻 Local CSV edition: refresh through a gateway
+
+Publish as usual. Power BI Service can't reach files on your PC by itself, so choose one of these:
+
+- **Scheduled refresh:** install an [on-premises data gateway](https://learn.microsoft.com/power-bi/connect-data/service-gateway-onprem) on a computer that's always on and can open the same CSV paths. In the semantic model's **Settings → Gateway and cloud connections**, map each file to the gateway, then schedule refresh to run after your PAX watermark job.
+- **Manual refresh:** refresh in Power BI Desktop, then publish again.
+
+Use the SharePoint edition if you'd rather not run a gateway.
+
+<a id="-row-level-security"></a>
+
+### 🔐 Set up row-level security before you share
+
+> ❗ **Important:** **Do this before you share the report.** The v2.0.0 dashboard uses row-level security (RLS) to decide whose data each viewer sees. Until people or groups are assigned to a role in Power BI Service, viewers can't see the report's data.
+
+The template includes two roles:
+
+| Role | Who belongs in it | What they see |
+|---|---|---|
+| **Reporting hierarchy** | Managers and other viewers who should see their own organization | Themselves and everyone who reports to them, directly or indirectly. Viewers are matched by sign-in name to the people data, so someone who isn't in that data sees nothing. |
+| **All data viewers** | Executive sponsors, analysts and adoption leads who need the whole picture | All users, wherever they sit in the reporting hierarchy, including people with no place in it |
+
+1. In Power BI Service, open the workspace, select **⋯** next to the semantic model, then **Security**.
+2. Select **Reporting hierarchy** and add the people or security groups who should see their own organization.
+3. Select **All data viewers** and add the people or security groups who should see everyone.
+4. Select **Save**.
+5. Check it: select **⋯** next to a role, choose **Test as role**, and enter a viewer's name to see the report as they will.
+
+> 💡 **Tip:** Security groups are easiest to maintain: add or remove people in Microsoft Entra ID and the report follows. RLS limits viewers; workspace Admins, Members and Contributors see all data regardless of role. **Minimum Group Size** still applies on top of RLS.
+
+### 👥 Share it
+
+- After assigning the [RLS roles](#-row-level-security), share through a **Power BI app** or give people **Viewer** access to the workspace.
+- Set up **email subscriptions** for leaders who want a regular update without opening the report.
+- Pair the report with the **[Storyboard](AI-in-One%20-%20v2.0.0%20-%20Storyboard.pptx)** for leadership reviews and the **[Interpretation Guide](AI-in-One%20-%20v2.0.0%20-%20Interpretation%20Guide.pdf)** for everyone else.
 
 </details>
 
 ---
 
-## 🔗 Related Resources
+<a id="-privacy-and-minimum-group-size"></a>
 
-- **PAX (Purview Audit eXporter)** — the script that produces this template's input files: https://github.com/microsoft/PAX
+## 🔒 Privacy and Minimum Group Size
+
+<details>
+<summary><b>Expand: how the dashboard protects individuals</b></summary>
+
+<br>
+
+**Minimum Group Size** sets how many eligible people a group needs before the report shows its details. Eligible people are everyone in the selected group, not only those who used Copilot.
+
+| Setting | What you see | Use it when |
+|:---:|---|---|
+| **3** *(default)* | Team and organization results. A team of 20 can show that two people were active without revealing who. | Everyday reporting and broad sharing |
+| **Higher** | Only larger groups | You want extra protection |
+| **1** | Individual activity, for example **By user** on Agents: Leaderboard | The report owner has **approved** individual-level reporting |
+
+> 🛑 **Caution:** Minimum Group Size doesn't make data anonymous and doesn't replace access permissions. Use [row-level security](#-row-level-security) to control whose data each viewer sees, and control who can open and export the report. For de-identified data, run PAX with `-Deidentify`.
+
+</details>
+
+<a id="-tips-for-reading-the-numbers"></a>
+
+## 🧭 Tips for reading the numbers
+
+<details>
+<summary><b>Expand: read the dashboard the right way</b></summary>
+
+<br>
+
+- **Sessions are conversations; prompts are the requests within them.** Prompts per session shows how deeply people engage.
+- **Habit ranges are active days in a month:** light (1–5), moderate (6–10), frequent (11–15) and daily (16 or more). Each habit page names the month it shows.
+- **Experiences are side by side, not stacked,** because one person can use M365 Copilot, Copilot Chat and agents.
+- **Unknown licensing stays Unknown.** Missing license information is never treated as "unlicensed".
+- **Counts can differ from other reports.** Audit-based prompt counts can differ from Viva Insights and Microsoft 365 admin center reports because coverage, timing and calculations differ.
+- **Use Cases are clues, not outcomes.** Discuss possible uses with the people doing the work.
+- **When in doubt,** open **📖 Metric Glossary & Guide** or the **[Interpretation Guide](AI-in-One%20-%20v2.0.0%20-%20Interpretation%20Guide.pdf)**.
+
+</details>
+
+<a id="-troubleshooting"></a>
+
+## 🛠️ Troubleshooting
+
+<details>
+<summary><b>Expand: common questions and fixes</b></summary>
+
+<br>
+
+| Symptom | Likely cause and fix |
+|---|---|
+| Visuals are blank or loading fails | The template needs dashboard-ready data. Run PAX with `-Dashboard AIO`, and use the `Interactions` and `Users` files from the **same** seed and its appends. |
+| PAX reports `AuditingDisabledTenant` | Unified audit logging is off. See [Step 1](#-step-1-prepare). |
+| SharePoint path is rejected | Use **Details → Path → Copy**, not the address bar or a sharing link. |
+| Local CSV edition won't refresh in Power BI Service | Power BI Service needs an on-premises data gateway that can open the same CSV paths. Set one up, or switch to the SharePoint edition. |
+| Viewers see a blank report or no data | The row-level security roles aren't assigned. Add people or groups under the semantic model's **Security** settings; see [row-level security](#-row-level-security). |
+| Names are hidden on user views | Minimum Group Size is above 1. That's expected; see [Privacy](#-privacy-and-minimum-group-size). |
+| Watermark says the target is already current | Every whole UTC day is already collected. Nothing to do until tomorrow. |
+| "`-WatermarkStartDate` is required" | The file or table wasn't created by a PAX v2.0.0 seed, so it has no watermark yet. Run a new seed, or add `-WatermarkStartDate` once with the first day you still need. |
+| Few results after turning on auditing | Auditing doesn't recover past activity. Results build up from the day it was turned on. |
+| Numbers differ from Viva Insights or the admin center | Expected. The sources differ in coverage, timing and calculations. |
+
+Still stuck? Open an [issue](../../issues) in this repository.
+
+</details>
+
+<a id="-usage-and-compliance"></a>
+
+## ⚠️ Usage and compliance
+
+<details>
+<summary><b>Expand: important usage and compliance information</b></summary>
+
+<br>
+
+Microsoft has **no visibility** into the data customers load into this template, and no control over how customers use it in their environment. Customers are solely responsible for making sure their use complies with all applicable laws and regulations, including those on data privacy, security and employee monitoring. **Microsoft disclaims any and all liability** arising from or related to customers' use of this template.
+
+The Microsoft Purview audit log is intended to support security and compliance scenarios. It gives visibility into Copilot and agent interactions, but it isn't intended to be the sole source of truth for licensing or full-fidelity usage reporting. For official usage figures, also refer to the Microsoft 365 admin center and Viva Insights. The template is currently available in English only.
+
+</details>
+
+<a id="-email-your-admin"></a>
+
+## 📧 Email your admin
+
+Need someone else to run the export? **[📨 Send your IT admin the setup request](mailto:?subject=Request%3A%20data%20export%20for%20the%20AI-in-One%20dashboard%20%28Power%20BI%29&body=Hi%2C%0A%0AI%27d%20like%20to%20set%20up%20the%20AI-in-One%20dashboard%20v2.0.0%2C%20a%20free%20Power%20BI%20report%20from%20the%20Microsoft%20Copilot%20Analytics%20team%20that%20shows%20Microsoft%20365%20Copilot%2C%20Copilot%20Chat%20and%20agent%20adoption%3A%20https%3A//github.com/microsoft/AI-in-One-Dashboard%0A%0ACould%20you%20help%20export%20the%20data%20with%20PAX%2C%20Microsoft%27s%20free%20audit%20exporter%3F%0A%0A1.%20Confirm%20unified%20audit%20logging%20is%20on%3A%20https%3A//purview.microsoft.com/audit/auditsearch%0A%0A2.%20Grant%20these%20Microsoft%20Graph%20permissions%20to%20the%20account%20or%20app%20that%20runs%20PAX%20%28delegated%20or%20application%29%3A%0A-%20AuditLogsQuery.Read.All%20%28Copilot%20and%20agent%20activity%29%0A-%20User.Read.All%20and%20Organization.Read.All%20%28people%20and%20licensing%29%0A-%20CopilotPackages.Read.All%20and%20Application.Read.All%20%28Agent%20365%20catalog%29%0A-%20Sites.Selected%20plus%20a%20one-time%20write%20grant%20to%20the%20target%20site%2C%20only%20if%20saving%20to%20SharePoint%20%28see%20the%20README%29%0A%0A3.%20Install%20PowerShell%207%2B%20and%20Python%203.10%2B%2C%20then%20download%20PAX%3A%20https%3A//aka.ms/PAX%0A%0A4.%20Build%20the%20command%20with%20the%20AI-in-One%20preset%20in%20Mini-Kitchen%20%28runs%20in%20the%20browser%2C%20no%20tenant%20connection%29%3A%20https%3A//PAXcookbook.com/Mini-Kitchen%0A%0A5.%20Run%20one%20seed%20export%2C%20then%20schedule%20a%20watermark%20run%20to%20add%20new%20days.%20Save%20the%20output%20to%3A%20%5BSharePoint%20folder%20/%20local%20or%20network%20folder%5D%0A%0AThe%20README%20has%20the%20exact%20commands%20under%20Step%202.%0A%0AThank%20you%21)** with everything they need: audit logging, Microsoft Graph permissions, the PAX link and the Mini-Kitchen preset.
 
 ---
 
-## 🔄 Version History
+<div align="center">
 
-This release ships **two editions**, both built for the same PAX rollup file format:
+### 🌐 Explore more free reports at **[aka.ms/Analytics-Hub](https://aka.ms/Analytics-Hub)**
 
-| Edition | File | Input locations | Scheduled refresh in the Service |
-|---|---|---|---|
-| Rollup Edition (3-in-1, auto-detect) | `AIO Dashboard - Rollup Edition - 2026-06-25.pbit` | Local / SharePoint / OneLake | Desktop / manual only |
-| Rollup Edition — PBI-SharePoint | `AIO Dashboard - Rollup Edition - PBI-SharePoint - 2026-06-25.pbit` | SharePoint only | ✅ Supported |
+**[PAX](https://aka.ms/PAX)** &nbsp;·&nbsp; **[Mini-Kitchen](https://PAXcookbook.com/Mini-Kitchen)** &nbsp;·&nbsp; **[Screenshot tour](Report%20Screenshots.md)** &nbsp;·&nbsp; **[Interpretation Guide](AI-in-One%20-%20v2.0.0%20-%20Interpretation%20Guide.pdf)** &nbsp;·&nbsp; **[Storyboard](AI-in-One%20-%20v2.0.0%20-%20Storyboard.pptx)** &nbsp;·&nbsp; **[What's New](AI-in-One%20-%20v2.0.0%20-%20What%27s%20New.pdf)** &nbsp;·&nbsp; **[License](LICENSE.md)** &nbsp;·&nbsp; **[Security](SECURITY.md)**
 
-As long as you're running a current version of PAX (v1.11.1+) with `-Rollup` (or `-RollupPlusRaw`), the output is compatible with both editions.
+Built and maintained by the **Microsoft Copilot Analytics team**.
 
----
+**Found this useful? ⭐ Star the repo to help others discover it.**
 
-## 📄 License
-
-This project is licensed under the MIT License — see the [LICENSE.md](../LICENSE.md) file for details.
-
----
-
-## 🔒 Security
-
-Please see [SECURITY.md](../SECURITY.md) for information on reporting security vulnerabilities.
-
----
-
-## 📧 Email Your Admin
-
-> 📧 **Before you begin, your IT admin needs to export data from Purview, Entra, and M365 Admin Center.**
-> This pre-written email covers all required data sources, field names, admin roles, permissions, and export steps — everything your admin needs in one click.
->
-> **[📨 Email Prerequisites to Your IT Admin](mailto:?subject=Action%20Required%3A%20Data%20Export%20Fields%20Needed%20for%20AI-in-One%20Dashboard%20%28Power%20BI%29&body=To%3A%20IT%20Admin%20%2F%20Global%20Admin%0ARe%3A%20AI-in-One%20Dashboard%20%E2%80%93%20Power%20BI%20Report%20Setup%0A%0A%0AWHAT%20THIS%20REPORT%20DOES%0A%0AThe%20AI-in-One%20Dashboard%20is%20a%20Power%20BI%20report%20that%20provides%20a%20comprehensive%20view%20of%20Microsoft%20365%20Copilot%2C%20unlicensed%20Copilot%20Chat%2C%20agent%20usage%2C%20and%20third-party%20AI%20adoption%20across%20your%20organization.%20It%20consolidates%20four%20data%20sources%20into%20a%20single%20dashboard%20for%20adoption%20tracking%2C%20license%20optimization%2C%20and%20enablement%20planning.%0A%0A%0ADATA%20SOURCES%20REQUIRED%0A%0A1.%20Microsoft%20Purview%20%E2%80%93%20Copilot%20Audit%20Logs%0A%20%20%20Export%3A%20Purview%20portal%20%28security.microsoft.com%29%20-%3E%20Audit%20-%3E%20Export%2C%20or%20PAX%20PowerShell%20script%0A%20%20%20Format%3A%20CSV%0A%0A2.%20Microsoft%20Entra%20ID%20%E2%80%93%20User%2FOrg%20Data%20%28includes%20license%20data%29%0A%20%20%20Export%3A%20entra.microsoft.com%20-%3E%20Identity%20-%3E%20Users%20-%3E%20Download%20users%2C%20or%20PAX%20script%20with%20-IncludeUserInfo%0A%20%20%20Format%3A%20CSV%0A%0A3.%20Microsoft%20365%20Admin%20Center%20%E2%80%93%20Agent%20365%20Inventory%0A%20%20%20Export%3A%20admin.microsoft.com%20-%3E%20Agents%20-%3E%20All%20Agents%20-%3E%20Export%20to%20Excel%0A%20%20%20Format%3A%20XLSX%0A%0A4.%20%28if%20not%20using%20PAX%29%20Microsoft%20365%20Admin%20Center%20%E2%80%93%20Licensed%20Users%0A%20%20%20Export%3A%20admin.microsoft.com%20-%3E%20Reports%20-%3E%20Usage%20-%3E%20M365%20Copilot%20-%3E%20Readiness%20tab%20-%3E%20Export%0A%20%20%20Format%3A%20CSV%0A%0ANote%20on%20license%20data%3A%20The%20report%20requires%20a%20hasLicense%20flag%20to%20split%20licensed%20vs.%20unlicensed%20Copilot%20usage.%20The%20PAX%20script%20automatically%20adds%20this%20column%20to%20the%20Entra%20user%20export%20%E2%80%94%20no%20separate%20file%20needed.%20If%20you%20are%20exporting%20manually%20from%20Entra%2C%20you%20will%20also%20need%20the%20M365%20Admin%20Center%20licensed%20users%20file%20%28source%20%234%29%20and%20provide%20it%20as%20a%20separate%20input%20to%20the%20template.%0A%0A%0AREQUIRED%20FIELDS%20%E2%80%94%20DO%20NOT%20REMOVE%0A%0AIMPORTANT%3A%20If%20you%20are%20running%20a%20PAX%20Purview%20agent%20extract%20or%20manually%20exporting%20from%20Purview%2C%20do%20not%20prune%20or%20remove%20columns%20from%20the%20output%20files.%20The%20report%20will%20silently%20break%20or%20produce%20blank%20visuals%20if%20any%20of%20the%20following%20fields%20are%20missing.%0A%0APurview%20Audit%20Log%20%28CopilotInteraction%20%2F%20ConnectedAIAppInteraction%20%2F%20AIAppInteraction%29%3A%0ACreationDate%2C%20UserId%2C%20Operations%2C%20AppHost%2C%20ThreadId%2C%20AgentId%2C%20AgentName%2C%20AISystemPlugin_Id%2C%20AISystemPlugin_Name%2C%20Context_Type%2C%20Message_isPrompt%2C%20ModelTransparencyDetails_ModelName%2C%20Workload%2C%20OrganizationId%2C%20AppIdentity_DisplayName.%0A%0AMicrosoft%20Entra%20ID%20%E2%80%93%20User%20Export%3A%0AUserPrincipalName%2C%20Department%2C%20JobTitle%2C%20displayName%2C%20hasLicense%20%28added%20automatically%20by%20PAX%3B%20or%20use%20the%20M365%20Admin%20Center%20licensed%20users%20file%20if%20exporting%20manually%29%2C%20Manager%2C%20Office%2C%20City%2C%20Country.%0A%0AM365%20Admin%20Center%20%E2%80%93%20Licensed%20Users%20%28manual%20export%20path%20only%29%3A%0AUserPrincipalName%2C%20Has%20Copilot%20License%20Assigned.%0A%0AAgent%20365%20Inventory%3A%0AName%2C%20Host%20Products%2C%20Created%20Date%2C%20Developer%20User%20ID%2C%20Description%2C%20Status%2C%20Version.%0A%0A%0AINSIGHTS%20YOU%20WILL%20GAIN%0A%0A-%20Active%20Copilot%20users%20and%20interaction%20volume%20by%20week%2Fmonth%0A-%20Surface%20breakdown%3A%20which%20apps%20%28Teams%2C%20Word%2C%20Outlook%2C%20BizChat%2C%20etc.%29%20users%20are%20engaging%20with%0A-%20Agent%20adoption%3A%20which%20agents%20are%20used%2C%20by%20how%20many%20users%2C%20on%20which%20surfaces%0A-%20AI%20model%20distribution%20across%20interactions%0A-%20Licensed%20vs.%20unlicensed%20usage%20patterns%0A-%20Session%20depth%20and%20prompt%20volume%20per%20user%20cohort%0A-%20Third-party%20and%20custom%20AI%20app%20usage%20alongside%20M365%20Copilot%0A%0A%0AROLES%20%26%20PERMISSIONS%20REQUIRED%0A%0AExport%20Purview%20audit%20logs%3A%20Audit%20Reader%20or%20Compliance%20Administrator%0AExport%20Entra%20user%20data%20%28includes%20hasLicense%20via%20PAX%29%3A%20User%20Administrator%20or%20Global%20Reader%0AExport%20Agent%20365%20inventory%3A%20AI%20Admin%20or%20Global%20Reader%0AExport%20M365%20Admin%20Center%20licensed%20users%20%28manual%20path%20only%29%3A%20Global%20Administrator%20or%20Reports%20Reader%0ARun%20PAX%20PowerShell%20script%20%28automated%20export%29%3A%20Audit%20Reader%20%2B%20Microsoft%20Graph%20API%20permissions%20%28AuditLog.Read.All%2C%20User.Read.All%2C%20Organization.Read.All%29%0A%0A%0ASOFTWARE%20REQUIREMENTS%0A%0A-%20Power%20BI%20Desktop%20%28free%20download%20from%20Microsoft%29%20%E2%80%94%20required%20to%20open%20the%20.pbit%20template%0A-%20PowerShell%205.1%2B%20%E2%80%94%20required%20only%20if%20using%20the%20PAX%20automated%20export%20script%0A-%20Microsoft%20Graph%20PowerShell%20module%20%E2%80%94%20required%20only%20for%20PAX%20script%20%28Install-Module%20Microsoft.Graph.Beta.Security%29%0A-%20Access%20to%3A%20security.microsoft.com%2C%20admin.microsoft.com%2C%20entra.microsoft.com%0A%0A%0ANote%20on%20Usernames%20in%20Reports%3A%0AIf%20user%20names%20appear%20concealed%20in%20M365%20Admin%20Center%20exports%2C%20go%20to%20Settings%20-%3E%20Org%20Settings%20-%3E%20Services%20-%3E%20Reports%20and%20uncheck%20%22Display%20concealed%20user%2C%20group%2C%20and%20site%20names%20in%20all%20reports%22%20before%20exporting.)**
-
----
-
-Found this useful? ⭐ Star this repo to help others discover it!
-
-That's it! 🚀
+</div>

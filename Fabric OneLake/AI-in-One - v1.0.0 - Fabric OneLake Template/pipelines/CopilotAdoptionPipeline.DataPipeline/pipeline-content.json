@@ -1,0 +1,84 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/pipeline/definition/pipeline/1.0.0/schema.json",
+  "properties": {
+    "description": "Orchestrates the 3 Direct Ingester notebooks. Audit log + Licensed Users always run; Org Data is optional via the EnableOrgDataPull pipeline parameter — set false if the customer uploads org data manually instead of via Graph.",
+    "activities": [
+      {
+        "name": "Run_Audit_Log_Ingester",
+        "description": "Calls Microsoft Graph audit log API, polls until Purview is ready, fetches records, parses + flattens, writes Delta table dbo.copilot_interactions_parsed. Typical runtime 5-15 min.",
+        "type": "TridentNotebook",
+        "dependsOn": [],
+        "policy": {
+          "timeout": "0.02:00:00",
+          "retry": 1,
+          "retryIntervalInSeconds": 60,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "notebookId": "REPLACE_WITH_AUDIT_LOG_NOTEBOOK_ID",
+          "workspaceId": "REPLACE_WITH_WORKSPACE_ID",
+          "parameters": {}
+        }
+      },
+      {
+        "name": "Run_Licensed_Users_Ingester",
+        "description": "Calls Microsoft Graph M365 active user report, derives HasCopilot flag, writes Delta table dbo.copilot_licensed_users. Typical runtime <30 sec.",
+        "type": "TridentNotebook",
+        "dependsOn": [],
+        "policy": {
+          "timeout": "0.00:15:00",
+          "retry": 2,
+          "retryIntervalInSeconds": 60,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "notebookId": "REPLACE_WITH_LICENSED_USERS_NOTEBOOK_ID",
+          "workspaceId": "REPLACE_WITH_WORKSPACE_ID",
+          "parameters": {}
+        }
+      },
+      {
+        "name": "Conditionally_Run_Org_Data",
+        "description": "Wraps the Org Data Ingester in an IfCondition so it only runs when EnableOrgDataPull = true. Customers who upload Entra/HRIS data manually can set this to false to skip the Graph pull.",
+        "type": "IfCondition",
+        "dependsOn": [],
+        "typeProperties": {
+          "expression": {
+            "value": "@pipeline().parameters.EnableOrgDataPull",
+            "type": "Expression"
+          },
+          "ifTrueActivities": [
+            {
+              "name": "Run_Org_Data_Ingester",
+              "description": "Calls Microsoft Graph /users with manager expansion, writes Delta table dbo.copilot_org_data. Typical runtime <30 sec.",
+              "type": "TridentNotebook",
+              "dependsOn": [],
+              "policy": {
+                "timeout": "0.00:15:00",
+                "retry": 2,
+                "retryIntervalInSeconds": 60,
+                "secureOutput": false,
+                "secureInput": false
+              },
+              "typeProperties": {
+                "notebookId": "REPLACE_WITH_ORG_DATA_NOTEBOOK_ID",
+                "workspaceId": "REPLACE_WITH_WORKSPACE_ID",
+                "parameters": {}
+              }
+            }
+          ],
+          "ifFalseActivities": []
+        }
+      }
+    ],
+    "annotations": [],
+    "parameters": {
+      "EnableOrgDataPull": {
+        "type": "Boolean",
+        "defaultValue": true
+      }
+    }
+  }
+}
