@@ -3,7 +3,6 @@ _temp/
 _backup/
 tests/
 scripts/sharepoint_source_contract.py
-scripts/Generate_Synthetic_Rollup_Data.ps1
 scripts/__pycache__/
 docs/
 docs/*

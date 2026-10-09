@@ -8,7 +8,7 @@
 
 </div>
 
-This folder holds made-up data for a fictional organization of **10,050 people** across two companies, **Contoso** and **Fabrikam**. It's the same data shown in the [screenshot tour](../Report%20Screenshots.md) and the What's New video. Load it into the dashboard to click through all 17 pages. You don't need a Microsoft 365 tenant, admin permissions or PAX.
+This folder holds made-up data for a fictional organization of **10,050 people** across two companies, **Contoso** and **Fabrikam**. The current [screenshot tour](../Report%20Screenshots.md) uses these files; the What's New video may show an earlier report layout. Load the files into the dashboard to click through all 17 pages. You don't need a Microsoft 365 tenant, admin permissions or PAX.
 
 > [!WARNING]
 > **Everything here is made up.** Every person, manager, agent, conversation and date is invented. Use it to learn, demo and test the dashboard, never as a benchmark or as a basis for real adoption or licensing decisions.
@@ -17,7 +17,7 @@ This folder holds made-up data for a fictional organization of **10,050 people**
 
 | Template parameter | File | What's inside |
 |---|---|---|
-| **Copilot Interactions File** | 📦 [Interactions (zip)](AIO_Realistic_Interactions.zip) <sub>(25 MB; 469 MB unzipped)</sub> | 1,202,114 rows of Copilot and agent activity from June 22 to September 18, 2026 |
+| **Copilot Interactions File** | 📦 [Interactions (zip)](AIO_Realistic_Interactions.zip) <sub>(26 MB; 469 MB unzipped)</sub> | 1,202,114 rows of Copilot and agent activity from June 22 to September 18, 2026 |
 | **Org Data File** | 📄 [Users](AIO_Realistic_Users.csv) <sub>(2.4 MB)</sub> | 10,050 people in 2 companies, 5 divisions, 11 departments and 9 countries, with a full reporting hierarchy: 6,499 with a Microsoft 365 Copilot license and 3,551 without |
 | **Agent 365** | 📄 [Agents](AIO_Realistic_Agents.csv) <sub>(664 KB)</sub> | A catalog of 1,206 agents |
 
@@ -46,6 +46,36 @@ The full file names are `AIO_Realistic_Interactions.zip` (it contains `AIO_Reali
 - **A mixed license rollout.** About two-thirds of people have a Microsoft 365 Copilot license, so **License Prioritization** and the **Chat (Web)** pages have plenty to compare.
 - **Every Copilot experience.** Activity covers licensed Microsoft 365 Copilot, Copilot Chat, agents, autonomous agents and Cowork.
 - **Agents to review.** 1,005 of the 1,206 catalog agents are used and 201 are registered but never used, so **Agents: Health Check** has agents to flag.
+- **Explicit catalog metadata.** All 1,206 sample agents have a legacy creator value; Creator is visible at Minimum Group Size 3 and 1. This sample does not provide Developer Name, so that column displays **Not stated** rather than inventing a developer. All activity agents match the catalog, so **Activity-only agents** is 0.
+- **Meaningful return-rate blanks.** Three active sample agents have no repeat users and show **0%**. The 201 unused catalog agents retain blank Return Rate. The 67 agents that support only Microsoft 365 Copilot Chat have a Features label for that surface.
+
+## Large-organization licensing assumptions
+
+The sample represents an organization with more than 2,000 paid seats. From **April 15, 2026**, its unlicensed people do not generate non-agent activity inside Word, Excel, PowerPoint or OneNote. They can use supported Copilot Chat surfaces and agents. Licensed users' in-app activity is preserved.
+
+The current June 22-September 18 window contains **zero** unsupported unlicensed non-agent rows. The sample preserves all **10,050 people**, **1,202,114 prompts** and **399,856 user/thread sessions**, including unlicensed agent activity. It is a deterministic illustration of the large-organization scenario, not a statement about a particular tenant's rollout date.
+
+| AppHost | Unlicensed activity rows |
+|---|---:|
+| `bizchat` | 247,632 |
+| `teams` | 55,878 |
+| `autonomous` | 5,561 |
+| `logic app` | 2,747 |
+| `copilot studio` | 2,211 |
+
+Agent and other-AI activity is retained and classified separately from chat. With the SharePoint template's existing chat-host list, **zero unlicensed rows remain Unclassified activity** in this sample.
+
+### Reproduce the surface-policy update
+
+The [synthetic generator](../scripts/Generate_Synthetic_Rollup_Data.ps1) retains its deterministic seed and applies the date/license/agent rule to newly generated sessions. Its existing-sample mode preserves the accepted realistic names, hierarchy, IDs, dates and totals:
+
+```powershell
+.\scripts\Generate_Synthetic_Rollup_Data.ps1 `
+  -ExistingSampleDirectory .\sample-data `
+  -OutDir .\_temp\sample-candidate
+```
+
+Use a new output directory. This mode never overwrites the input exports. It writes the three CSVs with LF line endings and a zip with fixed archive metadata. Repeating it on the corrected sample produces identical CSV and zip bytes. The Users and Agents files are unchanged by this surface-only update.
 
 ## 🚀 Ready for your own data?
 

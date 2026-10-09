@@ -23,6 +23,8 @@ https://github.com/user-attachments/assets/e66ac19e-d4bd-45d3-85ef-485d0707c155
 
 <sub>▶️ Plays right here with captions · 🔇 GitHub starts videos muted: select the speaker icon, or **[🔊 open it with sound](https://github.com/user-attachments/assets/e66ac19e-d4bd-45d3-85ef-485d0707c155)** · 4:56 · 📰 **[Read the What's New PDF](AI-in-One-v2.0.0-Whats-New.pdf)**</sub>
 
+*The video is an overview. For current agent metadata definitions and the latest layouts, use the PDF and [screenshot tour](Report%20Screenshots.md).*
+
 <a id="-whats-new-in-v200"></a>
 
 ## ✨ What's new in v2.0.0
@@ -37,13 +39,17 @@ The AI-in-One dashboard has helped many organizations understand how people use 
 | ✅ **Health Check that follows you.** Agent review figures now respect your team and date choices. | 📖 **Metric Glossary & Guide.** Definitions and reading tips for all 17 pages. |
 | ⚡ **Fast loads, growing history.** PAX prepares the data first and can add each new day automatically. | 🧹 **One-click reset.** **Clear filters** resets selections and expanded tables without leaving the page. |
 
+As customers explore new questions, v2.0.0 brings more context to those conversations: usage bands follow the selected dates and organization, licensed activity includes every recorded experience, and the relevant tables and weekly comparisons pair prompts with sessions.
+
 📰 **Prefer to read it?** The **[What's New in v2.0.0 overview (PDF)](AI-in-One-v2.0.0-Whats-New.pdf)** walks through every change with screenshots. It's easy to share with stakeholders.
 
 <a id="-choose-your-edition"></a>
 
 ## ⬇️ Choose your edition
 
-All three editions share the same v2.0.0 report: the same 17 pages, metrics, privacy controls and row-level security. They differ only in where the report reads its data and how it refreshes.
+All three editions provide the v2.0.0 report's 17-page experience with privacy controls and row-level security, using different data sources and refresh paths. **This preview update includes the latest calculation and agent-metadata improvements in the SharePoint and Local CSV editions. The Fabric OneLake edition remains at its earlier v2.0.0 preview build and does not yet include these latest improvements.**
+
+Dashboard downloads are **Power BI templates (.pbit)**. Load a template in Power BI Desktop to create your report.
 
 | | 🟦 **SharePoint** | 💻 **Local CSV** | 🟪 **Fabric OneLake** |
 |---|:---:|:---:|:---:|
@@ -160,7 +166,7 @@ The AI-in-One dashboard is a free Power BI template that brings together three s
 
 - **What people did:** Microsoft 365 Copilot, Copilot Chat and agent activity from the Microsoft Purview audit log.
 - **Who they are:** departments, reporting lines, job titles and Copilot licensing from Microsoft Entra ID and the Microsoft 365 admin center.
-- **Which agents exist:** names, types, creators and status from the Agent 365 catalog.
+- **Which agents exist:** names, types, creators, developers and status from the Agent 365 catalog.
 
 Together, they answer the questions leaders ask most:
 
@@ -624,6 +630,13 @@ The template includes two roles:
 - **Habit ranges are active days in a month:** light (1–5), moderate (6–10), frequent (11–15) and daily (16 or more). Each habit page names the month it shows.
 - **Experiences are side by side, not stacked,** because one person can use M365 Copilot, Copilot Chat and agents.
 - **Unknown licensing stays Unknown.** Missing license information is never treated as "unlicensed".
+- **Active and inactive licensed users reconcile.** Active licensed users have any recorded Copilot activity in the selected dates, including agent-only activity. Inactive licensed users have none. Together they equal the licensed directory population in the same organization, reporting-team, license and access scope. Usage-band selections only narrow that population.
+- **Usage ranks follow your selection.** Each chat or agent rank family uses distinct prompts per active week among its active users in the selected dates and authorized population. Bands recalculate with dates and organization/team/license scope; ties share a band. Different rank selections intersect without changing one another's percentile thresholds.
+- **Licensing comes from the PAX Users output.** PAX collects license assignments through Microsoft Graph from those shown in the Microsoft 365 admin center. The activity-row source status reflects the Users snapshot used to prepare those rows; the model's looked-up status reflects the currently loaded Users output. Neither is historical entitlement at each activity timestamp.
+- **Prompt comparisons use matching scopes.** Relevant leaderboards, habit/activity tables and tooltips show prompts and prompts per session. Weekly comparison bars and applicable cards also show prompts per active week and prompt month-over-month change. Top-N session bars, line/area trends and scatter charts keep their existing series.
+- **Catalog agents are counted by ID, not name.** Different agents can share a name. Agent Leaderboard and Health Check count distinct catalog Title IDs and show agents observed only in activity separately as **Activity-only agents**.
+- **Agent ownership is catalog metadata.** Creator and Developer Name remain visible at either Minimum Group Size setting, within the viewer's access. Creator uses **Created by**, then the legacy **Agent creator** value; missing ownership displays **Not recorded**. Developer Name stays separate; missing values and the generic defaults **Your developer name**, **Agent Developer** and **Published by your Org** display **Not stated** (case-insensitive after trimming spaces).
+- **Agent descriptions and return rates have explicit meanings.** An agent row without a usable description displays **Agent description unavailable.** Return Rate is **0%** when an agent has active users but no repeat users, and blank when there is no activity. Sessions / user and Return Rate use readable numeric cells; blank or protected activity is not converted into invented values.
 - **Counts can differ from other reports.** Audit-based prompt counts can differ from Viva Insights and Microsoft 365 admin center reports because coverage, timing and calculations differ.
 - **Use Cases are clues, not outcomes.** Discuss possible uses with the people doing the work.
 - **When in doubt,** open **📖 Metric Glossary & Guide** or the **[Interpretation Guide](AI-in-One-v2.0.0-Interpretation-Guide.pdf)**.
