@@ -33,6 +33,8 @@ Uses the AIO profile's columns from `Purview_CopilotInteraction_Processor_v4.2.3
 - Source attributes for agent, application, environment, behavior, model, resource, license, user-month and raw reconciliation identifiers.
 - `_SnapshotId` for publication validation.
 
+Use standard Delta `timestamp` (Spark `TimestampType`) for UTC timestamp fields, including `CreationDate` and publication `CompletedAt`, not `timestamp_ntz`. The SQL analytics endpoint can omit unsupported timestamp columns even when they exist in Delta. Verify the SQL-exposed schema as well as row counts before refreshing.
+
 Spaces are replaced with underscores in Delta column names: `Has_license` and `License_Status`. The template restores the existing model names `Has license` and `License Status`. Other classifications, catalog resolution and current-directory licensing logic remain in the v2 model.
 
 The fact-to-agent relationship uses the **resolved `Agent_TitleID`**, not the raw `Source Agent Title ID`. This keeps catalog-matched and uncatalogued agents on the same key contract, so activity remains visible when the optional inventory is absent. Existing cross-filter and security-filter directions are retained.
@@ -48,6 +50,27 @@ Exactly one row: `SnapshotId`, `State`, `TenantId`, `Users`, `Facts`, `Prompts`,
 `State=Publishing` blocks refresh. `State=Ready` identifies the completed generation. Both prepared tables carry that SnapshotId. The template verifies state, generation IDs and row counts through the SQL endpoint before returning source data.
 
 This marker is a **failure gate**, not a transaction across Delta tables. Do not overlap preparation with Power BI refresh or another package run. SQL endpoint synchronization can lag independently for each table.
+
+## PAX output compatibility
+
+This edition retains its notebook-prepared contract. PAX's raw `AIO_Users`, `AIO_CopilotInteractions` and `Agent365` Delta tables are **not** direct substitutes for the three `aio_v2_` tables. Renaming tables alone is insufficient: required column types, a consistent user/key set and the publication gate must also be satisfied. The optional Agent 365 connector still reads a SharePoint-hosted CSV, not the `Agent365` Delta table.
+
+PAX prerelease 10 (`purview-v2.0.0-prerelease-20261009-10`) preserves CSV headers when writing files under OneLake `Files`, but replaces Delta-prohibited characters, including spaces, with underscores when writing tables:
+
+| CSV header | PAX Delta column | This edition's input |
+|---|---|---|
+| `Created by` | `Created_by` | Agent CSV: preferred creator; legacy `Agent creator` fallback when blank |
+| `Creator Id` | `Creator_Id` | Agent CSV: preferred creator ID; legacy `Agent creator ID` fallback when blank |
+| `Developer Name` | `Developer_Name` | Agent CSV: separate developer attribute |
+| `Bot Id` | `Bot_Id` | Agent CSV: current header; legacy `Bot ID` fallback |
+| `Entra Agent ID` | `Entra_Agent_ID` | Agent CSV: retained source attribute |
+| `hasLicense` | `hasLicense` | Raw Entra output: recognized by the shared Users normalizer |
+| `Has license` | `Has_license` | Prepared AIO Users/activity tables: restored to `Has license` by the Fabric source queries |
+| `License Status` | `License_Status` | Prepared activity table: restored to `License Status` by the Fabric source query |
+
+PAX's `-CopilotAccessGroups` adjusts the final raw Users `hasLicense` value: a user must have an enabled Copilot license and belong to an allowed group to retain TRUE. The AIO processor canonicalizes that value to `Has license`; a PAX-to-prepared-table adaptation must preserve it rather than recompute it from `assignedLicenses`. The existing Fabric collectors do not implement that PAX switch and continue to use their documented licensing-report source.
+
+Missing creator names and IDs display **Not recorded**. Missing Developer Name and the trimmed, case-insensitive defaults `Your developer name`, `Agent Developer` and `Published by your Org` display **Not stated**. These catalog attributes are not governed by Minimum Group Size, but existing access restrictions still apply.
 
 ## Stable keys and compatibility
 

@@ -47,7 +47,7 @@ As customers explore new questions, v2.0.0 brings more context to those conversa
 
 ## ⬇️ Choose your edition
 
-All three editions provide the v2.0.0 report's 17-page experience with privacy controls and row-level security, using different data sources and refresh paths. **This preview update includes the latest calculation and agent-metadata improvements in the SharePoint and Local CSV editions. The Fabric OneLake edition remains at its earlier v2.0.0 preview build and does not yet include these latest improvements.**
+All three editions provide the v2.0.0 report's 17-page experience with privacy controls and row-level security, using different data sources and refresh paths. **This preview update aligns SharePoint, Local CSV and Fabric OneLake on the same report and all 444 measures, including the latest calculation, agent-metadata and numeric-readability improvements.** Fabric OneLake retains its notebook-prepared data tier and optional SharePoint-hosted Agent 365 CSV.
 
 Dashboard downloads are **Power BI templates (.pbit)**. Load a template in Power BI Desktop to create your report.
 
