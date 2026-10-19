@@ -1,6 +1,6 @@
-# AI-in-One Dashboard: Fabric OneLake edition (v2.0.0)
+# AI-in-One dashboard: Fabric OneLake edition (v2.0.0)
 
-The Fabric edition is derived from the current SharePoint v2.0.0 template, with the same report, all 444 measures, relationships and security roles. This includes the current agent metadata, description fallbacks, readable numeric cells and resolved-agent activity relationship. Minimum Group Size remains **3** by default; catalog Creator and Developer Name are visible within the viewer's access while individual usage remains protected.
+The Fabric edition is derived from the current SharePoint v2.0.0 template, with the same report, all 457 measures, relationships and security roles. This preview update adds friendly app names, separate platform and catalog-status labels, system-agent inclusion controls and normalized activity-only agent identities. Minimum Group Size remains **3** by default; catalog Creator and Developer Name are visible within the viewer's access while individual usage remains protected.
 
 **OneLake is the storage layer; Power BI uses Import mode through the Lakehouse SQL analytics endpoint. This is not Direct Lake.**
 

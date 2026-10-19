@@ -4,15 +4,15 @@
     Rollup Edition input format.
 
 .DESCRIPTION
-    Produces the three CSV files the Rollup Edition PBIT consumes:
+    New-data generation produces the three CSV files the Rollup Edition PBIT consumes:
 
-        <Prefix>_Interactions_<timestamp>.csv   -> "Copilot Interactions File" parameter
-        <Prefix>_Users_<timestamp>.csv          -> "Org Data File" parameter
-        Agent365_<timestamp>.csv                -> "Agent 365 (highly recommended)" parameter
+        <Prefix>_<timestamp>_Interactions.csv      -> "Copilot Interactions File" parameter
+        <UsersPrefix>_<timestamp>_Users.csv        -> "Org Data File" parameter
+        Agent365_Synthetic_<timestamp>.csv         -> "Agent 365 (highly recommended)" parameter
 
-    Column names, ordering, value domains and all derived/classification
-    columns are ported verbatim from scripts/Rollup_Processor_v3.0.0.py so the
-    output is a drop-in substitute for real PAX rollup output.
+    Generates synthetic AIO input fields rather than collecting tenant data.
+    For production CSV processing, use PAX or
+    scripts/Purview_CopilotInteraction_Processor_v4.2.3.py.
 
     NO REAL TENANT DATA IS USED OR REQUIRED. Every user, agent, document and
     interaction is invented for the fictional "Contoso Ltd" tenant.
@@ -75,7 +75,7 @@ function Get-WeightedItem($picker) {
 }
 
 # ---------------------------------------------------------------------------
-# Classification logic — verbatim ports of Rollup_Processor_v3.0.0.py
+# Classification logic for the synthetic AIO input fields
 # ---------------------------------------------------------------------------
 
 $LicenseTruthy = @('YES', 'TRUE', 'Y', '1')
@@ -883,7 +883,7 @@ $a365Header = @('Agent name', 'Supported in', 'Date created', 'Agent creator', '
     'Contains uploaded files', 'Uploaded files')
 
 $SupportedIn = @('Microsoft 365 Copilot Chat', 'Microsoft Teams; Microsoft 365 Copilot Chat', 'Microsoft Teams', 'Microsoft 365 Copilot Chat; Word; Outlook')
-$CreatedIn = @('Copilot Studio', 'Agent Builder', 'Copilot Studio Lite')
+$CreatedIn = @('Copilot Studio', 'Agent Builder', 'Microsoft 365 Copilot Agent Builder')
 $Availability = @('Everyone in the organization', 'Specific users and groups', 'Only me')
 $Sensitivity = @('General', 'Confidential', 'Highly Confidential', 'Public')
 

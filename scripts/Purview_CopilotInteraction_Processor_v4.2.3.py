@@ -2,33 +2,32 @@
 """
 Purview CopilotInteraction Processor v4.2.3
 -------------------------------------------
-Two-input / two-output preprocessor for the AI Business Value Dashboard
-and AI-in-One Rollup PBIPs.
+Two-input / two-output preprocessor for ValueLens (AI Business Value)
+and AI-in-One dashboard inputs.
 
 Output profiles (--profile):
-    aibv  (default) : AI Business Value Dashboard. 50-column fact superset —
+    aibv  (default) : ValueLens (AI Business Value). 52-column fact superset —
                       3-value Environment {Cowork, Licensed, Unlicensed},
                       all DAX calc-columns pre-computed (Behavior_*, Usage_Mode,
                       Expertise_Role, Efficiency_Breakdown, Human_Baseline_Min,
                       Behavior_Plausible, Workflow_Action, Delegation_Event_Key,
                       Is_Agent_Activity/Web_Grounded_Signal promoted into the
                       grain for sliceability) + Audit_UserId passthrough.
-    aio             : AI-in-One Dashboard. 36-column fact + 2 trailing append-
-                      reconciliation columns (Message_Id_Raw, ThreadId_Raw) —
+    aio             : AI-in-One Dashboard. 39-column fact: the original 36
+                      columns, User_Id_Normalized, Message_Id_Raw and ThreadId_Raw —
                       5-value Environment {Autonomous Agent, Cowork,
                       Agents, Licensed M365 Copilot, Unlicensed Chat}. Reproduces
-                      the AIO output byte-identically in the original 36
-                      columns (validated); the two raw keys are appended last so
-                      the AIO dashboard is unaffected. ~41% smaller than the aibv
-                      fact.
+                      the original AIO field order, with the normalized user
+                      identifier followed by the two raw keys for append
+                      reconciliation. The raw keys remain the final columns.
 
 Inputs:
     --purview <raw Purview audit log CSV>     (required)
     --entra   <Entra users CSV w/ licensing>  (required)
 
 Outputs (in --out-dir, default = directory of --purview):
-    <purview_stem>_Interactions_<YYYYMMDD_HHMMSS>.csv   (fact table)
-    <entra_stem>_Users_<YYYYMMDD_HHMMSS>.csv            (dim table)
+    <purview_stem>_Interactions.csv   (fact table)
+    <entra_stem>_Users.csv            (dim table)
 
     These two files are all the AIBV template needs. Pass --with-aggregates
     (aibv only) to ALSO write 5 pre-aggregated tables for a future calc-table
@@ -198,15 +197,10 @@ SCRIPT_VERSION = "4.2.3"
 # ---------------------------------------------------------------------------
 # Output schemas — TWO PROFILES
 #
-#   --profile aio   : reproduces the AIO-faithful output EXACTLY except
-#                     for two provenance columns (Message_Id_Raw, ThreadId_Raw)
-#                     APPENDED LAST for cross-run append reconciliation.
-#                     The original 36 columns are unchanged in name, order, and
-#                     value (5-value Environment vocabulary), so the pre-existing
-#                     AIO output is unchanged; only the two
-#                     trailing raw keys are new. This is the contract the
-#                     AI-in-One dashboard already consumes.
-#   --profile aibv  : the AIBV-faithful superset (50-col fact, 3-value
+#   --profile aio   : 39 columns: the original 36 AIO fields, User_Id_Normalized,
+#                     then Message_Id_Raw and ThreadId_Raw appended last for
+#                     cross-run reconciliation (5-value Environment vocabulary).
+#   --profile aibv  : the AIBV-faithful superset (52-col fact, 3-value
 #                     Environment, all offloaded calc cols + grain-promoted
 #                     sliceable flags).
 #
@@ -4085,9 +4079,9 @@ def main() -> None:
         default="aibv",
         help=(
             "Output profile. ValueLens Dashboard (default; internally selected by PAX) "
-            "superset (50-col fact, 3-value Environment). 'aio' = AI-in-One "
-            "Dashboard (36-col fact, 5-value Environment) — reproduces the "
-            "AIO output exactly."
+            "superset (52-col fact, 3-value Environment). 'aio' = AI-in-One "
+            "Dashboard (39-col fact, 5-value Environment), including the normalized "
+            "user identifier and two trailing raw reconciliation keys."
         ),
     )
     parser.add_argument(

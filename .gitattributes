@@ -1,2 +1,9 @@
 # Keep the synthetic rollup CSVs byte-stable across platforms.
 sample-data/*.csv text eol=lf
+
+# Preserve binary deliverables without text conversion or text merges.
+*.pbit binary
+*.png binary
+*.pdf binary
+*.pptx binary
+*.zip binary

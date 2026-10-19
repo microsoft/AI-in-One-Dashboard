@@ -2,7 +2,7 @@
 
 <a id="top"></a>
 
-# 🖼️ AI-in-One Dashboard v2.0.0: Report Screenshots
+# 🖼️ AI-in-One dashboard v2.0.0: Report Screenshots
 
 ### A picture tour of all 17 report pages, in order
 
@@ -13,7 +13,7 @@
 > [!NOTE]
 > Every screenshot uses **made-up example data**. The numbers show how the pages work; they aren't benchmarks or targets for your organization.
 
-Download the **PBIT template** for your edition. The screenshots illustrate the report after loading the sample files. Some screenshots show the optional individual-detail setting of **1** to illustrate navigation; the template default remains **3**.
+Download the **PBIT template** for your edition. The screenshots illustrate the report after loading the sample files with the default **Minimum Group Size of 3**. Individual activity remains hidden; the optional setting of **1** requires approval.
 
 This tour shows what each page looks like and what it's for, so you know where to go for each question. For deeper guidance on reading the numbers, use the **[Interpretation Guide](AI-in-One-v2.0.0-Interpretation-Guide.pdf)**. To present the dashboard to leaders, use the **[Storyboard](AI-in-One-v2.0.0-Storyboard.pptx)**.
 
@@ -47,7 +47,7 @@ New to the report? Start with **[Getting around the report](#getting-around)**.
 
 These controls work the same way on every analytical page.
 
-- 🎛️ **Org filters:** opens the panel shown here. Choose company, division, department, reporting team, user and license. Your choices follow you from page to page.
+- 🎛️ **Org filters:** opens the organization panel. Choose company, division, department, reporting team, user and license. **Include system agents** defaults to **No** in the current template. Your choices follow you from page to page.
 - 🔎 **Reporting team:** search for a manager to include everyone in their organization: direct and indirect reports.
 - 🧹 **Clear filters:** resets your selections and any expanded tables, without leaving the page.
 - 📅 **Date:** drag the slider or type dates to choose the period.
@@ -141,7 +141,7 @@ These controls work the same way on every analytical page.
 - **Unlicensed usage by department:** chat users, prompts, prompts per session, weekly prompt/session comparisons and the share who also used agents.
 - **Heat colors** that make the busiest departments easy to spot.
 
-> ⚖️ **Good to know:** Each percentage answers one question: *of this table's chat users, how many also used agents?* People with unknown license information aren't counted as unlicensed. Department results come first; individual people appear only with an approved setting.
+> ⚖️ **Good to know:** Each percentage answers one question: *of this table's chat users, how many also used agents?* People with unknown license information aren't counted as unlicensed. Agent prompts and prompts per session also follow that table's licensed or chat minimum-group check. Department results come first; individual people appear only with an approved setting.
 
 <div align="right"><a href="#top">⬆️ Back to top</a></div>
 
@@ -203,12 +203,14 @@ These controls work the same way on every analytical page.
 
 **What you'll see**
 - **Headline numbers:** catalog agents counted by Title ID, separately labeled activity-only agents, active agents, high impact agents, dormant agents and repeat users.
-- **Agents leaderboard:** each agent's type, users, organizations, sessions, prompts, prompts per session, sessions per user, return rate, Creator, Developer Name and Description. Scroll horizontally for the metadata columns.
+- **Agents leaderboard:** each agent's type, users, organizations, sessions, prompts, prompts per session, sessions per user, return rate, Creator, Developer Name, Description, Features, catalog status and usage coverage. Scroll horizontally for the metadata and Features columns.
 - **Readable numbers:** Sessions / user and Return Rate use dark text on white. A 0% return rate means active users but no repeat users; a blank means no activity or a protected scope.
 - **Explicit catalog defaults:** missing Creator is **Not recorded**; missing or generic Developer Name is **Not stated**; missing or ambiguous Description is **Agent description unavailable.** Creator and Developer Name are catalog metadata, not individual usage, so they remain visible at Minimum Group Size 3 and 1 within the viewer's access.
-- **Agent user leaderboard,** which you can expand from agent to department, managers and, when approved, employees.
+- **Expandable agent rows:** move from an agent to its departments; manager and employee levels require approved individual detail.
 - **By agent** and **By user** buttons. **By user** appears only when individual detail is approved.
-- **Agent features:** listed support for Microsoft 365 Copilot Chat, Teams, Outlook or Office, and capabilities such as SharePoint, OneDrive, Graph connectors and files. Listed support is not proof of use.
+- **Agent features:** listed support for M365 Copilot Chat, Teams, Outlook or Office, and capabilities such as SharePoint, OneDrive, Graph connectors and files. Listed support is not proof of use.
+- **Catalog status:** distinguish agents in the catalog, activity-only agents and ambiguous matches without mixing those states into the build-platform label.
+- **Include system agents:** the synchronized control in **Org filters** defaults to No. Choose Yes to include system-generated entries.
 
 > 💡 **Try this:** Sort by **prompts per session** to find agents that hold longer conversations, then select **Agent Details** to understand who uses them.
 
@@ -224,12 +226,13 @@ These controls work the same way on every analytical page.
 
 **What you'll see**
 - **Catalog agents and Activity-only agents:** separate ID-based counts; agent names need not be unique.
-- **Every agent with a review label:** **High impact**, **Keep**, **Review** or **No usage**.
+- **Every agent with an explanation:** **High impact**, **Keep**, **Review** or **No usage** for tracked agents. Microsoft Security Copilot entries show **Usage not tracked here**; included system agents show **System-generated**, not an action-oriented review label.
 - **Activity recency:** agents grouped by how recently anyone used them.
 - **Users, organizations and return rate** for each agent, following your team and date choices.
 - **Creator and Developer Name:** separate catalog attributes, available in aggregate and individual modes. Missing values display **Not recorded** and **Not stated**, respectively. Generic developer placeholders also display **Not stated**.
 - **Agents by review status:** a chart of how many agents fall into each label.
 - **Agent Detail:** select an agent to read its description.
+- **Type versus status:** build platform is separate from catalog matching. Third-party store agents identify their publisher in Developer Name rather than a creator in your tenant.
 
 > 💡 **Try this:** Choose a department and period, read the review explanation on the page, then talk through any surprising label with the agent's owner.
 
@@ -294,7 +297,7 @@ These controls work the same way on every analytical page.
 - **Usage trend:** active users and sessions per user, week by week.
 - **Weekly prompts and sessions per user by department.**
 - **Average prompts and sessions per active week by usage rank:** from the top 10% of users to the bottom 25%. Bands use distinct prompts per active week and recalculate with the selected dates and population.
-- **Top 5 apps by Copilot sessions,** such as Microsoft 365 Copilot Chat, Outlook, Teams and Word.
+- **Top 5 apps by Copilot sessions,** such as M365 Copilot Chat, Outlook, Teams and Word.
 
 > ⚖️ **Good to know:** Look at users, sessions and apps together, and ask the team what explains a change before drawing conclusions about value.
 
@@ -330,7 +333,7 @@ These controls work the same way on every analytical page.
 - **Usage by application:** expand an app to see its departments and, when approved, the people using it.
 - **Dynamic rank filter** to focus on usage bands within the selected dates and organization/team/license scope, respecting the viewer's access.
 
-> 💡 **Try this:** Expand **Microsoft 365 Copilot Chat** (bizchat) and then a department to see where that app is used most.
+> 💡 **Try this:** Expand **M365 Copilot Chat** (bizchat) and then a department to see where that app is used most.
 
 <div align="right"><a href="#top">⬆️ Back to top</a></div>
 

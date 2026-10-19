@@ -19,7 +19,7 @@ This folder holds made-up data for a fictional organization of **10,050 people**
 |---|---|---|
 | **Copilot Interactions File** | 📦 [Interactions (zip)](AIO_Realistic_Interactions.zip) <sub>(26 MB; 469 MB unzipped)</sub> | 1,202,114 rows of Copilot and agent activity from June 22 to September 18, 2026 |
 | **Org Data File** | 📄 [Users](AIO_Realistic_Users.csv) <sub>(2.4 MB)</sub> | 10,050 people in 2 companies, 5 divisions, 11 departments and 9 countries, with a full reporting hierarchy: 6,499 with a Microsoft 365 Copilot license and 3,551 without |
-| **Agent 365** | 📄 [Agents](AIO_Realistic_Agents.csv) <sub>(664 KB)</sub> | A catalog of 1,206 agents |
+| **Agent 365** | 📄 [Agents](AIO_Realistic_Agents.csv) <sub>(669 KB)</sub> | A catalog of 1,206 agents |
 
 The full file names are `AIO_Realistic_Interactions.zip` (it contains `AIO_Realistic_Interactions.csv`), `AIO_Realistic_Users.csv` and `AIO_Realistic_Agents.csv`.
 
@@ -29,7 +29,7 @@ The full file names are `AIO_Realistic_Interactions.zip` (it contains `AIO_Reali
 
 **2. Put the three `.csv` files where your edition can read them.**
 
-- 💻 **Local CSV edition:** put them in any folder on your PC. In File Explorer, select each file, choose **Copy as path**, paste it and remove the quotation marks, for example `C:\AIO sample\AIO_Realistic_Users.csv`.
+- 💻 **Local CSV edition:** put them in any folder on your PC. In File Explorer, select each file, choose **Copy as path**, paste it and remove the quotation marks, for example `C:\AI-in-One sample\AIO_Realistic_Users.csv`.
 - 🟦 **SharePoint edition:** upload them to a SharePoint document library. For each file, select it, choose **⋮ → Details**, then copy **Path**.
 
 > [!NOTE]
@@ -41,13 +41,15 @@ The full file names are `AIO_Realistic_Interactions.zip` (it contains `AIO_Reali
 
 ## 👀 What you'll see
 
-- **A realistic adoption story.** 9,246 of the 10,050 people show activity, with use growing across the 90 days, busy weekdays, quiet weekends and a mix of power, regular, occasional and inactive users.
+- **A realistic adoption story.** 9,246 of the 10,050 people show activity, with use growing across the 89 recorded days, busy weekdays, quiet weekends and a mix of power, regular, occasional and inactive users.
 - **A complete organization chart.** Everyone except the top leader has a manager, so **Org filters → Reporting team** works just as it would with your own data: search for a manager and see their whole organization. **Company** and **Division** are filled in too.
 - **A mixed license rollout.** About two-thirds of people have a Microsoft 365 Copilot license, so **License Prioritization** and the **Chat (Web)** pages have plenty to compare.
 - **Every Copilot experience.** Activity covers licensed Microsoft 365 Copilot, Copilot Chat, agents, autonomous agents and Cowork.
 - **Agents to review.** 1,005 of the 1,206 catalog agents are used and 201 are registered but never used, so **Agents: Health Check** has agents to flag.
 - **Explicit catalog metadata.** All 1,206 sample agents have a legacy creator value; Creator is visible at Minimum Group Size 3 and 1. This sample does not provide Developer Name, so that column displays **Not stated** rather than inventing a developer. All activity agents match the catalog, so **Activity-only agents** is 0.
-- **Meaningful return-rate blanks.** Three active sample agents have no repeat users and show **0%**. The 201 unused catalog agents retain blank Return Rate. The 67 agents that support only Microsoft 365 Copilot Chat have a Features label for that surface.
+- **Meaningful return-rate blanks.** Three active sample agents have no repeat users and show **0%**. The 201 unused catalog agents retain blank Return Rate. The 469 agents whose only listed Copilot surface is M365 Copilot Chat include 67 unused agents; Features identifies that supported surface.
+- **Current agent-platform names.** The retired Copilot Studio Lite source label has been replaced with **Microsoft 365 Copilot Agent Builder**. The dashboard displays **Agent Builder**. This field-only correction does not change identities, creators, activity, sessions, prompts or the Users file.
+- **Friendly app names.** App labels use recognizable products, such as **M365 Copilot Chat** for bizchat. The raw AppHost remains available for support.
 
 ## Large-organization licensing assumptions
 

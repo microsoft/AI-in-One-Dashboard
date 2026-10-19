@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🧠 AI-in-One Dashboard
+# 🧠 AI-in-One dashboard
 
 ### Every Microsoft 365 Copilot, Copilot Chat and agent signal, in one Power BI dashboard.
 
@@ -47,7 +47,7 @@ As customers explore new questions, v2.0.0 brings more context to those conversa
 
 ## ⬇️ Choose your edition
 
-All three editions provide the v2.0.0 report's 17-page experience with privacy controls and row-level security, using different data sources and refresh paths. **This preview update aligns SharePoint, Local CSV and Fabric OneLake on the same report and all 444 measures, including the latest calculation, agent-metadata and numeric-readability improvements.** Fabric OneLake retains its notebook-prepared data tier and optional SharePoint-hosted Agent 365 CSV.
+All three editions provide the v2.0.0 report's 17-page experience with privacy controls and row-level security, using different data sources and refresh paths. **The v2.0.0 preview update improves license-rank explanations, friendly app names, agent Features, catalog status and system-agent handling.** SharePoint, Local CSV and Fabric OneLake use the same report calculations; Fabric OneLake retains its notebook-prepared data tier and optional SharePoint-hosted Agent 365 CSV.
 
 Dashboard downloads are **Power BI templates (.pbit)**. Load a template in Power BI Desktop to create your report.
 
@@ -224,7 +224,7 @@ Together, they answer the questions leaders ask most:
 
 **Moving around the report**
 
-- Open **Org filters** on any analytical page to set company, division, department, reporting team, user and license. Your choices carry across pages.
+- Open **Org filters** on any analytical page to set company, division, department, reporting team, user and license, or change **Include system agents** from its default of **No**. Your choices carry across pages.
 - In **Reporting team**, search for a manager's name to include their whole organization: direct and indirect reports, without the manager's own record.
 - Right-click an agent name and choose **Drill through → Agent drillthrough** to open that agent's details.
 - **Clear filters** resets selections and expanded tables. In Power BI Desktop, hold **Ctrl** while clicking report buttons.
@@ -273,7 +273,7 @@ The dashboard turns scattered activity records into a shared, trusted picture th
 
 ### ✅ Turn on unified audit logging
 
-Every number in the dashboard comes from the Microsoft Purview unified audit log. It is on by default in most tenants, but it is often off in demo, development and new tenants. If it is off, every audit query fails with `"Status":"AuditingDisabledTenant"`.
+Activity figures in the dashboard come from the Microsoft Purview unified audit log; directory and catalog counts come from their separate inputs. Audit logging is on by default in most tenants, but it is often off in demo, development and new tenants. If it is off, every audit query fails with `"Status":"AuditingDisabledTenant"`.
 
 - **In the portal:** open [purview.microsoft.com/audit/auditsearch](https://purview.microsoft.com/audit/auditsearch). If you see **Start recording user and admin activity**, select it.
 - **In PowerShell:**
@@ -346,12 +346,15 @@ The [PAX documentation](https://aka.ms/PAX) covers each sign-in option, includin
 
 | | |
 |---|---|
-| 🧩 **One run, every input.** Copilot and agent activity, people and licensing, and the Agent 365 catalog, all from one command. | ⚡ **Dashboard-ready output.** `-Dashboard AIO` prepares compact files before Power BI reads them, so reports load fast. |
+| 🧩 **One run, every input.** Copilot and agent activity, people and licensing, and the Agent 365 catalog, all from one command. | ⚡ **Dashboard-ready output.** `-Dashboard AIO` prepares compact files before Power BI reads them, reducing raw-data processing. Refresh time still depends on data volume, source access and available resources. |
 | 📈 **History that grows itself.** A watermark adds only the days you don't have yet, with no gaps and no double counting. | ☁️ **Save where you work.** Write to a SharePoint library or to a local or network folder. |
-| 🛟 **Built for big tenants.** Checkpoint and resume, parallel collection and adaptive time-slicing keep long exports on track. | 🛡️ **Protects your history.** Every file is checked before and after it is replaced, so a failed run never leaves you with half a dataset. |
+| 🛟 **Built for big tenants.** Checkpoint and resume, parallel collection and adaptive time-slicing keep long exports on track. | 🛡️ **Checks and recovery.** Replacement candidates are checked before publication and read back afterward. If publication fails, PAX attempts restoration and reports any destination it cannot verify. |
 | 🔐 **Optional de-identification.** `-Deidentify` replaces names and other identifiers with consistent stand-ins. | 🆓 **Free and open source.** Published by Microsoft on [GitHub](https://aka.ms/PAX). |
 
 Download the latest PAX script and its documentation from **[aka.ms/PAX](https://aka.ms/PAX)**.
+
+> [!IMPORTANT]
+> **The watermark examples below use PAX v2 preview features.** The [public v2 prerelease notes](https://github.com/microsoft/PAX/tree/purview-v2.0.0-prerelease-20261009-10) document those switches. The production release reached through **aka.ms/PAX** is a separate release channel and does not provide this v2 watermark workflow. Confirm your approved build and its release-specific seed/watermark instructions before using the examples.
 
 ### ⌨️ Build your command with Mini-Kitchen
 
@@ -368,7 +371,7 @@ Download the latest PAX script and its documentation from **[aka.ms/PAX](https:/
 | **🌱 Seed** | Collects your starting history, for example the last 90 days, and creates the dashboard data. | **Once** |
 | **💧 Keep it current** | Adds new days to the **same** data, so the template's paths never change. | **Daily or weekly, on a schedule** |
 
-`-Dashboard AIO` prepares the AI-in-One data. Every output gets its own destination: activity (`-OutputPath`), people and licensing (`-OutputPathUserInfo`) and the Agent 365 catalog (`-OutputPathAgent365Info`). Watermark runs then use the matching `-AppendFile`, `-AppendUserInfo` and `-AppendAgent365Info` switches. Replace the example paths, dates and file names with your own, and replace `PAX_Purview_Audit_Log_Processor_v2.0.0.ps1` with the file name of the PAX script you downloaded.
+`-Dashboard AIO` prepares the AI-in-One data. Every output gets its own destination: activity (`-OutputPath`), people and licensing (`-OutputPathUserInfo`) and the Agent 365 catalog (`-OutputPathAgent365Info`). Watermark runs then use the matching `-AppendFile`, `-AppendUserInfo` and `-AppendAgent365Info` switches. Replace the example paths, dates and file names with your own, and replace `PAX_Purview_Audit_Log_Processor_v2.0.0.ps1` with the file name of your approved PAX v2 build.
 
 Choose where the data should live:
 
@@ -396,7 +399,7 @@ The library folder then holds three files, one for each template parameter:
 
 **💧 Keep it current: schedule this**
 
-Point each append switch at the matching seed file, using the file names exactly as they appear. The seed records where it ended, so every run picks up from there automatically.
+Point each append switch at the matching seed file, using the file names exactly as they appear. On the first watermark run for that seed, add `-WatermarkStartDate 2026-10-01` (the seed's exclusive `-EndDate` in this example). Once the watermark is established, omit `-WatermarkStartDate` from scheduled runs.
 
 ```powershell
 pwsh -NoProfile -ExecutionPolicy Bypass -File .\PAX_Purview_Audit_Log_Processor_v2.0.0.ps1 `
@@ -430,6 +433,8 @@ pwsh -NoProfile -ExecutionPolicy Bypass -File .\PAX_Purview_Audit_Log_Processor_
 
 **💧 Keep it current: schedule this**
 
+On the first watermark run, add `-WatermarkStartDate 2026-10-01`. Omit it from scheduled runs once the watermark is established.
+
 ```powershell
 pwsh -NoProfile -ExecutionPolicy Bypass -File .\PAX_Purview_Audit_Log_Processor_v2.0.0.ps1 `
     -Dashboard AIO -Watermark `
@@ -446,7 +451,7 @@ pwsh -NoProfile -ExecutionPolicy Bypass -File .\PAX_Purview_Audit_Log_Processor_
 <br>
 
 - **Dates are whole UTC days.** `-StartDate` is the first day collected. `-EndDate` is the day collection stops *before*. So `-StartDate 2026-07-01 -EndDate 2026-10-01` collects July 1 through September 30.
-- **No gaps, no overlap.** The seed records where it ended, so the first watermark run starts on the seed's `-EndDate` (here `2026-10-01`) automatically.
+- **No gaps, no overlap.** On the first watermark run, set `-WatermarkStartDate` to the seed's exclusive `-EndDate` (here `2026-10-01`). Later runs start automatically from the verified watermark.
 - **Watermark runs pick their own dates.** Don't add `-StartDate` or `-EndDate`. Each run collects every whole day since the last one, up to the start of today (UTC).
 - **Already current?** PAX says so and finishes without contacting any service.
 - **Overlap is safe.** If a day is collected twice, PAX removes the duplicates, so nothing is counted twice.
@@ -516,7 +521,7 @@ Run `python .\scripts\Purview_CopilotInteraction_Processor_v4.2.3.py --help` for
    |:---:|---|
    | **3** *(default)* | Team-level reporting. Groups need at least three eligible people, and individual activity stays hidden. |
    | **1** | Individual detail, such as **By user** views. Use it only when individual-level reporting is approved. |
-   | **Any whole number** | Your own threshold. For example, **10** shows only groups of ten or more people. |
+   | **Any whole number of 1 or more** | Your own threshold. For example, **10** shows only groups of ten or more people. |
 
 4. **Select Load.** With the SharePoint edition, sign in with your **organizational account** when prompted. The Local CSV edition reads the files directly.
 5. **Explore.** The report opens on **Copilot Usage Explorer**.
@@ -633,8 +638,14 @@ The template includes two roles:
 - **Active and inactive licensed users reconcile.** Active licensed users have any recorded Copilot activity in the selected dates, including agent-only activity. Inactive licensed users have none. Together they equal the licensed directory population in the same organization, reporting-team, license and access scope. Usage-band selections only narrow that population.
 - **Usage ranks follow your selection.** Each chat or agent rank family uses distinct prompts per active week among its active users in the selected dates and authorized population. Bands recalculate with dates and organization/team/license scope; ties share a band. Different rank selections intersect without changing one another's percentile thresholds.
 - **Licensing comes from the PAX Users output.** PAX collects license assignments through Microsoft Graph from those shown in the Microsoft 365 admin center. The activity-row source status reflects the Users snapshot used to prepare those rows; the model's looked-up status reflects the currently loaded Users output. Neither is historical entitlement at each activity timestamp.
-- **Prompt comparisons use matching scopes.** Relevant leaderboards, habit/activity tables and tooltips show prompts and prompts per session. Weekly comparison bars and applicable cards also show prompts per active week and prompt month-over-month change. Top-N session bars, line/area trends and scatter charts keep their existing series.
+- **Prompt comparisons use matching scopes.** Relevant leaderboards, habit/activity tables and tooltips show prompts and prompts per session. On Combined Leaderboard, agent prompt cells also respect the licensed or chat row's minimum-group check. Weekly comparison bars and applicable cards also show prompts per active week and prompt month-over-month change. Top-N session bars, line/area trends and scatter charts keep their existing series.
 - **Catalog agents are counted by ID, not name.** Different agents can share a name. Agent Leaderboard and Health Check count distinct catalog Title IDs and show agents observed only in activity separately as **Activity-only agents**.
+- **Agent identities reconcile across views.** Activity-only and ambiguous active agents follow the same dates, organization and access scope as Active Agents. In-catalog active, activity-only and ambiguous active counts sum to Active Agents. Duplicate names use short identifier suffixes, never internal match keys.
+- **Agent inventory refresh avoids repeated enrichment.** Activity-only catalog completion uses a narrow distinct-identifier query rather than reprocessing the fully enriched activity table. The counts, matching rules and access controls remain the same.
+- **Agent type and catalog status answer different questions.** Type describes the build platform. When the platform is not reported, catalog store type gives **Microsoft agent**, **Third-party store agent** or **In-house (platform not reported)**. Catalog status is **In catalog**, **Not in Agent 365 catalog (activity only)** or **Ambiguous catalog match**. An absent catalog match can reflect deletion, unpublishing, a personal/shared agent outside the organization catalog, or different export dates.
+- **Special catalog entries are explained.** Third-party store agents have no creator in your tenant; Developer Name identifies the publisher. Microsoft Security Copilot entries show **Usage not tracked here**, because their activity is outside this dashboard. System-generated agents are excluded by default; use **Org filters → Include system agents → Yes** to see them. System agents are not builder or action-oriented review targets.
+- **Individual rank is relative to peers.** Unlicensed people are ranked by Copilot Chat activity within the same manager team. Rank 1 is most active; ties share a rank. Manager and department rows have no individual rank or rank background. Minimum Group Size 1 is required.
+- **Apps use recognizable names.** For example, `bizchat` appears as **M365 Copilot Chat**. Unknown app values pass through unchanged; support tooltips retain the raw AppHost.
 - **Agent ownership is catalog metadata.** Creator and Developer Name remain visible at either Minimum Group Size setting, within the viewer's access. Creator uses **Created by**, then the legacy **Agent creator** value; missing ownership displays **Not recorded**. Developer Name stays separate; missing values and the generic defaults **Your developer name**, **Agent Developer** and **Published by your Org** display **Not stated** (case-insensitive after trimming spaces).
 - **Agent descriptions and return rates have explicit meanings.** An agent row without a usable description displays **Agent description unavailable.** Return Rate is **0%** when an agent has active users but no repeat users, and blank when there is no activity. Sessions / user and Return Rate use readable numeric cells; blank or protected activity is not converted into invented values.
 - **Counts can differ from other reports.** Audit-based prompt counts can differ from Viva Insights and Microsoft 365 admin center reports because coverage, timing and calculations differ.
@@ -662,7 +673,7 @@ The template includes two roles:
 | Viewers see a blank report or no data | The row-level security roles aren't assigned. Add people or groups under the semantic model's **Security** settings; see [row-level security](#-row-level-security). |
 | Names are hidden on user views | Minimum Group Size is above 1. That's expected; see [Privacy](#-privacy-and-minimum-group-size). |
 | Watermark says the target is already current | Every whole UTC day is already collected. Nothing to do until tomorrow. |
-| "`-WatermarkStartDate` is required" | The file or table wasn't created by a PAX v2.0.0 seed, so it has no watermark yet. Run a new seed, or add `-WatermarkStartDate` once with the first day you still need. |
+| "`-WatermarkStartDate` is required" | This CSV append target has no verified watermark yet. Add `-WatermarkStartDate` once with the first UTC day still needed, then omit it after the watermark is established. A normal seed does not create the initial watermark. |
 | Few results after turning on auditing | Auditing doesn't recover past activity. Results build up from the day it was turned on. |
 | Numbers differ from Viva Insights or the admin center | Expected. The sources differ in coverage, timing and calculations. |
 

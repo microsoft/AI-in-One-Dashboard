@@ -3,6 +3,7 @@ _temp/
 _backup/
 tests/
 scripts/sharepoint_source_contract.py
+scripts/sharepoint_rls.py
 scripts/__pycache__/
 docs/
 docs/*

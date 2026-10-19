@@ -158,7 +158,7 @@ def build():
                  "Attach the same **default Lakehouse** to all four notebooks. "
                  "Bare table names resolve in the default Lakehouse (dbo on schema-enabled Lakehouses). "
                  "This package writes only `aio_v2_` (or explicit `aio_test_`) tables. "
-                 "Power BI remains Import through the SQL analytics endpoint. Tables outside the `aio_v2_` prefix are never overwritten.\n\n"
+                 "Power BI remains Import through the SQL analytics endpoint. Tables outside these permitted prefixes are never overwritten.\n\n"
                  "Configure the parameter cell before running. Keep notebook outputs free of credentials and personal data."),
             cell("code", config, ["parameters"]),
             cell("code", common),

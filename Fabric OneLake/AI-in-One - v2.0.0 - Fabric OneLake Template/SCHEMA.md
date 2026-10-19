@@ -70,7 +70,13 @@ PAX prerelease 10 (`purview-v2.0.0-prerelease-20261009-10`) preserves CSV header
 
 PAX's `-CopilotAccessGroups` adjusts the final raw Users `hasLicense` value: a user must have an enabled Copilot license and belong to an allowed group to retain TRUE. The AIO processor canonicalizes that value to `Has license`; a PAX-to-prepared-table adaptation must preserve it rather than recompute it from `assignedLicenses`. The existing Fabric collectors do not implement that PAX switch and continue to use their documented licensing-report source.
 
-Missing creator names and IDs display **Not recorded**. Missing Developer Name and the trimmed, case-insensitive defaults `Your developer name`, `Agent Developer` and `Published by your Org` display **Not stated**. These catalog attributes are not governed by Minimum Group Size, but existing access restrictions still apply.
+Creator and Developer Name are separate attributes. The Agent CSV accepts `Creator provenance`, `Creator Provenance`, `Creator Source` and `Creator source`, taking the first nonblank value in that order.
+
+For ordinary agents, missing creator names and IDs display **Not recorded**. Missing Developer Name and the trimmed, case-insensitive defaults `Your developer name`, `Agent Developer` and `Published by your Org` display **Not stated**.
+
+System-generated agents instead display **System-generated** or **System-generated (Power Apps)** for both creator and developer; creator ID displays **Not recorded**. System evidence is an all-zero creator GUID, or a blank creator ID with explicit `system`, `system-generated`, `system generated` or `system-generated (power apps)` provenance. A catalogued **Copilot in Power Apps** agent of type **Shared** also qualifies when its creator name/ID, publisher and description are blank and Developer Name is blank or **Not stated**. These catalog attributes are not governed by Minimum Group Size, but existing access restrictions still apply.
+
+Platform labels and catalog status describe different things. An activity-only agent can be identified as SharePoint or Copilot Studio from its activity identifier without being in the Agent 365 catalog; an inferred platform is not a catalog match.
 
 ## Stable keys and compatibility
 
