@@ -15,6 +15,8 @@
 
 **Cowork Billing:** [https://microsoft.github.io/Analytics-Hub/cowork-billing/](https://microsoft.github.io/Analytics-Hub/cowork-billing/)
 
+**Also see [Analytics Hub for Microsoft Copilot](https://github.com/microsoft/AnalyticsHub-Dashboard):** one installer sets up an app on Microsoft Fabric or Azure that shows Copilot and agent adoption, value, consumption and governance in one place.
+
 <br>
 
 **Found this useful? ⭐ Star this repo to help others discover it!**
