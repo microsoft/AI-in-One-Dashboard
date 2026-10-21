@@ -41,13 +41,24 @@ The AI-in-One dashboard has helped many organizations understand how people use 
 
 As customers explore new questions, v2.0.0 brings more context to those conversations: usage bands follow the selected dates and organization, licensed activity includes every recorded experience, and the relevant tables and weekly comparisons pair prompts with sessions.
 
+### More context for everyday adoption questions
+
+- **Follow the pattern, not a weekend dip.** Explorer marks each month start on its bold 7-day trends. Switch **Activity by experience** between sessions and prompts without changing the selected people or dates.
+- **Compare like with like.** License Prioritization can compare median weekly sessions or prompts; its axis, selected-scope median and scale follow that choice. Licensed directory headcount is shown separately from active and inactive use. The score explanation gives the existing 60/30/10 weights and the 10-session, 5-day and 5-session-per-active-day benchmarks; these are heuristics, not validated targets.
+- **Understand agent engagement.** Agents Usage Trends pairs sessions and prompts per active week by usage rank; hover over a Top 5 agent for its description and type. Use Cases ranks its Top 10 by an equal-weight comparison of return rate, sessions per user and prompts per session, among agents with at least **MAX(Minimum Group Size, 5)** users. Sessions, then agent name, break ties.
+- **Find the right agent and audience.** The stable **Top builder** headline and **Creator** filter help explore a builder's catalog, including matching agents with no usage; usage values still follow disclosure rules. The Agent User Leaderboard adds **Most used agent** and **Agents used** within each row's scope. Scroll right for these columns.
+- **Know where navigation takes you.** The Leaderboard's **Agent Details** button and right-click drillthrough keep the clicked agent in scope. The drillthrough page explains this and provides **Open Agent Details** to browse all agents in the selected organizational/date scope.
+- **Read missing information correctly.** **Dormant** means previously used, not never used. **No usage** and **Not enough activity to infer** explain different situations. Native help, the glossary and prompt-count coverage links provide context; prompts now use the same table color conventions as sessions.
+
+The three chat tabs are explicitly named **Copilot Chat (Unlicensed)**. Per-user labels, Combined-page group dividers and the glossary make the population and units clearer. All three editions retain the same report calculations, access controls and default **Minimum Group Size 3**.
+
 📰 **Prefer to read it?** The **[What's New in v2.0.0 overview (PDF)](AI-in-One-v2.0.0-Whats-New.pdf)** walks through every change with screenshots. It's easy to share with stakeholders.
 
 <a id="-choose-your-edition"></a>
 
 ## ⬇️ Choose your edition
 
-All three editions provide the v2.0.0 report's 17-page experience with privacy controls and row-level security, using different data sources and refresh paths. **The v2.0.0 preview update improves license-rank explanations, friendly app names, agent Features, catalog status and system-agent handling.** SharePoint, Local CSV and Fabric OneLake use the same report calculations; Fabric OneLake retains its notebook-prepared data tier and optional SharePoint-hosted Agent 365 CSV.
+All three editions provide the v2.0.0 report's 17-page experience with privacy controls and row-level security, using different data sources and refresh paths. **The v2.0.0 preview update adds agent engagement ranking, scoped Leaderboard columns, clearer agent navigation, trend markers and hierarchy handling, alongside friendly app names, Features, catalog status and system-agent controls.** SharePoint, Local CSV and Fabric OneLake use the same report calculations; Fabric OneLake retains its notebook-prepared data tier and optional SharePoint-hosted Agent 365 CSV.
 
 Dashboard downloads are **Power BI templates (.pbit)**. Load a template in Power BI Desktop to create your report.
 
@@ -129,7 +140,7 @@ A ready-to-present walkthrough for leadership reviews, adoption councils and sta
 <tr>
 <td width="33%" align="center"><a href="Report%20Screenshots.md#page-10"><img src="media/v2.0.0/pages/10-agent-details.png" alt="Agent Details" width="100%"></a><br><sub><b>🤖 Agent Details</b></sub></td>
 <td width="33%" align="center"><a href="Report%20Screenshots.md#page-12"><img src="media/v2.0.0/pages/12-m365-copilot-habit-formation.png" alt="M365 Copilot: Habit Formation" width="100%"></a><br><sub><b>📈 M365 Copilot: Habit Formation</b></sub></td>
-<td width="33%" align="center"><a href="Report%20Screenshots.md#page-14"><img src="media/v2.0.0/pages/14-chat-usage-trends.png" alt="Chat (Web): Usage Trends" width="100%"></a><br><sub><b>📊 Chat (Web): Usage Trends</b></sub></td>
+<td width="33%" align="center"><a href="Report%20Screenshots.md#page-14"><img src="media/v2.0.0/pages/14-chat-usage-trends.png" alt="Copilot Chat (Unlicensed): Usage Trends" width="100%"></a><br><sub><b>📊 Copilot Chat (Unlicensed): Usage Trends</b></sub></td>
 </tr>
 </table>
 
@@ -206,9 +217,9 @@ Together, they answer the questions leaders ask most:
 | **M365 Copilot** | [📈 M365 Copilot: Usage Trends](Report%20Screenshots.md#page-11) | How is licensed Copilot use trending? |
 | | [📈 M365 Copilot: Habit Formation](Report%20Screenshots.md#page-12) | Is licensed Copilot becoming a monthly habit? |
 | | [📈 M365 Copilot: Leaderboard](Report%20Screenshots.md#page-13) | Which departments, applications and (when approved) people lead? |
-| **Copilot Chat** | [📊 Chat (Web): Usage Trends](Report%20Screenshots.md#page-14) | How often do people without a Copilot license use Copilot Chat, and do they return the same day? |
-| | [📊 Chat (Web): Habit Formation](Report%20Screenshots.md#page-15) | Is Copilot Chat becoming a habit? |
-| | [📊 Chat (Web): Leaderboard](Report%20Screenshots.md#page-16) | Who leads on prompts and conversations, and when were they last active? |
+| **Copilot Chat (Unlicensed)** | [📊 Usage Trends](Report%20Screenshots.md#page-14) | How often do people without a Copilot license use Copilot Chat, and do they return the same day? |
+| | [📊 Habit Formation](Report%20Screenshots.md#page-15) | Is Copilot Chat becoming a habit? |
+| | [📊 Leaderboard](Report%20Screenshots.md#page-16) | Who leads on prompts and conversations, and when were they last active? |
 | **Reference** | [📖 Metric Glossary & Guide](Report%20Screenshots.md#page-17) | What does this number mean, and how should I read it? |
 
 🖼️ **Select any page name to see its screenshot in the [Screenshot tour](Report%20Screenshots.md).**
@@ -249,7 +260,7 @@ The dashboard turns scattered activity records into a shared, trusted picture th
 | Who | What they want to know | Where to look | What they do next |
 |---|---|---|---|
 | **CIO / CTO** | Is our Copilot investment being used broadly, and is use growing? | Combined Trends, M365 Copilot: Usage Trends | Report adoption to the board with month-over-month trends instead of anecdotes. |
-| **CFO / licensing owner** | Where would more licenses, or a different license mix, have the most impact? | License Prioritization, Chat (Web) pages | Find departments with heavy Copilot Chat use and no license, and start a business-case conversation with their leaders. |
+| **CFO / licensing owner** | Where would more licenses, or a different license mix, have the most impact? | License Prioritization, Copilot Chat (Unlicensed) pages | Find departments with heavy Copilot Chat use and no license, and start a business-case conversation with their leaders. |
 | **Business unit leader** | How is *my* organization doing compared with the rest of the company? | Copilot Usage Explorer, Org filters | Search for their own name in **Reporting team**, compare the team's seven-day trend before and after a rollout, and celebrate the teams that lead. |
 | **Adoption and change lead** | Is Copilot becoming a habit, or did people try it once and stop? | Habit Formation pages | Target training at groups that are stuck at 1–5 active days a month, then check next month whether they moved into a higher range. |
 | **Agent owner / Center of Excellence** | Which agents earn repeat use, and which should be retired or improved? | Agents: Health Check, Agent Details, Use Cases | Use **Keep** and **Review** labels to plan agent reviews, invest in agents people return to, and tidy up ones nobody uses. |
@@ -582,6 +593,8 @@ The template includes two roles:
 |---|---|---|
 | **Reporting hierarchy** | Managers and other viewers who should see their own organization | Themselves and everyone who reports to them, directly or indirectly. Viewers are matched by sign-in name to the people data, so someone who isn't in that data sees nothing. |
 | **All data viewers** | Executive sponsors, analysts and adoption leads who need the whole picture | All users, wherever they sit in the reporting hierarchy, including people with no place in it |
+
+When the PAX users file includes **Manager_UserKey**, a blank value means the person is at the top of a chain; the report does not substitute ManagerUPN. An unresolved manager also makes that person a root, so their descendants retain populated reporting levels. An unresolved-manager diagnostic applies only to that person, not to everyone below them. Files without the PAX hierarchy columns continue to resolve managers by UPN, with the same root behavior for an out-of-file manager. Access permissions still apply.
 
 1. In Power BI Service, open the workspace, select **⋯** next to the semantic model, then **Security**.
 2. Select **Reporting hierarchy** and add the people or security groups who should see their own organization.

@@ -43,13 +43,20 @@ The full file names are `AIO_Realistic_Interactions.zip` (it contains `AIO_Reali
 
 - **A realistic adoption story.** 9,246 of the 10,050 people show activity, with use growing across the 89 recorded days, busy weekdays, quiet weekends and a mix of power, regular, occasional and inactive users.
 - **A complete organization chart.** Everyone except the top leader has a manager, so **Org filters → Reporting team** works just as it would with your own data: search for a manager and see their whole organization. **Company** and **Division** are filled in too.
-- **A mixed license rollout.** About two-thirds of people have a Microsoft 365 Copilot license, so **License Prioritization** and the **Chat (Web)** pages have plenty to compare.
+- **A mixed license rollout.** About two-thirds of people have a Microsoft 365 Copilot license, so **License Prioritization** and the **Copilot Chat (Unlicensed)** pages have plenty to compare. Licensed directory headcount remains distinct from recorded activity.
 - **Every Copilot experience.** Activity covers licensed Microsoft 365 Copilot, Copilot Chat, agents, autonomous agents and Cowork.
 - **Agents to review.** 1,005 of the 1,206 catalog agents are used and 201 are registered but never used, so **Agents: Health Check** has agents to flag.
 - **Explicit catalog metadata.** All 1,206 sample agents have a legacy creator value; Creator is visible at Minimum Group Size 3 and 1. This sample does not provide Developer Name, so that column displays **Not stated** rather than inventing a developer. All activity agents match the catalog, so **Activity-only agents** is 0.
 - **Meaningful return-rate blanks.** Three active sample agents have no repeat users and show **0%**. The 201 unused catalog agents retain blank Return Rate. The 469 agents whose only listed Copilot surface is M365 Copilot Chat include 67 unused agents; Features identifies that supported surface.
 - **Current agent-platform names.** The retired Copilot Studio Lite source label has been replaced with **Microsoft 365 Copilot Agent Builder**. The dashboard displays **Agent Builder**. This field-only correction does not change identities, creators, activity, sessions, prompts or the Users file.
 - **Friendly app names.** App labels use recognizable products, such as **M365 Copilot Chat** for bizchat. The raw AppHost remains available for support.
+- **Clearer trends and units.** Explorer's month-start dots sit on its bold 7-day session and prompt trends; **Activity by experience** switches between the two metrics. Weekly usage-rank charts pair prompts and sessions, and License Prioritization's median and vertical scale follow its selected weekly metric.
+- **Agent engagement and navigation.** Use Cases compares eligible agents using equal-weight percentile ranks of return rate, sessions per user and prompts per session, with at least **MAX(Minimum Group Size, 5)** users. The Leaderboard adds scoped **Most used agent** and **Agents used** columns. Selected-agent drillthrough now explains its scope and offers **Open Agent Details** for the full agent list.
+- **Interpretable blanks.** Dormant means previously used, never-used agents remain **No usage**, and **Not enough activity to infer** avoids inventing a use case. Creator filtering includes matching no-usage catalog entries without disclosing protected usage.
+
+The [screenshot tour](../Report%20Screenshots.md) uses these synthetic files at **Minimum Group Size 1** to illustrate optional detail. Templates still default to **3**; real-data individual views require approval. Prompts and sessions share consistent table color formatting, and prompt-count footers explain coverage differences.
+
+**Reporting hierarchy:** a blank PAX **Manager_UserKey** means top of chain. A manager outside the users file also makes that person a root, rather than hiding their descendants' reporting levels. Any unresolved-manager status applies only to the affected person; the unmodified sample hierarchy is unchanged.
 
 ## Large-organization licensing assumptions
 

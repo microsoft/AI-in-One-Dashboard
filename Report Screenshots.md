@@ -13,7 +13,7 @@
 > [!NOTE]
 > Every screenshot uses **made-up example data**. The numbers show how the pages work; they aren't benchmarks or targets for your organization.
 
-Download the **PBIT template** for your edition. The screenshots illustrate the report after loading the sample files with the default **Minimum Group Size of 3**. Individual activity remains hidden; the optional setting of **1** requires approval.
+Download the **PBIT template** for your edition. These screenshots use the made-up sample files with **Minimum Group Size 1** so the optional detail and navigation can be illustrated. The templates still default to **3** for team-level reporting; use **1** for real data only with approval.
 
 This tour shows what each page looks like and what it's for, so you know where to go for each question. For deeper guidance on reading the numbers, use the **[Interpretation Guide](AI-in-One-v2.0.0-Interpretation-Guide.pdf)**. To present the dashboard to leaders, use the **[Storyboard](AI-in-One-v2.0.0-Storyboard.pptx)**.
 
@@ -53,6 +53,7 @@ These controls work the same way on every analytical page.
 - 📅 **Date:** drag the slider or type dates to choose the period.
 - 🟢 **Activity status:** tells you how many people are in scope, and explains when a group is too small to show or has no recorded activity.
 - 🖱️ **Ctrl + click:** in Power BI Desktop, hold **Ctrl** when you select a report button. In Power BI Service, a normal click works.
+- ❔ **Help and coverage:** hover over headline help for context. Prompt-count footers link to Microsoft's explanation of audit-log versus Viva/MAC coverage and timing.
 
 </td>
 </tr>
@@ -60,6 +61,8 @@ These controls work the same way on every analytical page.
 
 > [!TIP]
 > **Minimum Group Size** decides how much detail you see. The default, **3**, keeps reporting at team level; a group needs at least three eligible people before its detail appears. Views that list individual people, such as **By user**, appear only when the report owner approves a setting of **1**.
+
+**Reporting roots:** a blank PAX **Manager_UserKey** is authoritative top of chain. If a requested manager cannot be found in the file, that person becomes a root; their reports keep their hierarchy. Any missing-manager diagnostic belongs to that person only, not their descendants.
 
 ---
 
@@ -73,10 +76,10 @@ These controls work the same way on every analytical page.
 
 **What you'll see**
 - **Six headline numbers:** active users, prompts, sessions, prompts per session, active days per user and repeat users.
-- **Daily prompts and sessions:** thin lines show each day, and bold lines show the 7-day average, so the weekly pattern is easy to follow.
-- **Sessions by experience:** M365 Copilot, agents, Copilot Chat, other AI activity, unclassified activity and Cowork, side by side.
+- **Daily prompts and sessions:** thin lines show each day; bold lines show the 7-day average. Matching dots mark each month start on the bold trends, not on weekend daily dips.
+- **Activity by experience:** switch between sessions and prompts for M365 Copilot, agents, Copilot Chat, other AI activity, unclassified activity and Cowork.
 - **Agent usage:** every agent your selected people used, with users, prompts, sessions, organizations, type and last activity.
-- **Inferred usage patterns:** the kinds of tasks people seem to use Copilot for, such as searching, meeting prep or drafting.
+- **Inferred usage patterns:** possible tasks such as searching, meeting prep or drafting. **Not enough activity to infer** is an explanation, not an invented activity category.
 
 > 💡 **Try this:** Open **Org filters → Reporting team**, type a few letters of a manager's surname and pick their team. Then right-click any agent name and choose **Drill through → Agent drillthrough** to see that agent's details for the same team and dates.
 
@@ -101,10 +104,10 @@ These controls work the same way on every analytical page.
 ![License Prioritization](media/v2.0.0/pages/02-license-prioritization.png)
 
 **What you'll see**
-- **Chat users, active licensed users and inactive licensed users** at a glance. Active licensed includes any recorded experience, including agent-only activity; active plus inactive equals the licensed directory population in the same selected scope and dates.
+- **Unlicensed Chat Users, active licensed users and inactive licensed users** at a glance. Active licensed includes any recorded experience, including agent-only activity; active plus inactive equals licensed directory headcount in the selected scope.
 - **Unlicensed Copilot usage leaderboard:** departments ranked by how much people without a Microsoft 365 Copilot license use Copilot Chat, with median weekly sessions and active days.
-- **License priority patterns:** each department plotted by how often and how regularly people use Copilot Chat. Departments toward the **High Priority** corner use it most.
-- **How the score works:** sessions count for 60%, active days for 30% and sessions per day for 10%. The explanation is printed on the page.
+- **License priority patterns:** choose median weekly sessions or prompts. The vertical axis, selected-scope median reference and scale follow that choice; the horizontal axis remains active days per week.
+- **How the score works:** the existing heuristic gives 60% to sessions per week divided by 10, 30% to active days per week divided by 5 and 10% to sessions per active day divided by 5. Scores are not capped; these benchmarks are not validated targets.
 
 > ⚖️ **Good to know:** Use this page to *start* a licensing conversation, alongside job needs, cost and feedback from colleagues. It doesn't decide who should receive a license. Department comparisons come first; individual rankings need an approved setting.
 
@@ -119,7 +122,7 @@ These controls work the same way on every analytical page.
 ![Copilot Overall: Combined Trends](media/v2.0.0/pages/03-combined-trends.png)
 
 **What you'll see**
-- **Agent users, chat users, active licensed users and inactive licensed users** in one column. Licensed activity includes every recorded experience.
+- **Agent users, Unlicensed Chat Users, active licensed users, inactive licensed users and licensed directory headcount** in one column. Licensed activity includes every recorded experience; group dividers clarify the comparisons.
 - **Average sessions per user over time:** one line each for agents, unlicensed Copilot Chat and M365 Copilot.
 - **Active users by department:** separate bars for each experience, not stacked totals.
 - **Usage frequency and intensity:** a bubble chart of departments, with tabs to switch between agents, unlicensed Copilot Chat and M365 Copilot.
@@ -167,7 +170,8 @@ These controls work the same way on every analytical page.
 - **Most users** and **Most organizations:** which agents lead, with ties shown.
 - **Headline numbers:** active agents, agent users, agent adoption, weekly prompts and sessions per user, month-over-month change in prompts and sessions, and repeat users.
 - **Agent users and sessions over time**, and **weekly agent prompts and sessions per user by department**.
-- **Top 5 agents by sessions.** Select an agent to filter the page and see its description under **Agent Detail**.
+- **Top 5 agents by sessions.** Hover over an agent for its gated description and type; select it to filter the page.
+- **Average agent sessions and prompts per active week by usage rank:** paired bars compare usage bands with the same design as the licensed Copilot page. Per-user and per-active-week labels distinguish the units.
 - **Filters on the right** for return rate, review status, agent type, agent name, activity recency and user rank.
 
 > 💡 **Try this:** Compare reach (people who tried an agent) with repeat use (people who came back) over several weeks, then open **Agent Details** to look closer at one agent.
@@ -211,6 +215,9 @@ These controls work the same way on every analytical page.
 - **Agent features:** listed support for M365 Copilot Chat, Teams, Outlook or Office, and capabilities such as SharePoint, OneDrive, Graph connectors and files. Listed support is not proof of use.
 - **Catalog status:** distinguish agents in the catalog, activity-only agents and ambiguous matches without mixing those states into the build-platform label.
 - **Include system agents:** the synchronized control in **Org filters** defaults to No. Choose Yes to include system-generated entries.
+- **Top builder and Creator:** the headline remains stable when an agent is selected. The Creator filter includes matching catalog agents with no usage; numeric activity still follows the minimum and access rules.
+- **Agent User Leaderboard:** **Most used agent** chooses the highest-session agent within that row, with an alphabetical name tie-break. **Agents used** counts distinct agents in the same scope. Scroll right; individual rows still require approved detail.
+- **Dormant:** previously used agents whose last recorded activity is more than 60 days before the selected end date. Agents with no recorded usage in scope are **No usage** or **Never Used**, not Dormant.
 
 > 💡 **Try this:** Sort by **prompts per session** to find agents that hold longer conversations, then select **Agent Details** to understand who uses them.
 
@@ -247,7 +254,8 @@ These controls work the same way on every analytical page.
 ![Agents: Use Cases](media/v2.0.0/pages/09-agents-use-cases.png)
 
 **What you'll see**
-- **Top 10 agents by sessions.**
+- **Top 10 agents by engagement:** agents need at least **MAX(Minimum Group Size, 5)** users in the selected scope. For each eligible agent, compare return rate, sessions per user and prompts per session with the eligible peers; average the three percentile ranks equally. Higher scores reflect stronger repeat use and conversation depth, not measured business value. Sessions descending, then agent name ascending, break ties.
+- **Hover context:** users, sessions, prompts and prompts per session remain available in the Top 10 tooltip.
 - **What are agents being used for?:** each agent with its likely activity categories, conversation counts and type.
 - **Agents leaderboard:** users, prompts, listed capabilities, type and description.
 
@@ -270,7 +278,9 @@ These controls work the same way on every analytical page.
 - **Usage by organization:** which departments use the agent most.
 - **Usage detail:** departments (and, when approved, people) with prompts, sessions, active days and last activity.
 
-> 💡 **Two ways in:** Open the **Agent Details** tab to browse freely, or right-click an agent name on another page and choose **Drill through → Agent drillthrough**. From there, **Back** returns you to where you were and **Explore all agents** lets you pick another, keeping the same team and dates.
+> 💡 **Two ways in:** Open the **Agent Details** tab to browse freely. The Leaderboard **Agent Details** button and **Drill through → Agent drillthrough** open the clicked agent's scoped page. Its selector intentionally stays within that drillthrough filter. The visible note and **Open Agent Details** button provide a route to the full list, keeping organizational and date scope. **Back**, right-click drillthrough and **Clear filters** retain their existing roles.
+
+![Scoped agent drillthrough with the explanatory note and Open Agent Details navigation](media/v2.0.0/pages/18-agent-drillthrough.png)
 
 <div align="right"><a href="#top">⬆️ Back to top</a></div>
 
@@ -343,17 +353,17 @@ These controls work the same way on every analytical page.
 
 ## 📊 Copilot Chat
 
-*Copilot Chat use by people without a Microsoft 365 Copilot license. These tabs are named **Chat (Web)** in the report.*
+*Copilot Chat use by people without a Microsoft 365 Copilot license. The tabs are explicitly named **Copilot Chat (Unlicensed)**.*
 
 </div>
 
 <a id="page-14"></a>
 
-## 14 · 📊 Chat (Web): Usage Trends
+## 14 · 📊 Copilot Chat (Unlicensed): Usage Trends
 
 > **The question it answers:** *How often do people without a Copilot license use Copilot Chat, and do they come back the same day?*
 
-![Chat (Web): Usage Trends](media/v2.0.0/pages/14-chat-usage-trends.png)
+![Copilot Chat (Unlicensed): Usage Trends](media/v2.0.0/pages/14-chat-usage-trends.png)
 
 **What you'll see**
 - **Headline numbers:** chat users, weekly prompts and sessions per user, prompt/session month-over-month change and weekly active days.
@@ -367,11 +377,11 @@ These controls work the same way on every analytical page.
 
 <a id="page-15"></a>
 
-## 15 · 📊 Chat (Web): Habit Formation
+## 15 · 📊 Copilot Chat (Unlicensed): Habit Formation
 
 > **The question it answers:** *Is Copilot Chat becoming a regular habit?*
 
-![Chat (Web): Habit Formation](media/v2.0.0/pages/15-chat-habit-formation.png)
+![Copilot Chat (Unlicensed): Habit Formation](media/v2.0.0/pages/15-chat-habit-formation.png)
 
 **What you'll see**
 - **Habit month**, printed at the top.
@@ -383,11 +393,11 @@ These controls work the same way on every analytical page.
 
 <a id="page-16"></a>
 
-## 16 · 📊 Chat (Web): Leaderboard
+## 16 · 📊 Copilot Chat (Unlicensed): Leaderboard
 
 > **The question it answers:** *Which departments lead in Copilot Chat use, and how engaged are they?*
 
-![Chat (Web): Leaderboard](media/v2.0.0/pages/16-chat-leaderboard.png)
+![Copilot Chat (Unlicensed): Leaderboard](media/v2.0.0/pages/16-chat-leaderboard.png)
 
 **What you'll see**
 - **Unlicensed chat usage leaderboard by department:** users, prompts, prompts per session, sessions and weekly prompt/session comparisons.
