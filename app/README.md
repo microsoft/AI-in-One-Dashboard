@@ -50,9 +50,9 @@ The design system is in [DESIGN.md](DESIGN.md) and the product brief is in [PROD
 
 ## Deploy
 
-You need the `ms` CLI, signed in to the target tenant.
+You need the `ms` CLI, signed in to the target tenant. `ms app init` writes `ms.config.json` with your tenant's app and environment IDs. It's gitignored, so each deployer runs it once.
 
 ```powershell
-ms app init -n "AI in One" --repo none -b ./dist -S "npm run build"
+ms app init -n "AI in One" --repo none -b ./dist -S "npm run build"   # add -e <environment-id> if environment lookup times out
 ms app deploy
 ```

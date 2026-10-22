@@ -25,3 +25,5 @@ dist-ssr
 
 # Managed-Apps specific
 .ms/packed/
+# Tenant-specific app binding; each deployer runs `ms app init`
+ms.config.json

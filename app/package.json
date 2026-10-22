@@ -17,6 +17,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@microsoft/managed-apps-cli": "0.29.0",
     "@microsoft/managed-apps-vite-plugin": "^0.3.11",
     "@types/node": "^24.12.3",
     "@types/papaparse": "^5.5.2",
