@@ -25,7 +25,7 @@ An app version of the AI in One Power BI dashboard. It keeps **the same informat
 - Accessibility: WCAG AA contrast, keyboard reachable controls, visible focus.
 
 ## Brand and tone
-Microsoft-adjacent, calm and analytical. A dark-teal header band and a white working surface, following the "Copilot Costs Central" reference. Plain English labels; numbers are the hero.
+Microsoft-adjacent, calm and analytical. A dark-teal header band and a white working surface, following a reference cost-dashboard design. Plain English labels; numbers are the hero.
 
 ## Anti-goals
 - No marketing hero, no decorative gradients, no illustration.
