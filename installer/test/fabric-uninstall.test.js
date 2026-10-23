@@ -26,6 +26,7 @@ function setup(o) {
     pipelineId: 'pl-1',
     pipelineName: 'AI in One pipeline',
     notebooks: Object.fromEntries(NOTEBOOKS.map((nb) => [nb.key, `nb-${nb.key}`])),
+    appRole: { workspaceId: 'ws-1', principalId: 'sp-1', role: 'Viewer' },
   });
   Object.assign(config.semanticModel, {
     id: 'sm-1',
@@ -107,7 +108,7 @@ test('uninstall, created workspace: no means nothing is deleted', async () => {
   assert.match(ui.text(), /Left workspace "AI in One" alone\./);
 });
 
-test('uninstall, the user\'s workspace: only the installer\'s items go, in order, and only the app\'s Viewer role', async () => {
+test('uninstall, the user\'s workspace: only the installer\'s items go, in order, and the Viewer role it gave the app', async () => {
   const { ctx, fabric, ui } = setup({ created: false });
   assert.equal(await fabricUninstall(ctx), true);
   assert.equal(ui.asked[0], 'Delete what AI in One created in workspace "Team analytics"? The workspace and everything else in it stay.');
@@ -147,6 +148,37 @@ test('uninstall, the user\'s workspace: a Lakehouse they had and an app role the
   assert.ok(fabric.items.some((i) => i.displayName === 'CopilotAnalytics'));
   const text = ui.text();
   assert.doesNotMatch(text, / {2}The Lakehouse /);
-  assert.match(text, /Left AI in One's Contributor role on the workspace: the installer only gives it Viewer\./);
+  assert.match(text, /Left AI in One's Contributor role on the workspace: the installer didn't give it that role\./);
   assert.match(text, /Left alone: the app registration "AI in One" and its client secrets and the Lakehouse "CopilotAnalytics" with its tables and files\./);
+});
+
+test('uninstall, the user\'s workspace: a role the app had before the install stays, even Viewer', async () => {
+  const markers = /** @type {const} */ ([
+    undefined,
+    { workspaceId: 'ws-1', principalId: 'sp-old', role: 'Viewer' },
+    { workspaceId: 'ws-old', principalId: 'sp-1', role: 'Viewer' },
+  ]);
+  for (const appRole of markers) {
+    const { ctx, config, fabric, ui } = setup({ created: false });
+    config.app.existing = true;
+    if (appRole) config.fabric.appRole = appRole;
+    else delete config.fabric.appRole;
+    assert.equal(await fabricUninstall(ctx), true);
+    assert.ok(!fabric.calls.some((c) => /^(deleteRoleAssignment|updateRoleAssignment)\b/.test(c)), JSON.stringify(appRole));
+    assert.deepEqual(fabric.roles.map((r) => `${r.id} ${r.role}`), ['sp-1 Viewer', 'u-1 Admin']);
+    assert.match(ui.text(), /Left AI in One's Viewer role on the workspace: the installer didn't give it that role\./);
+    assert.doesNotMatch(ui.text(), /Removed AI in One's/);
+  }
+});
+
+test('uninstall, the user\'s workspace: a role the installer raised goes back to what the app had', async () => {
+  const { ctx, config, fabric, ui } = setup({ created: false });
+  config.app.existing = true;
+  config.fabric.appRole = { workspaceId: 'WS-1', principalId: 'SP-1', role: 'Contributor', previous: 'Viewer' };
+  /** @type {any} */ (fabric.roles[0]).role = 'Contributor';
+  assert.equal(await fabricUninstall(ctx), true);
+  assert.ok(fabric.calls.includes('updateRoleAssignment sp-1 Viewer'));
+  assert.ok(!fabric.calls.some((c) => c.startsWith('deleteRoleAssignment')));
+  assert.deepEqual(fabric.roles.map((r) => `${r.id} ${r.role}`), ['sp-1 Viewer', 'u-1 Admin']);
+  assert.match(ui.text(), /Put AI in One's role on the workspace back to Viewer/);
 });

@@ -306,7 +306,8 @@ const ROLE_RANK = { Viewer: 1, Contributor: 2, Member: 3, Admin: 4 };
 /**
  * Gives the app's service principal at least `role` on the workspace. Viewer lets the model's
  * connection read the Lakehouse. People and the viewer group never get a workspace role: a Viewer
- * can read the notebooks, which may hold the client secret.
+ * can read the notebooks, which may hold the client secret. The record keeps what was given, so
+ * uninstall takes away only that.
  * @param {Ctx} ctx
  * @param {'Viewer' | 'Contributor'} [role]
  * @param {string} [why]
@@ -322,6 +323,13 @@ export async function ensureWorkspaceRole(ctx, role = 'Viewer', why = 'so the mo
   if (has >= ROLE_RANK[role]) return;
   if (mine) await api.fabric.updateRoleAssignment(ws, mine.id, role);
   else await api.fabric.addRoleAssignment(ws, spId, 'ServicePrincipal', role);
+  // Raising a role the installer gave keeps what the app had before the installer. A record from
+  // another workspace or app says nothing about this one.
+  const given = config.fabric.appRole;
+  const ours = !!given && given.workspaceId?.toLowerCase() === ws.toLowerCase() && given.principalId.toLowerCase() === spId.toLowerCase();
+  const before = mine && (ours ? given?.previous : mine.role);
+  config.fabric.appRole = before ? { workspaceId: ws, principalId: spId, role, previous: before } : { workspaceId: ws, principalId: spId, role };
+  ctx.save();
   ui.ok(`Gave ${config.app.displayName ?? 'the app'} ${role} on the workspace, ${why}`);
 }
 

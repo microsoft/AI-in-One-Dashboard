@@ -287,8 +287,8 @@ lasts 12 months.
 Choose **Uninstall** (`uninstall`). It:
 
 1. deletes the workspace, if the installer created it. In a workspace you had, it deletes only its
-   own items (deleting the pipeline also removes its schedule) and removes the app's role on the
-   workspace;
+   own items (deleting the pipeline also removes its schedule) and takes away the workspace role it
+   gave the app, or puts back the role the app had before. A role the app already had stays;
 2. deletes the model's SQL connection;
 3. asks before it deletes an app registration it created.
 

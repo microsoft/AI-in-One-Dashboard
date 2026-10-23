@@ -109,8 +109,9 @@ async function deleteItems(ctx, workspaceId, items) {
 }
 
 /**
- * Removes the app's role on the workspace, but only Viewer, the role the installer gives it
- * (see steps/model.js). Any other role was given for something else, so it stays.
+ * Takes away the workspace role the installer gave the app, as the record has it (see
+ * steps/model.js): removes it, or puts back the role the app had before. A role the installer
+ * didn't give, one changed since, or one recorded for another workspace stays.
  * @param {Ctx} ctx
  * @param {string} workspaceId
  */
@@ -119,18 +120,27 @@ async function removeAppRole(ctx, workspaceId) {
   const spId = config.app.servicePrincipalId;
   if (!spId) return;
   const app = config.app.displayName ?? 'the app';
+  /** @param {unknown} id */
+  const isApp = (id) => String(id).toLowerCase() === spId.toLowerCase();
+  const marker = config.fabric.appRole;
+  const given = marker && isApp(marker.principalId) && marker.workspaceId?.toLowerCase() === workspaceId.toLowerCase() ? marker : undefined;
   try {
     const roles = await api.fabric.listRoleAssignments(workspaceId);
-    const mine = roles.find((r) => String(r.principal?.id ?? r.id).toLowerCase() === spId.toLowerCase());
+    const mine = roles.find((r) => isApp(r.principal?.id ?? r.id));
     if (!mine) return;
-    if (mine.role !== 'Viewer') {
-      ui.note(`Left ${app}'s ${mine.role ?? ''} role on the workspace: the installer only gives it Viewer.`);
+    if (!given || mine.role !== given.role) {
+      ui.note(`Left ${app}'s ${mine.role ? `${mine.role} ` : ''}role on the workspace: the installer didn't give it that role.`);
       return;
     }
-    await api.fabric.deleteRoleAssignment(workspaceId, mine.id);
-    ui.ok(`Removed ${app}'s Viewer role on the workspace`);
+    if (given.previous) {
+      await api.fabric.updateRoleAssignment(workspaceId, mine.id, given.previous);
+      ui.ok(`Put ${app}'s role on the workspace back to ${given.previous}`);
+    } else {
+      await api.fabric.deleteRoleAssignment(workspaceId, mine.id);
+      ui.ok(`Removed ${app}'s ${given.role} role on the workspace`);
+    }
   } catch (err) {
-    if (!gone(err)) ui.warn(`Couldn't remove ${app}'s Viewer role on the workspace: ${reason(err)}. Remove it under Manage access.`);
+    if (!gone(err) && given) ui.warn(`Couldn't take away the ${given.role} role the installer gave ${app} on the workspace: ${reason(err)}. Change it under Manage access.`);
   }
 }
 
