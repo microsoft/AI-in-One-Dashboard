@@ -95,7 +95,7 @@ The **PBI-SharePoint** edition gives up that flexibility on purpose: every input
 
 ### 🧩 App Edition (preview)
 
-[`app/`](app/) is a Copilot Managed App with **the same metrics as the Power BI report**, regrouped into six tabs (Overview, M365 Copilot, Copilot Chat, Agents, Licence priority, Guide) with short sub-views, so it's easier to find your way around. You drop in the same PAX CSVs and every number is calculated in your browser, so no data leaves your tenant. No Power BI licence is needed. See [`app/README.md`](app/README.md) to run or deploy it.
+[`app/`](app/) is a web app, deployable as a Fabric App in your Fabric workspace or as a Copilot Managed App, with **the same metrics as the Power BI report**, regrouped into six tabs (Overview, M365 Copilot, Copilot Chat, Agents, Licence priority, Guide) with short sub-views, so it's easier to find your way around. You drop in the same PAX CSVs and every number is calculated in your browser, so no data leaves your tenant. No Power BI licence is needed. See [`app/README.md`](app/README.md) to run or deploy it.
 
 ---
 

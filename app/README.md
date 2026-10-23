@@ -50,6 +50,21 @@ The design system is in [DESIGN.md](DESIGN.md) and the product brief is in [PROD
 
 ## Deploy
 
+The same build runs in two hosts. Pick one.
+
+### As a Fabric App in a Fabric workspace
+
+You need a workspace on Fabric capacity (F2 or larger, or a trial; *My workspace* won't work) and the **Fabric Apps (preview)** tenant setting turned on. The project config is [`rayfin/rayfin.yml`](rayfin/rayfin.yml). The app keeps no server-side data, so only auth and static hosting are on.
+
+```powershell
+npx rayfin up --dry-run
+npx rayfin up --tenant <tenant-id> --workspace-id <workspace-id> -y
+```
+
+It prints the item's portal link. People need access to the item (share it, or give them a workspace role) to open it. To update, run `npx rayfin up` again. The deploy state it writes (`rayfin/.deployments.json`, `rayfin/.env`) is gitignored.
+
+### As a Copilot Managed App
+
 You need the `ms` CLI, signed in to the target tenant. `ms app init` writes `ms.config.json` with your tenant's app and environment IDs. It's gitignored, so each deployer runs it once.
 
 ```powershell

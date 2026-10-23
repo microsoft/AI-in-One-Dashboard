@@ -27,3 +27,8 @@ dist-ssr
 .ms/packed/
 # Tenant-specific app binding; each deployer runs `ms app init`
 ms.config.json
+
+# Fabric App deploy state written by `rayfin up` (includes a publishable key)
+rayfin/.env
+rayfin/.deployments.json
+rayfin/.temp/
