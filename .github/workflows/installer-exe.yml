@@ -1,0 +1,235 @@
+name: installer-exe
+
+# Builds AIInOneInstaller.exe, the download that runs the Fabric installer without a clone of this
+# repo or a terminal, and install.ps1 with AIInOneInstaller.zip, which run the same payload from
+# PowerShell for organisations that block downloaded exes. The payload is the installer and the
+# Classic Fabric files it deploys (see installer/packaging/payload.js). A tag such as
+# installer-v0.1.0 also drafts a release with them, to publish by hand: this workflow never
+# publishes one.
+#
+# Signing: the exe is Authenticode-signed with ESRP outside this workflow (see
+# installer/packaging/sign-installer.azure-pipelines.yml), which replaces the draft's exe, .sha256
+# and notes. Publishing a release runs the check below. With the repo variable
+# REQUIRE_SIGNED_INSTALLER set to true, it turns an unsigned release back into a draft, so no one
+# downloads it.
+#
+# The repo's Latest release is the dashboard's, so an installer release is never marked Latest and
+# every installer link names its version. Publishing one warns if it became Latest anyway.
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['installer-v*']
+  pull_request:
+    paths:
+      - 'installer/**'
+      # The Classic Fabric files the payload carries. Nothing from the archive.
+      - 'Classic Editions/3. Fabric/**'
+      - '!Classic Editions/3. Fabric/archive/**'
+      - '.github/workflows/installer-exe.yml'
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build the installer exe
+    if: github.event_name != 'release'
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+
+      - name: Check the tag matches the installer's version
+        if: startsWith(github.ref, 'refs/tags/installer-v')
+        working-directory: 'installer'
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          if ($env:TAG -ne "installer-v$version") { throw "Tag $env:TAG doesn't match the installer's version $version." }
+
+      # The lock file may resolve through Microsoft's internal mirror of npm, which runners can't reach.
+      - name: Use the public npm registry
+        working-directory: 'installer'
+        run: node packaging/public-registry.js package-lock.json
+
+      - name: Install the installer's dependencies
+        working-directory: 'installer'
+        run: npm ci --no-audit --no-fund
+
+      - name: Test the installer
+        working-directory: 'installer'
+        run: npm test
+
+      - name: Type-check the installer
+        working-directory: 'installer'
+        run: npm run typecheck
+
+      - name: Build the exe
+        working-directory: 'installer'
+        run: npm run build:exe -- --release --out "${{ runner.temp }}\exe"
+
+      - name: Smoke-test the exe
+        run: |
+          $exe = Join-Path $env:RUNNER_TEMP 'exe\AIInOneInstaller.exe'
+          & $exe --version
+          if ($LASTEXITCODE) { throw "--version failed with exit code $LASTEXITCODE." }
+          # preview signs in to nothing: it writes what would be deployed, from the payload's files.
+          $preview = Join-Path $env:RUNNER_TEMP 'preview'
+          & $exe preview --config (Join-Path $env:RUNNER_TEMP 'smoke.json') --out $preview
+          if ($LASTEXITCODE) { throw "preview failed with exit code $LASTEXITCODE." }
+          foreach ($f in 'pipeline-content.json', 'model.bim') {
+            if (-not (Test-Path -LiteralPath (Join-Path $preview $f))) { throw "preview wrote no $f." }
+          }
+          if (-not (Get-ChildItem -LiteralPath (Join-Path $preview 'notebooks') -Filter '*.ipynb')) { throw 'preview wrote no notebooks.' }
+
+      # Unpacks into its own LOCALAPPDATA, so it doesn't reuse what the exe unpacked above.
+      - name: Smoke-test install.ps1
+        run: |
+          $out = Join-Path $env:RUNNER_TEMP 'exe'
+          $zip = Join-Path $out 'AIInOneInstaller.zip'
+          $script = Join-Path $out 'install.ps1'
+          $env:LOCALAPPDATA = Join-Path $env:RUNNER_TEMP 'ps-local'
+          & $script -ZipPath $zip --version
+          if ($LASTEXITCODE) { throw "install.ps1 --version failed with exit code $LASTEXITCODE." }
+          & (Join-Path $env:LOCALAPPDATA 'AIInOne\aio-install.cmd') --version
+          if ($LASTEXITCODE) { throw "aio-install.cmd --version failed with exit code $LASTEXITCODE." }
+          # Windows PowerShell 5.1 in Constrained Language Mode, as on a locked-down PC, through iex.
+          $env:LOCALAPPDATA = Join-Path $env:RUNNER_TEMP 'ps-clm'
+          $env:AI_IN_ONE_ZIP = $zip
+          $env:INSTALL_PS1 = $script
+          powershell.exe -NoProfile -Command '$ExecutionContext.SessionState.LanguageMode = ''ConstrainedLanguage''; $s = Get-Content -Raw $env:INSTALL_PS1; iex (''& {'' + [char]10 + $s + [char]10 + ''} --version''); exit $LASTEXITCODE'
+          if ($LASTEXITCODE) { throw "install.ps1 in Constrained Language Mode failed with exit code $LASTEXITCODE." }
+          # -UseInstalledNode: runs with the Node.js from setup-node instead of the one in the zip.
+          $env:LOCALAPPDATA = Join-Path $env:RUNNER_TEMP 'ps-installed'
+          & $script -ZipPath $zip -UseInstalledNode --version
+          if ($LASTEXITCODE) { throw "install.ps1 -UseInstalledNode failed with exit code $LASTEXITCODE." }
+          $cmd = Join-Path $env:LOCALAPPDATA 'AIInOne\aio-install.cmd'
+          $node = (Get-Command node -CommandType Application | Select-Object -First 1).Source
+          if (-not (Select-String -Path $cmd -SimpleMatch "set `"AIO_NODE=$node`"" -Quiet)) { throw "aio-install.cmd doesn't use $node." }
+          & $cmd --version
+          if ($LASTEXITCODE) { throw "aio-install.cmd --version (installed Node.js) failed with exit code $LASTEXITCODE." }
+          # Exercise the installed-Node route in Windows PowerShell 5.1 CLM as well.
+          $env:LOCALAPPDATA = Join-Path $env:RUNNER_TEMP 'ps-installed-clm'
+          $env:AI_IN_ONE_USE_INSTALLED_NODE = '1'
+          powershell.exe -NoProfile -Command '$ExecutionContext.SessionState.LanguageMode = ''ConstrainedLanguage''; $s = Get-Content -Raw $env:INSTALL_PS1; iex (''& {'' + [char]10 + $s + [char]10 + ''} --version''); exit $LASTEXITCODE'
+          if ($LASTEXITCODE) { throw "install.ps1 -UseInstalledNode in Constrained Language Mode failed with exit code $LASTEXITCODE." }
+          $cmd = Join-Path $env:LOCALAPPDATA 'AIInOne\aio-install.cmd'
+          if (-not (Select-String -Path $cmd -SimpleMatch "set `"AIO_NODE=$node`"" -Quiet)) { throw "aio-install.cmd (CLM) doesn't use $node." }
+          & $cmd --version
+          if ($LASTEXITCODE) { throw "aio-install.cmd --version (installed Node.js, CLM) failed with exit code $LASTEXITCODE." }
+          $env:AI_IN_ONE_USE_INSTALLED_NODE = $null
+
+      # Run on the exe that gets published, after any signing: signing changes the hash.
+      - name: Check the signature, write the hash and the release notes
+        working-directory: 'installer'
+        run: node packaging/finish-exe.js "${{ runner.temp }}\exe\AIInOneInstaller.exe" --notes "${{ runner.temp }}\release-notes.md"
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: AIInOneInstaller
+          path: |
+            ${{ runner.temp }}\exe\AIInOneInstaller.exe
+            ${{ runner.temp }}\exe\AIInOneInstaller.exe.sha256
+            ${{ runner.temp }}\exe\AIInOneInstaller.zip
+            ${{ runner.temp }}\exe\AIInOneInstaller.zip.sha256
+            ${{ runner.temp }}\exe\install.ps1
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-notes
+          path: ${{ runner.temp }}\release-notes.md
+          if-no-files-found: error
+
+  release:
+    name: Draft the release
+    needs: build
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/installer-v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: AIInOneInstaller
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: release-notes
+          path: notes
+      - name: Draft the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          # A release candidate such as installer-v0.1.0-rc.1 is a pre-release, which the
+          # installer's update check skips. --latest=false: the repo's Latest stays the dashboard's.
+          pre=()
+          if [[ "$TAG" =~ -rc\.[0-9]+$ ]]; then pre=(--prerelease); fi
+          gh release create "$TAG" AIInOneInstaller.exe AIInOneInstaller.exe.sha256 \
+            AIInOneInstaller.zip AIInOneInstaller.zip.sha256 install.ps1 \
+            --repo "$GITHUB_REPOSITORY" --draft --latest=false "${pre[@]}" \
+            --notes-file notes/release-notes.md \
+            --title "AI in One installer ${TAG#installer-v}"
+
+  check-published:
+    name: Check the published exe
+    if: github.event_name == 'release' && startsWith(github.event.release.tag_name, 'installer-v')
+    runs-on: windows-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: ${{ github.event.release.tag_name }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+
+      - name: Download the published exe
+        run: gh release download $env:TAG --repo $env:GITHUB_REPOSITORY --dir "$env:RUNNER_TEMP\published" --pattern AIInOneInstaller.exe --pattern AIInOneInstaller.exe.sha256
+
+      - name: Check its signature and hash
+        working-directory: 'installer'
+        env:
+          REQUIRE_SIGNED: ${{ vars.REQUIRE_SIGNED_INSTALLER }}
+        run: |
+          $require = if ($env:REQUIRE_SIGNED -eq 'true') { '--require-signed' } else { $null }
+          node packaging/finish-exe.js "$env:RUNNER_TEMP\published\AIInOneInstaller.exe" --check-hash $require
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+
+      - name: Check install.ps1 matches the published zip
+        run: |
+          $dir = Join-Path $env:RUNNER_TEMP 'published'
+          gh release download $env:TAG --repo $env:GITHUB_REPOSITORY --dir $dir --pattern AIInOneInstaller.zip --pattern AIInOneInstaller.zip.sha256 --pattern install.ps1
+          if ($LASTEXITCODE) { throw 'The release needs AIInOneInstaller.zip, its .sha256 and install.ps1.' }
+          $hash = (Get-FileHash (Join-Path $dir 'AIInOneInstaller.zip') -Algorithm SHA256).Hash.ToLowerInvariant()
+          $listed = ((Get-Content -Raw (Join-Path $dir 'AIInOneInstaller.zip.sha256')) -split '\s+')[0]
+          if ($listed -ne $hash) { throw "AIInOneInstaller.zip.sha256 says $listed, but the zip's SHA-256 is $hash." }
+          if ((Get-Content -Raw (Join-Path $dir 'install.ps1')) -notmatch "\`$Sha256 = '$hash'") { throw "install.ps1 doesn't check for the published zip's SHA-256 $hash." }
+          Write-Output "install.ps1 and AIInOneInstaller.zip match ($hash)"
+
+      - name: Turn the release back into a draft
+        if: failure()
+        run: |
+          gh release edit $env:TAG --repo $env:GITHUB_REPOSITORY --draft=true
+          Write-Output "::error::$env:TAG is a draft again. Fix the exe or its .sha256, then publish it again."
+
+      # Publishing by hand can mark the release Latest. A warning, which can't fail the checks above.
+      - name: Check the repo's Latest release is still the dashboard's
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        run: |
+          $latest = gh api "repos/$env:GITHUB_REPOSITORY/releases/latest" --jq .tag_name
+          if ($LASTEXITCODE) { throw "Couldn't read the repo's Latest release." }
+          if ($latest -like 'installer-v*') {
+            Write-Output "::warning::$latest is now the repo's Latest release, which should stay the dashboard's. Set the dashboard release as Latest again: gh release edit <its tag> --latest."
+          }

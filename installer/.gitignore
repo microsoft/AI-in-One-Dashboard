@@ -1,0 +1,6 @@
+node_modules/
+aio-install*.json
+*.draft.json
+*.tmp
+aio-preview/
+dist-exe/

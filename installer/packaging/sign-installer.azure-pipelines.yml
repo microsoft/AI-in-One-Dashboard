@@ -1,0 +1,119 @@
+# Signs a drafted AI in One installer release with ESRP, the Microsoft Corporation Authenticode
+# certificate. Signed exes carry the publisher's SmartScreen reputation, so Edge and Windows stop
+# warning that the download "isn't commonly downloaded".
+#
+# Not run by GitHub. To use it, an Azure DevOps pipeline in an internal project points at this file
+# in the GitHub repo (the GitHub service connection gives it the checkout), and needs the following.
+# Everything named here is a placeholder: this repo's maintainers set up the ESRP onboarding, the
+# variable group, the service connections and the pipeline themselves.
+#   - ESRP onboarding: Authenticode signing approved for the team, with the key code it gives
+#     (usually CP-230012, the Microsoft Corporation Authenticode key code).
+#   - A variable group "ai-in-one-esrp" with EsrpKeyCode, EsrpServiceConnection, EsrpClientId,
+#     EsrpAppRegistrationClientId, EsrpAppRegistrationTenantId, EsrpAuthKeyVaultName and
+#     EsrpRequestSigningCertName (from ESRP onboarding), and the secret GitHubReleaseToken: a
+#     token that can write releases in this repo only.
+#   - Your organisation's required pipeline template (1ES or OneBranch) wrapped around the job,
+#     if it requires one.
+#
+# Run it with the tag once installer-exe has drafted the release. It signs the draft's exe, checks
+# the signature, then replaces the exe, its .sha256 and the notes. Review and publish by hand as
+# before. The repo variable REQUIRE_SIGNED_INSTALLER=true then stops an unsigned exe being published.
+# The draft's AIInOneInstaller.zip, its .sha256 and install.ps1 stay as they are: signing the exe
+# doesn't change the zip, which holds the same payload.
+
+trigger: none
+pr: none
+
+parameters:
+  - name: tag
+    displayName: Release tag, such as installer-v0.1.0
+    type: string
+
+variables:
+  - group: ai-in-one-esrp
+  - name: ToSign
+    value: $(Build.ArtifactStagingDirectory)\tosign
+
+jobs:
+  - job: sign
+    displayName: Sign AIInOneInstaller.exe
+    pool:
+      vmImage: windows-latest
+    timeoutInMinutes: 60
+    steps:
+      - checkout: self
+        fetchDepth: 1
+
+      - task: UseNode@1
+        inputs:
+          version: '24.x'
+
+      - pwsh: |
+          if ('${{ parameters.tag }}' -notmatch '^installer-v\d+\.\d+\.\d+') { throw "'${{ parameters.tag }}' isn't an installer tag." }
+          gh release download '${{ parameters.tag }}' --repo $env:BUILD_REPOSITORY_NAME --dir $env:TOSIGN --pattern AIInOneInstaller.exe
+          if ($LASTEXITCODE) { throw 'Download failed.' }
+        displayName: Download the drafted exe
+        env:
+          GH_TOKEN: $(GitHubReleaseToken)
+          TOSIGN: $(ToSign)
+
+      - task: EsrpCodeSigning@6
+        displayName: Sign with ESRP
+        inputs:
+          ConnectedServiceName: $(EsrpServiceConnection)
+          AppRegistrationClientId: $(EsrpAppRegistrationClientId)
+          AppRegistrationTenantId: $(EsrpAppRegistrationTenantId)
+          AuthAKVName: $(EsrpAuthKeyVaultName)
+          AuthSignCertName: $(EsrpRequestSigningCertName)
+          UseMSIAuthentication: true
+          EsrpClientId: $(EsrpClientId)
+          FolderPath: $(ToSign)
+          Pattern: AIInOneInstaller.exe
+          signConfigType: inlineSignParams
+          SessionTimeout: 90
+          MaxConcurrency: 1
+          MaxRetryAttempts: 5
+          inlineOperation: |
+            [
+              {
+                "KeyCode": "$(EsrpKeyCode)",
+                "OperationCode": "SigntoolSign",
+                "Parameters": {
+                  "OpusName": "AI in One installer",
+                  "OpusInfo": "https://github.com/$(Build.Repository.Name)",
+                  "FileDigest": "/fd \"SHA256\"",
+                  "PageHash": "/NPH",
+                  "TimeStamp": "/tr \"http://rfc3161.gtm.corp.microsoft.com/TSS/HttpTspServer\" /td sha256"
+                },
+                "ToolName": "sign",
+                "ToolVersion": "1.0"
+              },
+              {
+                "KeyCode": "$(EsrpKeyCode)",
+                "OperationCode": "SigntoolVerify",
+                "Parameters": {},
+                "ToolName": "sign",
+                "ToolVersion": "1.0"
+              }
+            ]
+
+      # The same check the GitHub workflow runs when the release is published.
+      - pwsh: |
+          $version = '${{ parameters.tag }}' -replace '^installer-v', ''
+          node packaging/finish-exe.js "$env:TOSIGN\AIInOneInstaller.exe" --require-signed --repo $env:BUILD_REPOSITORY_NAME --version $version --notes "$env:TOSIGN\release-notes.md"
+          if ($LASTEXITCODE) { throw 'The signed exe failed its checks.' }
+        displayName: Check the signature, write the hash and the release notes
+        workingDirectory: installer
+        env:
+          TOSIGN: $(ToSign)
+
+      - pwsh: |
+          $exe = Join-Path $env:TOSIGN 'AIInOneInstaller.exe'
+          gh release upload '${{ parameters.tag }}' $exe "$exe.sha256" --repo $env:BUILD_REPOSITORY_NAME --clobber
+          if ($LASTEXITCODE) { throw 'Upload failed.' }
+          gh release edit '${{ parameters.tag }}' --repo $env:BUILD_REPOSITORY_NAME --notes-file (Join-Path $env:TOSIGN 'release-notes.md')
+          if ($LASTEXITCODE) { throw 'Updating the notes failed.' }
+        displayName: Replace the draft's exe, hash and notes
+        env:
+          GH_TOKEN: $(GitHubReleaseToken)
+          TOSIGN: $(ToSign)
