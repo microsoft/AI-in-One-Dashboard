@@ -51,7 +51,7 @@ The notebook has two run modes:
 | `MODE` | What it does | `WRITE_MODE` | When to use |
 |--------|--------------|--------------|-------------|
 | `backfill` | Pulls `BACKFILL_DAYS` of history in one go | `overwrite` | First load / a clean re-seed |
-| `incremental` | Pulls only rows newer than the latest `CreationDate` already in the table (high-water mark) | `append` | Scheduled daily/weekly runs |
+| `incremental` | Pulls from the start of the day of the latest `CreationDate` already in the table (high-water mark) | Replaces the rows from that day on | Scheduled daily/weekly runs |
 
 **Recommended sequence:** run once with `MODE='backfill'` to seed history, then switch
 to `MODE='incremental'` on the schedule.
@@ -69,13 +69,32 @@ care how the table was populated. **Power BI Incremental Refresh is not required
 this notebook to work. Without it, the dashboard just does a normal **full import** of
 the table on each refresh, which is fine at typical volumes.
 
-One thing to note: because `MODE='incremental'` **appends**, the Delta table grows over
-time. A full import stays fast for a long while and only becomes worth optimizing once
+One thing to note: because `MODE='incremental'` **keeps older rows and adds new days**, the
+Delta table grows over time. A full import stays fast for a long while and only becomes worth optimizing once
 the table reaches millions of rows over many months — at which point adding Power BI
 Incremental Refresh to the template is a sensible *later* enhancement, not a blocker.
 
 If you'd prefer the ingester to behave exactly like the previous weekly snapshot
 (overwrite each run, no accumulation), just leave `MODE='backfill'`.
+
+## Duplicate rows from earlier versions
+
+Earlier versions of this notebook read every file in the staging folder on each run, not just
+the current run's windows, and `incremental` appended them all. Each incremental run therefore
+added the table's history again, and totals that count rows grew with every run.
+
+This version reads only the current run's windows. In `incremental` mode it replaces the rows
+from the start of the high-water mark's day on, the range it has just fetched again, so a rerun
+never adds a row twice.
+
+If your table already has duplicates, run the notebook once with `MODE='backfill'` and a
+`BACKFILL_DAYS` that covers the history you want, then go back to `MODE='incremental'`. A
+backfill overwrites the whole table. Windows the staging manifest already lists as succeeded are
+read from staging rather than fetched again.
+
+The staging folder (`Files/_audit_staging`) still keeps every run's files. Later runs don't read
+them, so after a successful run you can delete the folder to save space; the next run then
+fetches all of its windows again.
 
 ## If a window still runs long
 
