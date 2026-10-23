@@ -687,7 +687,7 @@ test('page: the stages and the finish it waits for are headings the installer pr
 
 test('page: every command has a row, or for prerequisites its own panel, and the record says which rows can run', async () => {
   const app = await readFile(new URL('web/app.js', SRC), 'utf8');
-  const table = /^const COMMANDS = \{\n([\s\S]*?)\n\};/m.exec(app)?.[1] ?? '';
+  const table = /^const COMMANDS = \{\r?\n([\s\S]*?)\r?\n\};/m.exec(app)?.[1] ?? '';
   const titled = [...table.matchAll(/^ {2}'?([a-z-]+)'?: \{/gm)].map((m) => m[1]);
   assert.deepEqual([...titled].sort(), [...WEB_COMMANDS].sort(), 'each command the session takes has a title and text, and no other');
   const rows = [...(/const ROW_ORDER = \[([^\]]*)\]/.exec(app)?.[1] ?? '').matchAll(/'([^']+)'/g)].map((m) => m[1]);
