@@ -93,6 +93,14 @@ The **PBI-SharePoint** edition gives up that flexibility on purpose: every input
 - You want the report to refresh itself on a schedule in the Service and your files are on SharePoint → **PBI-SharePoint edition.**
 - Your files are on OneLake/Fabric **and** you need scheduled refresh → use the dedicated Fabric edition in [`Classic Editions/3. Fabric/`](Classic%20Editions/3.%20Fabric/), a Fabric-native thin client.
 
+### 🧩 App Edition (preview)
+
+[`app/`](app/) is a web app with **the same metrics as the Power BI report**, regrouped into six tabs (Overview, M365 Copilot, Copilot Chat, Agents, Licence priority, Guide) with short sub-views, so it's easier to find your way around. You drop in the same PAX CSVs and every number is calculated in your browser, so no data leaves your tenant. No Power BI licence is needed.
+
+- **Open it on your PC:** download [`app/download/AI-in-One-App.html`](app/download/AI-in-One-App.html) and open it in Edge or Chrome.
+- **Put it in a Fabric workspace:** run `irm https://raw.githubusercontent.com/microsoft/AI-in-One-Dashboard/main/app/Deploy-FabricApp.ps1 | iex` in PowerShell. There's nothing to install first.
+- **Copilot Managed App:** see [`app/README.md`](app/README.md#as-a-copilot-managed-app).
+
 ---
 
 <details>

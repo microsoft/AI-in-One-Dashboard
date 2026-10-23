@@ -1,0 +1,151 @@
+PersonId,DisplayName,Organization,JobTitle,Country,Has license,UserKey,License Status
+deepa.kaur@contoso.com,Deepa Kaur,Sales,Solution Specialist,United States,TRUE,1,M365 Copilot Licensed
+carlos.singh@contoso.com,Carlos Singh,Marketing,Campaign Specialist,India,FALSE,2,Unlicensed
+thomas.meyer@contoso.com,Thomas Meyer,IT Operations,IT Manager,United States,TRUE,3,M365 Copilot Licensed
+chen.lindqvist@contoso.com,Chen Lindqvist,Sales,Account Executive,Singapore,TRUE,4,M365 Copilot Licensed
+carlos.petrov@contoso.com,Carlos Petrov,Engineering,Data Engineer,India,FALSE,5,Unlicensed
+amara.olsen@contoso.com,Amara Olsen,Finance,FP&A Analyst,India,FALSE,6,Unlicensed
+zoe.costa@contoso.com,Zoe Costa,Human Resources,Recruiter,United Kingdom,FALSE,7,Unlicensed
+grace.lehmann@contoso.com,Grace Lehmann,Finance,FP&A Analyst,Japan,FALSE,8,Unlicensed
+sven.lopez@contoso.com,Sven Lopez,Engineering,Senior Software Engineer,United States,FALSE,9,Unlicensed
+andre.martins@contoso.com,Andre Martins,Marketing,Marketing Manager,United States,FALSE,10,Unlicensed
+diego.martins@contoso.com,Diego Martins,Human Resources,Recruiter,United Kingdom,FALSE,11,Unlicensed
+ravi.martins@contoso.com,Ravi Martins,Operations,Logistics Coordinator,United States,FALSE,12,Unlicensed
+jonas.lehmann@contoso.com,Jonas Lehmann,Human Resources,Recruiter,United States,TRUE,13,M365 Copilot Licensed
+nadia.bauer@contoso.com,Nadia Bauer,Customer Success,Support Engineer,Australia,TRUE,14,M365 Copilot Licensed
+carlos.bianchi@contoso.com,Carlos Bianchi,Customer Success,Customer Success Manager,United Kingdom,TRUE,15,M365 Copilot Licensed
+bianca.bennett@contoso.com,Bianca Bennett,Sales,Solution Specialist,Brazil,TRUE,16,M365 Copilot Licensed
+sara.walsh@contoso.com,Sara Walsh,Finance,Finance Manager,United States,FALSE,17,Unlicensed
+deepa.singh@contoso.com,Deepa Singh,Sales,Sales Director,United Kingdom,TRUE,18,M365 Copilot Licensed
+felix.murphy@contoso.com,Felix Murphy,Legal & Compliance,Legal Counsel,India,FALSE,19,Unlicensed
+liam.nakamura@contoso.com,Liam Nakamura,Marketing,Brand Manager,United States,FALSE,20,Unlicensed
+harold.garcia@contoso.com,Harold Garcia,Marketing,Marketing Manager,Singapore,TRUE,21,M365 Copilot Licensed
+elena.bennett@contoso.com,Elena Bennett,Engineering,Engineering Manager,Germany,TRUE,22,M365 Copilot Licensed
+andre.nakamura@contoso.com,Andre Nakamura,IT Operations,IT Manager,Ireland,FALSE,23,Unlicensed
+maria.martins@contoso.com,Maria Martins,Legal & Compliance,Privacy Analyst,Australia,TRUE,24,M365 Copilot Licensed
+jonas.ibrahim@contoso.com,Jonas Ibrahim,IT Operations,Service Desk Analyst,India,TRUE,25,M365 Copilot Licensed
+lucas.hoffmann@contoso.com,Lucas Hoffmann,Engineering,Site Reliability Engineer,United States,TRUE,26,M365 Copilot Licensed
+nadia.dubois@contoso.com,Nadia Dubois,Sales,Inside Sales Representative,India,TRUE,27,M365 Copilot Licensed
+sofia.kaur@contoso.com,Sofia Kaur,Operations,Logistics Coordinator,Germany,TRUE,28,M365 Copilot Licensed
+kai.brandt@contoso.com,Kai Brandt,Executive,Chief Financial Officer,United States,TRUE,29,M365 Copilot Licensed
+javier.schmidt@contoso.com,Javier Schmidt,IT Operations,Identity Engineer,Singapore,TRUE,30,M365 Copilot Licensed
+benedikt.martins@contoso.com,Benedikt Martins,Operations,Logistics Coordinator,United Kingdom,FALSE,31,Unlicensed
+rafael.pereira@contoso.com,Rafael Pereira,Marketing,Brand Manager,Brazil,TRUE,32,M365 Copilot Licensed
+nadia.wright@contoso.com,Nadia Wright,Marketing,Marketing Manager,United States,TRUE,33,M365 Copilot Licensed
+kenji.alvarez@contoso.com,Kenji Alvarez,Research & Development,Innovation Lead,Australia,TRUE,34,M365 Copilot Licensed
+tariq.fischer@contoso.com,Tariq Fischer,Finance,Finance Manager,Ireland,FALSE,35,Unlicensed
+wei.mensah@contoso.com,Wei Mensah,Engineering,Site Reliability Engineer,United States,FALSE,36,Unlicensed
+kai.hansen@contoso.com,Kai Hansen,Marketing,Content Strategist,United Kingdom,TRUE,37,M365 Copilot Licensed
+hana.lehmann@contoso.com,Hana Lehmann,Marketing,Brand Manager,Ireland,FALSE,38,Unlicensed
+laura.alvarez@contoso.com,Laura Alvarez,Engineering,Site Reliability Engineer,United Kingdom,TRUE,39,M365 Copilot Licensed
+andre.murphy@contoso.com,Andre Murphy,Human Resources,HR Business Partner,Australia,FALSE,40,Unlicensed
+sofia.adeyemi@contoso.com,Sofia Adeyemi,Marketing,Content Strategist,Australia,TRUE,41,M365 Copilot Licensed
+kenji.lehmann@contoso.com,Kenji Lehmann,Legal & Compliance,Privacy Analyst,Brazil,TRUE,42,M365 Copilot Licensed
+julia.brandt@contoso.com,Julia Brandt,Sales,Inside Sales Representative,United States,TRUE,43,M365 Copilot Licensed
+amara.kaur@contoso.com,Amara Kaur,Engineering,Software Engineer,United States,FALSE,44,Unlicensed
+lina.moreau@contoso.com,Lina Moreau,Customer Success,Renewals Specialist,India,TRUE,45,M365 Copilot Licensed
+daniel.silva@contoso.com,Daniel Silva,Customer Success,Onboarding Consultant,United Kingdom,FALSE,46,Unlicensed
+lars.weber@contoso.com,Lars Weber,Operations,Supply Chain Planner,Australia,FALSE,47,Unlicensed
+aisha.gruber@contoso.com,Aisha Gruber,Engineering,Engineering Manager,United States,TRUE,48,M365 Copilot Licensed
+tariq.brandt@contoso.com,Tariq Brandt,Sales,Inside Sales Representative,Japan,FALSE,49,Unlicensed
+nina.kaur@contoso.com,Nina Kaur,Executive,Chief Information Officer,Singapore,TRUE,50,M365 Copilot Licensed
+maria.mensah@contoso.com,Maria Mensah,Engineering,Engineering Manager,Germany,TRUE,51,M365 Copilot Licensed
+jasmin.lehmann@contoso.com,Jasmin Lehmann,Sales,Solution Specialist,United Kingdom,TRUE,52,M365 Copilot Licensed
+lina.murphy@contoso.com,Lina Murphy,Customer Success,Renewals Specialist,Japan,TRUE,53,M365 Copilot Licensed
+daniel.lopez@contoso.com,Daniel Lopez,Engineering,Engineering Manager,United States,TRUE,54,M365 Copilot Licensed
+sven.bennett@contoso.com,Sven Bennett,Operations,Logistics Coordinator,Ireland,FALSE,55,Unlicensed
+paula.ruiz@contoso.com,Paula Ruiz,Legal & Compliance,Contracts Manager,United States,FALSE,56,Unlicensed
+lucas.schmidt@contoso.com,Lucas Schmidt,Engineering,QA Engineer,Ireland,FALSE,57,Unlicensed
+rania.mensah@contoso.com,Rania Mensah,Engineering,Senior Software Engineer,United States,FALSE,58,Unlicensed
+jasmin.kumar@contoso.com,Jasmin Kumar,Finance,Financial Analyst,United Kingdom,TRUE,59,M365 Copilot Licensed
+nadia.bauer2@contoso.com,Nadia Bauer,Customer Success,Support Engineer,Germany,TRUE,60,M365 Copilot Licensed
+elena.kumar@contoso.com,Elena Kumar,Engineering,Site Reliability Engineer,United Kingdom,TRUE,61,M365 Copilot Licensed
+gabriel.larsen@contoso.com,Gabriel Larsen,Finance,Accounts Payable Specialist,Ireland,TRUE,62,M365 Copilot Licensed
+cathy.weber@contoso.com,Cathy Weber,Engineering,QA Engineer,Australia,TRUE,63,M365 Copilot Licensed
+rosa.keller@contoso.com,Rosa Keller,Human Resources,Learning Specialist,United States,FALSE,64,Unlicensed
+andre.bennett@contoso.com,Andre Bennett,Finance,FP&A Analyst,United States,FALSE,65,Unlicensed
+emeka.meyer@contoso.com,Emeka Meyer,Marketing,Product Marketing Manager,Japan,TRUE,66,M365 Copilot Licensed
+lars.lopez@contoso.com,Lars Lopez,IT Operations,Identity Engineer,Germany,TRUE,67,M365 Copilot Licensed
+leon.costa@contoso.com,Leon Costa,Engineering,Site Reliability Engineer,Ireland,TRUE,68,M365 Copilot Licensed
+javier.walsh@contoso.com,Javier Walsh,Engineering,Engineering Manager,Ireland,TRUE,69,M365 Copilot Licensed
+laura.zhang@contoso.com,Laura Zhang,Engineering,Site Reliability Engineer,Germany,TRUE,70,M365 Copilot Licensed
+ines.hansen@contoso.com,Ines Hansen,Research & Development,Innovation Lead,United States,FALSE,71,Unlicensed
+sven.quinn@contoso.com,Sven Quinn,Engineering,Software Engineer,Australia,TRUE,72,M365 Copilot Licensed
+benedikt.lopez@contoso.com,Benedikt Lopez,IT Operations,IT Manager,United Kingdom,TRUE,73,M365 Copilot Licensed
+sven.ferrari@contoso.com,Sven Ferrari,Marketing,Product Marketing Manager,United States,TRUE,74,M365 Copilot Licensed
+sofia.virtanen@contoso.com,Sofia Virtanen,IT Operations,Service Desk Analyst,United States,FALSE,75,Unlicensed
+lars.kaur@contoso.com,Lars Kaur,IT Operations,Identity Engineer,United States,TRUE,76,M365 Copilot Licensed
+hana.martins@contoso.com,Hana Martins,Engineering,Software Engineer,United Kingdom,TRUE,77,M365 Copilot Licensed
+niall.dubois@contoso.com,Niall Dubois,Finance,Accounts Payable Specialist,United States,TRUE,78,M365 Copilot Licensed
+yara.ferrari@contoso.com,Yara Ferrari,Marketing,Product Marketing Manager,United States,TRUE,79,M365 Copilot Licensed
+julia.andersen@contoso.com,Julia Andersen,IT Operations,IT Manager,Ireland,TRUE,80,M365 Copilot Licensed
+hana.keller@contoso.com,Hana Keller,Operations,Operations Analyst,United States,TRUE,81,M365 Copilot Licensed
+amara.fischer@contoso.com,Amara Fischer,IT Operations,IT Support Specialist,India,TRUE,82,M365 Copilot Licensed
+andre.martins2@contoso.com,Andre Martins,Sales,Sales Director,United Kingdom,TRUE,83,M365 Copilot Licensed
+rania.chen@contoso.com,Rania Chen,Finance,Finance Manager,United Kingdom,TRUE,84,M365 Copilot Licensed
+kai.kumar@contoso.com,Kai Kumar,Customer Success,Onboarding Consultant,United Kingdom,TRUE,85,M365 Copilot Licensed
+wei.hansen@contoso.com,Wei Hansen,Operations,Logistics Coordinator,United States,TRUE,86,M365 Copilot Licensed
+priya.kaur@contoso.com,Priya Kaur,Research & Development,Product Researcher,United States,TRUE,87,M365 Copilot Licensed
+ravi.pereira@contoso.com,Ravi Pereira,Operations,Logistics Coordinator,Singapore,TRUE,88,M365 Copilot Licensed
+deepa.moreau@contoso.com,Deepa Moreau,Finance,FP&A Analyst,United Kingdom,FALSE,89,Unlicensed
+elena.lopez@contoso.com,Elena Lopez,Customer Success,Renewals Specialist,Germany,TRUE,90,M365 Copilot Licensed
+erin.vargas@contoso.com,Erin Vargas,Engineering,Software Engineer,India,TRUE,91,M365 Copilot Licensed
+carlos.kumar@contoso.com,Carlos Kumar,Sales,Solution Specialist,United States,TRUE,92,M365 Copilot Licensed
+mateo.carlson@contoso.com,Mateo Carlson,IT Operations,Systems Administrator,United Kingdom,TRUE,93,M365 Copilot Licensed
+diego.costa@contoso.com,Diego Costa,Sales,Sales Director,United Kingdom,TRUE,94,M365 Copilot Licensed
+bianca.ferrari@contoso.com,Bianca Ferrari,Engineering,Engineering Manager,United States,TRUE,95,M365 Copilot Licensed
+aisha.lindqvist@contoso.com,Aisha Lindqvist,Sales,Sales Manager,United Kingdom,FALSE,96,Unlicensed
+javier.carlson@contoso.com,Javier Carlson,Engineering,Engineering Manager,United Kingdom,TRUE,97,M365 Copilot Licensed
+carlos.andersen@contoso.com,Carlos Andersen,Engineering,Site Reliability Engineer,United States,FALSE,98,Unlicensed
+nina.tanaka@contoso.com,Nina Tanaka,Engineering,Software Engineer,Japan,TRUE,99,M365 Copilot Licensed
+anika.adeyemi@contoso.com,Anika Adeyemi,Operations,Logistics Coordinator,United States,FALSE,100,Unlicensed
+hana.kaur@contoso.com,Hana Kaur,Engineering,Site Reliability Engineer,United Kingdom,TRUE,101,M365 Copilot Licensed
+laura.moreau@contoso.com,Laura Moreau,Engineering,Data Engineer,United Kingdom,TRUE,102,M365 Copilot Licensed
+amara.novak@contoso.com,Amara Novak,Operations,Operations Analyst,Ireland,FALSE,103,Unlicensed
+lina.petrov@contoso.com,Lina Petrov,Human Resources,Recruiter,United States,TRUE,104,M365 Copilot Licensed
+niall.meyer@contoso.com,Niall Meyer,Engineering,Data Engineer,Germany,TRUE,105,M365 Copilot Licensed
+ines.ibrahim@contoso.com,Ines Ibrahim,Customer Success,Onboarding Consultant,United Kingdom,TRUE,106,M365 Copilot Licensed
+benedikt.silva@contoso.com,Benedikt Silva,Engineering,Senior Software Engineer,United States,FALSE,107,Unlicensed
+hana.sorensen@contoso.com,Hana Sorensen,Human Resources,Recruiter,United States,TRUE,108,M365 Copilot Licensed
+mateo.bianchi@contoso.com,Mateo Bianchi,IT Operations,Service Desk Analyst,United States,TRUE,109,M365 Copilot Licensed
+chen.kumar@contoso.com,Chen Kumar,Human Resources,HR Business Partner,United States,FALSE,110,Unlicensed
+nadia.gruber@contoso.com,Nadia Gruber,Sales,Inside Sales Representative,Germany,TRUE,111,M365 Copilot Licensed
+hana.dubois@contoso.com,Hana Dubois,Legal & Compliance,Legal Counsel,India,TRUE,112,M365 Copilot Licensed
+nadia.vargas@contoso.com,Nadia Vargas,Engineering,Senior Software Engineer,United States,TRUE,113,M365 Copilot Licensed
+gabriel.kaur@contoso.com,Gabriel Kaur,Sales,Account Executive,United States,TRUE,114,M365 Copilot Licensed
+sara.kumar@contoso.com,Sara Kumar,Engineering,QA Engineer,Ireland,TRUE,115,M365 Copilot Licensed
+rania.rossi@contoso.com,Rania Rossi,Sales,Solution Specialist,Singapore,TRUE,116,M365 Copilot Licensed
+liam.ferrari@contoso.com,Liam Ferrari,Human Resources,Learning Specialist,Singapore,FALSE,117,Unlicensed
+amara.yilmaz@contoso.com,Amara Yilmaz,Sales,Solution Specialist,United Kingdom,TRUE,118,M365 Copilot Licensed
+rafael.eriksen@contoso.com,Rafael Eriksen,Engineering,Senior Software Engineer,United Kingdom,FALSE,119,Unlicensed
+gabriel.keller@contoso.com,Gabriel Keller,Sales,Inside Sales Representative,United Kingdom,TRUE,120,M365 Copilot Licensed
+eli.carlson@contoso.com,Eli Carlson,Engineering,Data Engineer,United States,FALSE,121,Unlicensed
+gabriel.ferrari@contoso.com,Gabriel Ferrari,IT Operations,Service Desk Analyst,United States,TRUE,122,M365 Copilot Licensed
+chloe.weber@contoso.com,Chloe Weber,IT Operations,Identity Engineer,United States,TRUE,123,M365 Copilot Licensed
+jasmin.singh@contoso.com,Jasmin Singh,Operations,Logistics Coordinator,India,FALSE,124,Unlicensed
+sofia.kumar@contoso.com,Sofia Kumar,Legal & Compliance,Privacy Analyst,United Kingdom,FALSE,125,Unlicensed
+sara.kowalski@contoso.com,Sara Kowalski,Human Resources,HR Business Partner,Brazil,TRUE,126,M365 Copilot Licensed
+sven.sanchez@contoso.com,Sven Sanchez,Marketing,Product Marketing Manager,Singapore,FALSE,127,Unlicensed
+marco.singh@contoso.com,Marco Singh,Marketing,Campaign Specialist,United Kingdom,TRUE,128,M365 Copilot Licensed
+sven.chen@contoso.com,Sven Chen,Research & Development,Research Scientist,Ireland,FALSE,129,Unlicensed
+eli.brandt@contoso.com,Eli Brandt,IT Operations,Systems Administrator,United States,FALSE,130,Unlicensed
+anika.rossi@contoso.com,Anika Rossi,Operations,Operations Analyst,United Kingdom,TRUE,131,M365 Copilot Licensed
+noah.bauer@contoso.com,Noah Bauer,Sales,Sales Director,United States,TRUE,132,M365 Copilot Licensed
+nina.dubois@contoso.com,Nina Dubois,Engineering,Engineering Manager,Ireland,TRUE,133,M365 Copilot Licensed
+cathy.lopez@contoso.com,Cathy Lopez,Finance,Financial Analyst,Brazil,FALSE,134,Unlicensed
+tariq.silva@contoso.com,Tariq Silva,Legal & Compliance,Compliance Officer,United States,FALSE,135,Unlicensed
+kai.hoffmann@contoso.com,Kai Hoffmann,Human Resources,Recruiter,Brazil,FALSE,136,Unlicensed
+mateo.olsen@contoso.com,Mateo Olsen,Customer Success,Customer Success Manager,Germany,TRUE,137,M365 Copilot Licensed
+leon.novak@contoso.com,Leon Novak,Sales,Account Executive,Ireland,TRUE,138,M365 Copilot Licensed
+hana.mensah@contoso.com,Hana Mensah,Finance,Controller,United Kingdom,TRUE,139,M365 Copilot Licensed
+tariq.murphy@contoso.com,Tariq Murphy,Human Resources,HR Business Partner,Germany,TRUE,140,M365 Copilot Licensed
+javier.alvarez@contoso.com,Javier Alvarez,Research & Development,Innovation Lead,India,FALSE,141,Unlicensed
+jonas.ferrari@contoso.com,Jonas Ferrari,Engineering,QA Engineer,United Kingdom,TRUE,142,M365 Copilot Licensed
+gabriel.kaur2@contoso.com,Gabriel Kaur,Sales,Account Executive,United States,TRUE,143,M365 Copilot Licensed
+tariq.silva2@contoso.com,Tariq Silva,Engineering,Senior Software Engineer,Ireland,TRUE,144,M365 Copilot Licensed
+eli.novak@contoso.com,Eli Novak,IT Operations,IT Manager,Australia,TRUE,145,M365 Copilot Licensed
+amara.jensen@contoso.com,Amara Jensen,Customer Success,Customer Success Manager,United States,FALSE,146,Unlicensed
+laura.walsh@contoso.com,Laura Walsh,Legal & Compliance,Legal Counsel,Germany,FALSE,147,Unlicensed
+carlos.fischer@contoso.com,Carlos Fischer,Finance,Financial Analyst,United States,FALSE,148,Unlicensed
+yara.wright@contoso.com,Yara Wright,IT Operations,IT Support Specialist,Singapore,FALSE,149,Unlicensed
+pedro.ferrari@contoso.com,Pedro Ferrari,Operations,Supply Chain Planner,United States,TRUE,150,M365 Copilot Licensed
