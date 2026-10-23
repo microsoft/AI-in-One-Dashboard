@@ -215,9 +215,10 @@ model and checks the data. When a load fails, its card says why:
   with **Repair or change**.
 - **Anything else.** Open the pipeline's latest run in Fabric for the details.
 
-**Rerun failed** (`rerun-failed`) runs again only the loads that failed in the latest run. **Run
-now** (`run`) runs the whole pipeline, then the data check. The installer won't start a run while
-one is going. A run that started more than 24 hours ago counts as stuck, not running.
+**Rerun failed** (`rerun-failed`) runs again only the loads that failed in the latest run. If one
+of them now works, it refreshes the model again too, so the report shows the new data. **Run now**
+(`run`) runs the whole pipeline, then the data check. The installer won't start a run while one is
+going. A run that started more than 24 hours ago counts as stuck, not running.
 
 ## A large tenant
 

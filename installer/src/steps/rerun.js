@@ -13,11 +13,26 @@ import { activityRuns, BUSY_RETRIES, BUSY_WAIT_MS, capacityBusy, jobIdFrom, load
 /** @typedef {import('../install.js').Ctx} Ctx */
 
 /**
- * The steps whose output an activity reads: the model refresh reads every step it waits for.
+ * The steps whose output an activity reads: the model refresh reads every step it waits for,
+ * directly or through the steps before it. It waits on the licence load only through lane 2's chain.
  * @param {any} a
+ * @param {Map<string, any>} byName  Top-level activities by name.
  * @returns {string[]}
  */
-const readsFrom = (a) => (a.name === REFRESH_ACTIVITY ? (a.dependsOn ?? []).map((/** @type {any} */ d) => d.activity) : []);
+function readsFrom(a, byName) {
+  if (a.name !== REFRESH_ACTIVITY) return [];
+  /** @type {Set<string>} */
+  const seen = new Set();
+  const visit = (/** @type {any} */ x) => {
+    for (const d of x?.dependsOn ?? []) {
+      if (seen.has(d.activity)) continue;
+      seen.add(d.activity);
+      visit(byName.get(d.activity));
+    }
+  };
+  visit(a);
+  return [...seen];
+}
 /** Times a step turned away by a busy capacity is tried again, and how long to wait first. */
 export { BUSY_RETRIES, BUSY_WAIT_MS };
 const STUCK_MS = 24 * 3_600_000;
@@ -155,8 +170,8 @@ const branch = (a, /** @type {boolean} */ which) => (which ? a.typeProperties?.i
 /**
  * Works out what to run again and runs it, step by step. A step reruns when it didn't succeed and
  * what it waits for now holds. The model refresh also reruns, even after succeeding, when a step it
- * waits for freshly reran, because it reads what they load. A step whose dependencies still fail is
- * marked skipped.
+ * waits for, directly or through lane 2, freshly reran, because it reads what they load. A step
+ * whose dependencies still fail is marked skipped.
  * @param {any[]} activities  Top-level activities of the pipeline.
  * @param {Map<string, any>} runs  The last attempt of each activity in the run being repaired.
  * @param {Record<string, any>} params  The run's pipeline parameters.
@@ -166,6 +181,7 @@ const branch = (a, /** @type {boolean} */ which) => (which ? a.typeProperties?.i
  */
 export async function rerunSteps(activities, runs, params, execute, onStart = () => {}) {
   const merged = new Map(runs);
+  const byName = new Map(activities.map((a) => [a.name, a]));
   /** @type {string[]} */
   const reran = [];
   const statusOf = (/** @type {string} */ name) => merged.get(name)?.status ?? 'Skipped';
@@ -187,7 +203,7 @@ export async function rerunSteps(activities, runs, params, execute, onStart = ()
   for (const a of dependencyOrder(activities)) {
     const deps = a.dependsOn ?? [];
     const met = deps.every((/** @type {any} */ d) => conditionMet(statusOf(d.activity), d.dependencyConditions ?? ['Succeeded']));
-    const freshInput = readsFrom(a).some((n) => reran.includes(n) && statusOf(n) === 'Succeeded');
+    const freshInput = readsFrom(a, byName).some((n) => reran.includes(n) && statusOf(n) === 'Succeeded');
     const isOk = statusOf(a.name) === 'Succeeded';
     if (isOk && !freshInput) continue;
     if (!met) {
