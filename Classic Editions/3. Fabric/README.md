@@ -221,7 +221,7 @@ For the full audit-log JSON schema, see [Microsoft Learn — CopilotInteraction 
 
 The audit log notebook's `audit_schema` cell defines which JSON fields get extracted from `AuditData`. Add fields by extending that struct — the rest of the notebook adapts automatically as long as the new field is referenced in the `flat.select(...)` block.
 
-For incremental refresh (only fetch new events since the last run), change `WRITE_MODE` to `'append'` and add a watermark filter on `CreationTime` keyed off the max value already in the Delta table. Then drop `LOOKBACK_DAYS` to 1–2 and run on a daily schedule.
+For incremental loads (only fetch events since the last run), keep the default `MODE = 'incremental'` and run on a daily schedule. Each run fetches again from the start of the day of the latest `CreationDate` in the table and replaces those rows, so a rerun never adds duplicates. [`notebooks/AUDIT_LOG_INGESTER_NOTES.md`](notebooks/AUDIT_LOG_INGESTER_NOTES.md) explains both modes and how to remove duplicates that earlier versions of the notebook added.
 
 ## Migration from the legacy flow
 
