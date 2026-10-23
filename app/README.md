@@ -1,8 +1,32 @@
 # AI in One: App Edition
 
-A Copilot Managed App version of the AI in One Power BI dashboard. It shows the same metrics as the Power BI report, with the same DAX definitions, in a simpler layout: six tabs with short sub-views instead of fifteen report pages.
+An app version of the AI in One Power BI dashboard. It shows the same metrics as the Power BI report, with the same DAX definitions, in a simpler layout: six tabs with short sub-views instead of fifteen report pages.
 
 Everything runs in the browser. The app reads your PAX CSV exports locally and calculates every metric on the page. No data is sent anywhere.
+
+## Get the app
+
+There are three ways to use it. None of them needs a Power BI licence.
+
+| Option | What you do | Best for |
+|---|---|---|
+| **Open it on your PC** | Download [`download/AI-in-One-App.html`](download/AI-in-One-App.html) (choose **Download raw file**) and open it in Edge or Chrome. | Trying it, or one person looking at the numbers. Works offline. |
+| **Put it in a Fabric workspace** | Run one line in PowerShell (below). | Sharing it with your team inside Fabric. |
+| **Copilot Managed App** | See [Deploy](#as-a-copilot-managed-app). | Tenants that use Copilot Managed Apps. |
+
+The downloaded page opens with a labelled synthetic sample. Choose **Change data** and drop in your PAX CSVs.
+
+### Put it in a Fabric workspace
+
+You need a workspace on Fabric capacity (F2 or larger, or a trial; *My workspace* won't work), the **Fabric Apps (preview)** tenant setting turned on, and Contributor or higher on the workspace. Open PowerShell and run:
+
+```powershell
+irm https://raw.githubusercontent.com/microsoft/AI-in-One-Dashboard/main/app/Deploy-FabricApp.ps1 | iex
+```
+
+Paste the workspace URL from your browser when asked, and sign in when your browser opens. There's nothing to install first: [`Deploy-FabricApp.ps1`](Deploy-FabricApp.ps1) downloads a portable Node.js (only if you don't have Node.js 22.13 or later), the Fabric App deploy tool and the app into `%LOCALAPPDATA%\AI-in-One-App`, then deploys the same page as the download. It prints the app's Fabric portal link. Share the item, or give people a workspace role, so they can open it. Run the same line again to update the app.
+
+To pass the workspace without being asked, or deploy a local copy of the page, save the script and run `.\Deploy-FabricApp.ps1 -WorkspaceUrl <url> [-TenantId <id>] [-AppHtml <path>]`.
 
 ## Tabs
 
@@ -35,10 +59,13 @@ The Guide tab lists where the app deliberately differs from the Power BI report.
 
 ```powershell
 npm install
-npm run dev       # local dev server
+npm run dev         # local dev server
 npm run lint
-npm run build     # type-check and build to dist/
+npm run build       # type-check and build to dist/ (Fabric App and Managed App hosting)
+npm run build:file  # build the single-file download to download/AI-in-One-App.html
 ```
+
+`download/AI-in-One-App.html` is committed so people can download it, so run `npm run build:file` and commit the result whenever you change the app. The single-file build inlines the code and styles, and embeds the sample CSVs gzipped.
 
 The code is organised like this:
 - `src/data/`: CSV loading and header detection.
@@ -50,11 +77,11 @@ The design system is in [DESIGN.md](DESIGN.md) and the product brief is in [PROD
 
 ## Deploy
 
-The same build runs in two hosts. Pick one.
+Most people should use [Get the app](#get-the-app). This section is for deploying from a clone of the repo. The same `npm run build` output runs in two hosts.
 
 ### As a Fabric App in a Fabric workspace
 
-You need a workspace on Fabric capacity (F2 or larger, or a trial; *My workspace* won't work) and the **Fabric Apps (preview)** tenant setting turned on. The project config is [`rayfin/rayfin.yml`](rayfin/rayfin.yml). The app keeps no server-side data, so only auth and static hosting are on.
+The prerequisites are the same as [above](#put-it-in-a-fabric-workspace). The project config is [`rayfin/rayfin.yml`](rayfin/rayfin.yml). The app keeps no server-side data, so only auth and static hosting are on.
 
 ```powershell
 npx rayfin up --dry-run

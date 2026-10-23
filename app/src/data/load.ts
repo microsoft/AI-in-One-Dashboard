@@ -1,4 +1,5 @@
 import Papa from 'papaparse'
+import embeddedSample from 'virtual:embedded-sample'
 import type { AgentInfo, Dataset, Lic, Person, Row } from './types'
 import { LICENSED, UNKNOWN_ORG, UNLICENSED } from './types'
 
@@ -133,13 +134,21 @@ export function buildDataset(
   return { rows, people, agents: buildAgents(agents), maxDate, minDate, months, orgs, source, label }
 }
 
+async function gunzipBase64(b64: string): Promise<string> {
+  const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0))
+  const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))
+  return new Response(stream).text()
+}
+
+async function sampleText(f: string): Promise<string> {
+  if (embeddedSample) return gunzipBase64(embeddedSample[f])
+  const res = await fetch(`${import.meta.env.BASE_URL}sample/${f}.csv`)
+  if (!res.ok) throw new Error(`Could not load sample ${f}.csv (${res.status})`)
+  return res.text()
+}
+
 export async function loadSample(): Promise<Dataset> {
-  const base = import.meta.env.BASE_URL
-  const get = async (f: string) => {
-    const res = await fetch(`${base}sample/${f}.csv`)
-    if (!res.ok) throw new Error(`Could not load sample ${f}.csv (${res.status})`)
-    return parseCsv(await res.text()).rows
-  }
+  const get = async (f: string) => parseCsv(await sampleText(f)).rows
   const [i, u, a] = await Promise.all([get('interactions'), get('users'), get('agents')])
   return buildDataset(i, u, a, 'sample', 'Synthetic sample · Contoso')
 }

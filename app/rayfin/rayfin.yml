@@ -9,7 +9,6 @@ services:
     allowedRedirectUris:
       - http://localhost:5173
       - http://127.0.0.1:5173
-      - https://ruby-iris-f8959980b1-westcentralus.webapp.msit.fabricapps.net
   data:
     enabled: false
   storage:
