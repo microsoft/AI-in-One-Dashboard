@@ -22,6 +22,9 @@ All reports and guides can be found on the [Analytics Hub](https://microsoft.git
 
 </div>
 
+> [!NOTE]
+> **New here?** This page covers the earlier editions, kept for existing deployments. Start with [the app](../README.md#-start-here-the-app-preview) or the [Power BI report](../README.md#-the-power-bi-report) in the main README.
+
 # ℹ️ **Agent Dashboard in Copilot Analytics**  
 The Agent Dashboard is now generally available (GA), providing one-click visibility into agent usage. Work with your IT admin to enable it.
 
@@ -66,7 +69,7 @@ Pick the path that matches your environment. Each folder is self-contained — R
 
 | Path | Folder | Best when… | Volume ceiling |
 |---|---|---|---|
-| **Rollup Edition** | [`4. Rollup Edition (Manual-SharePoint-Fabric)/`](4.%20Rollup%20Edition%20%28Manual-SharePoint-Fabric%29/) | Data is pre-processed before Power BI ever loads it — dramatically smaller files, near-instant dashboard opens, and no out-of-memory errors. Works with local files, SharePoint, or Fabric — one template covers all three | Any size tenant, including large enterprise |
+| **Rollup Edition** | [Repo root](../README.md#-the-power-bi-report) | Data is pre-processed before Power BI ever loads it — dramatically smaller files, near-instant dashboard opens, and no out-of-memory errors. Works with local files, SharePoint, or Fabric — one template covers all three | Any size tenant, including large enterprise |
 | **Manual** *(Classic Edition)* | [`1. Manual/`](1.%20Manual/) | One-off, ad-hoc, or single-user. Customer manually exports audit CSV from Purview UI, drops into the local PBIT | < ~100K events lifetime |
 | **SharePoint — Single File** *(Classic Edition)* | [`2. SharePoint/Single File/`](2.%20SharePoint/Single%20File/) | Scheduled refresh in PBI Service without a Gateway. Script overwrites one CSV per refresh — no folder iteration, no privacy firewall errors | Rolling 30 days, refreshes weekly or daily |
 | **SharePoint — Folder** *(Classic Edition)* | [`2. SharePoint/Folder/`](2.%20SharePoint/Folder/) | Need > 30 days of accumulated history but no Fabric. Folder iteration auto-unions all daily CSVs | Up to 180 days (Graph cap), heavier PBI memory footprint |
@@ -76,7 +79,7 @@ Inside each path:
 - The PBIT for that pattern (and a README explaining what parameters to fill in)
 - `scripts/` — automation scripts for data processing and export; contents vary by edition but may include data pre-processors, manual one-shot PowerShell (interactive browser sign-in), unattended app-registration scripts (service principal for scheduled jobs), and Azure Automation runbooks with Bicep deployment
 
-For customers whose dataset is growing or where Power BI load times and refresh failures are a concern, the **[Rollup Edition](4.%20Rollup%20Edition%20%28Manual-SharePoint-Fabric%29/)** pre-processes data upstream before Power BI ever sees it — typically reducing file sizes by 70%+ and cutting dashboard open times from hours to minutes - and sometimes seconds! It natively supports local files, SharePoint, and Fabric in a single template, making it the right fit regardless of your storage tier. The Manual, SharePoint, and Fabric Classic Editions remain available for existing deployments.
+For customers whose dataset is growing or where Power BI load times and refresh failures are a concern, the **[Rollup Edition](../README.md#-the-power-bi-report)** pre-processes data upstream before Power BI ever sees it — typically reducing file sizes by 70%+ and cutting dashboard open times from hours to minutes - and sometimes seconds! It natively supports local files, SharePoint, and Fabric in a single template, making it the right fit regardless of your storage tier. The Manual, SharePoint, and Fabric Classic Editions remain available for existing deployments.
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -138,11 +141,11 @@ The Rollup Edition requires pre-processed input files — the template cannot co
 
 **PAX path (recommended):** Run PAX with `-Rollup` — PAX exports Purview audit data and Entra/MAC user+license data, and pre-processes both into the two files this template requires. Output can go to local, SharePoint, or OneLake.
 
-**Standalone processor path (alternative):** Export raw Purview audit data and raw Entra/MAC user+license data yourself (via portals or your own tooling), then run the standalone processor in `scripts/` against both raw files. Neither raw file can go directly into the template — both must be processed first. See the [Rollup Edition README](4.%20Rollup%20Edition%20%28Manual-SharePoint-Fabric%29/README.md) for full instructions on this path.
+**Standalone processor path (alternative):** Export raw Purview audit data and raw Entra/MAC user+license data yourself (via portals or your own tooling), then run the standalone processor in `scripts/` against both raw files. Neither raw file can go directly into the template — both must be processed first. See the [standalone processor guide](../docs/standalone-processor.md) for full instructions on this path.
 
 **Agent 365 (optional, either path):** The only input that requires no pre-processing. Export manually from the M365 Admin Center (Step 1 below) or let PAX produce it as a convenience via `-IncludeAgent365Info`.
 
-👉 **See full details** in the [Rollup Edition README](4.%20Rollup%20Edition%20%28Manual-SharePoint-Fabric%29/README.md)
+👉 **See full details** in [Get your data: PAX](../docs/get-your-data.md)
 
 #### Option A Detailed Steps
 
@@ -189,7 +192,7 @@ Each parameter accepts a local file path, SharePoint URL, or OneLake URL — the
 
 Click **Load**. First refresh on a moderate dataset typically takes 5–15 minutes.
 
-See the [Rollup Edition README](4.%20Rollup%20Edition%20%28Manual-SharePoint-Fabric%29/README.md) for SharePoint URL conventions, OneLake path format, scheduled refresh setup, and full troubleshooting.
+See the [Power BI report guide](../docs/power-bi-report.md) for SharePoint URL conventions, OneLake path format, scheduled refresh setup, and full troubleshooting.
 
 ### Common issues
 
@@ -501,7 +504,7 @@ Refer back to the [**Choose your deployment path**](#choose-your-deployment-path
 
 | Path | PBIT | Setup guide |
 |---|---|---|
-| **Rollup Edition** *(local · SharePoint · Fabric)* | `4. Rollup Edition (Manual-SharePoint-Fabric)/AI-In-One - Rollup Edition.pbit` | [`4. Rollup Edition (Manual-SharePoint-Fabric)/README.md`](4.%20Rollup%20Edition%20%28Manual-SharePoint-Fabric%29/README.md) |
+| **Rollup Edition** *(local · SharePoint · Fabric)* | `AIO Dashboard - Rollup Edition - 2026-06-25.pbit` and `AIO Dashboard - Rollup Edition - PBI-SharePoint - 2026-06-25.pbit`, in the repo root | [`docs/power-bi-report.md`](../docs/power-bi-report.md) |
 | **Manual** *(Classic Edition)* | `1. Manual/AI-in-One Dashboard.pbit` (single local CSV) | [`1. Manual/README.md`](1.%20Manual/README.md) |
 | **SharePoint — Single File** *(Classic Edition · recommended default for scheduled refresh)* | `2. SharePoint/Single File/AI-in-One Dashboard.pbit` | [`2. SharePoint/Single File/README.md`](2.%20SharePoint/Single%20File/README.md) |
 | **SharePoint — Folder** *(Classic Edition · advanced; >30 days history without Fabric)* | `2. SharePoint/Folder/AI-in-One Dashboard - SP Folder.pbit` | [`2. SharePoint/Folder/README.md`](2.%20SharePoint/Folder/README.md) |
@@ -521,7 +524,7 @@ Each parameter accepts a local file path, SharePoint URL, or OneLake URL — the
 | **Org Data File** | Full path or URL to `..._Users.csv` — the pre-processed output from PAX (`-Rollup`) or the standalone processor | ✅ Required |
 | **Agent 365** | Full path or URL to `Agent365_....csv` (manual M365 Admin Center export, or PAX with `-IncludeAgent365Info`), or leave blank | Optional |
 
-See the [Rollup Edition README](4.%20Rollup%20Edition%20%28Manual-SharePoint-Fabric%29/README.md) for full details on both PAX and standalone processor paths, SharePoint URL guidance, and scheduled refresh setup.
+See [Get your data: PAX](../docs/get-your-data.md), the [standalone processor guide](../docs/standalone-processor.md) and the [Power BI report guide](../docs/power-bi-report.md) for full details on both PAX and standalone processor paths, SharePoint URL guidance, and scheduled refresh setup.
 
 **Classic Edition — 4 parameters:**
 

@@ -58,4 +58,4 @@ Two narrated, client-ready walkthroughs ship with the AI-in-One Dashboard. Both 
 
 ---
 
-*Part of the [AI-in-One Dashboard](../README.md) — one Power BI report for every Microsoft Copilot and Agent adoption signal.*
+*Part of the [AI-in-One Dashboard](../README.md) — one app and Power BI report for every Microsoft Copilot and Agent adoption signal.*
