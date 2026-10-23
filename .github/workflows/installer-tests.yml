@@ -1,0 +1,44 @@
+name: installer-tests
+
+# Tests and type-checks the installer. installer-exe also builds and smoke-tests the Windows exe.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'installer/**'
+      # The Classic Fabric files the installer deploys. Nothing from the archive.
+      - 'Classic Editions/3. Fabric/**'
+      - '!Classic Editions/3. Fabric/archive/**'
+      - '.github/workflows/installer-tests.yml'
+      - '.github/workflows/installer-exe.yml'
+  # Every base, so stacked pull requests are tested too.
+  pull_request:
+    paths:
+      - 'installer/**'
+      - 'Classic Editions/3. Fabric/**'
+      - '!Classic Editions/3. Fabric/archive/**'
+      - '.github/workflows/installer-tests.yml'
+      - '.github/workflows/installer-exe.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  installer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: 'installer'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+      # The lock file may resolve through Microsoft's internal mirror of npm, which runners can't reach.
+      - name: Use the public npm registry
+        run: node packaging/public-registry.js package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - run: npm test
+      - run: npm run typecheck

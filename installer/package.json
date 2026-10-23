@@ -1,0 +1,33 @@
+{
+  "name": "ai-in-one-installer",
+  "version": "0.1.0",
+  "description": "AI in One installer. Sets up the AI in One Dashboard's Classic Fabric edition: app registration, client secret (in the notebooks or Azure Key Vault), workspace, Lakehouse, notebooks, pipeline, schedule, semantic model, report and first load.",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "aio-install": "bin/aio-install.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "assets"
+  ],
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "start": "node bin/aio-install.js",
+    "build:exe": "node packaging/build-exe.js",
+    "test": "node --test",
+    "typecheck": "tsc -p jsconfig.json"
+  },
+  "dependencies": {
+    "@azure/identity": "^4.13.3",
+    "@inquirer/prompts": "^8.7.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.43",
+    "typescript": "^5.9.3"
+  }
+}

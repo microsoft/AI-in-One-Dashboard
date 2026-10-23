@@ -79,6 +79,8 @@ Helper scripts for app-registration setup live in [`archive/scripts/appreg/`](ar
 
 ## Quick start
 
+> **Rather not do it by hand?** The [AI in One installer](../../installer/README.md) registers the app and does steps 1–5 for you, except the optional Agent 365 file. Then it runs the first load.
+
 ### 1. Stand up the Lakehouse
 
 - Open a Fabric workspace assigned to a Fabric capacity (F2+ or trial)
