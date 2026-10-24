@@ -88,6 +88,7 @@ export const TARGETS = /** @type {const} */ (['fabric', 'pax']);
  * @property {string} folder  The folder in the library.
  * @property {string} [grantId]  The app's write permission on the site, so uninstall can take it away.
  * @property {boolean} [grantedByInstaller]  The installer gave that permission, rather than an admin.
+ * @property {string[]} [previousRoles]  The roles an admin's permission gave the app before the installer raised it to write, so uninstall can put them back.
  * @property {string} [checkedAt]  When the app last showed it can write to the folder.
  */
 

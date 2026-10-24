@@ -27,7 +27,7 @@ import { CERT_MONTHS, CERT_SUBJECT, defaultLocalFolder, PAX_APP_NAME, paxFiles, 
 import { checkPc, pcRows } from './pc.js';
 import { loadRelease } from './release.js';
 import { refreshTimes } from './report.js';
-import { folderLabel, parseSiteUrl, revokeCommands, siteAddress } from './site.js';
+import { folderLabel, parseSiteUrl, restoreCommands, revokeCommands, siteAddress } from './site.js';
 import { describeLogon } from './task.js';
 
 /** @typedef {import('../install.js').Ctx} Ctx */
@@ -227,6 +227,9 @@ async function chooseSite(ctx, pax, advanced) {
     if (old?.grantId && old.grantedByInstaller) {
       ui.warn(`The app keeps its write access to ${siteAddress(old)} until it's taken away. A SharePoint or Global Administrator can run:`);
       for (const line of revokeCommands(old)) ui.info(`  ${line}`);
+    } else if (old?.grantId && old.previousRoles?.length) {
+      ui.warn(`The app keeps write access to ${siteAddress(old)} until it's put back to ${old.previousRoles.join(', ')}. A SharePoint or Global Administrator can run:`);
+      for (const line of restoreCommands(old, old.previousRoles)) ui.info(`  ${line}`);
     }
     pax.site = { url: parsed.url, host: parsed.host, path: parsed.path, library: parsed.library ?? DEFAULT_LIBRARY, folder: parsed.folder ?? SP_FOLDER };
   }

@@ -162,6 +162,17 @@ export const revokeCommands = (site) => [
 ];
 
 /**
+ * What an admin runs to put the app's access to the site back to the roles an admin had given it,
+ * before the installer raised them to write.
+ * @param {PaxSite} site
+ * @param {string[]} roles
+ */
+export const restoreCommands = (site, roles) => [
+  'Connect-MgGraph -Scopes Sites.FullControl.All',
+  `Invoke-MgGraphRequest -Method PATCH -Uri ${psQuote(`https://graph.microsoft.com/v1.0/sites/${site.id}/permissions/${site.grantId}`)} -ContentType 'application/json' -Body (@{ roles = @(${roles.map((r) => psQuote(r)).join(', ')}) } | ConvertTo-Json)`,
+];
+
+/**
  * SharePoint, signed in as the user with Sites.FullControl.All, which giving an app access to a
  * site takes. It's a second sign-in, through Microsoft Graph Command Line Tools, because the
  * installer's own sign-in can't ask for that permission.
@@ -293,11 +304,16 @@ async function grantSiteAccess(ctx, site) {
     const mine = appGrant(await sites.permissions(id), appId);
     if (mine) {
       const roles = /** @type {string[]} */ ((await sites.permission(id, mine.id)).roles ?? []);
+      if (site.grantId !== mine.id) {
+        delete site.grantedByInstaller;
+        delete site.previousRoles;
+      }
       site.grantId = mine.id;
       if (roles.some((r) => WRITE_ROLES.includes(String(r).toLowerCase()))) {
         ui.ok(`The app can already write to ${site.name}`);
       } else {
         await sites.updateGrant(id, mine.id, ['write']);
+        if (roles.length) site.previousRoles = roles;
         ui.ok(`Changed the app's access to ${site.name} from ${roles.join(', ') || 'none'} to write`);
       }
     } else {
@@ -432,25 +448,33 @@ export async function ensureSiteAccess(ctx, o) {
 }
 
 /**
- * Uninstall: takes away the app's access to the site when the installer gave it, signed in again
- * with Sites.FullControl.All. Otherwise, or when that doesn't work, shows the admin command.
+ * Uninstall: takes away the app's access to the site when the installer gave it, or puts it back
+ * to the roles an admin had given it when the installer raised them to write, signed in again with
+ * Sites.FullControl.All. Otherwise, or when that doesn't work, shows the admin command.
  * @param {Ctx} ctx
  */
 export async function revokeSiteGrant(ctx) {
   const { ui } = ctx;
   const site = ctx.config.pax?.site;
   if (!site?.id || !site.grantId) return;
+  const label = siteLabel(site);
+  const before = !site.grantedByInstaller && site.previousRoles?.length ? site.previousRoles : undefined;
   const show = () => {
-    for (const line of revokeCommands(site)) ui.info(`  ${line}`);
+    for (const line of before ? restoreCommands(site, before) : revokeCommands(site)) ui.info(`  ${line}`);
   };
-  if (!site.grantedByInstaller) {
-    ui.note(`The installer didn't give the app its access to ${siteLabel(site)}, so it stays. An admin can take it away with:`);
+  if (!site.grantedByInstaller && !before) {
+    ui.note(`The installer didn't give the app its access to ${label}, so it stays. An admin can take it away with:`);
     show();
     return;
   }
-  const signIn = canSignInForSites(ctx) && (await ui.confirm(`Take away the app's access to ${siteLabel(site)}? You sign in again, with Sites.FullControl.All.`, true));
+  const what = before ? `put the app's access to ${label} back to ${before.join(', ')}` : `take away the app's access to ${label}`;
+  const signIn = canSignInForSites(ctx) && (await ui.confirm(`${what[0].toUpperCase()}${what.slice(1)}? You sign in again, with Sites.FullControl.All.`, true));
   if (!signIn) {
-    ui.note(`The app's access to ${siteLabel(site)} stays. An admin can take it away with:`);
+    ui.note(
+      before
+        ? `The app keeps write access to ${label}. An admin can put it back to ${before.join(', ')} with:`
+        : `The app's access to ${label} stays. An admin can take it away with:`,
+    );
     show();
     return;
   }
@@ -459,21 +483,26 @@ export async function revokeSiteGrant(ctx) {
     const appId = ctx.config.app?.appId;
     if (!appId || !appGrant([await sites.permission(site.id, site.grantId)], appId)) {
       ui.warn(
-        `The permission the install record names on ${siteLabel(site)} (${site.grantId}) isn't the app's, so the installer left it alone and took it off the record. An admin can check the site's permissions.`,
+        `The permission the install record names on ${label} (${site.grantId}) isn't the app's, so the installer left it alone and took it off the record. An admin can check the site's permissions.`,
       );
+    } else if (before) {
+      // The roles Graph gave the admin's permission, which held no write role.
+      await sites.updateGrant(site.id, site.grantId, /** @type {('read' | 'write')[]} */ (before));
+      ui.ok(`Put the app's access to ${label} back to ${before.join(', ')}`);
     } else {
       await sites.revoke(site.id, site.grantId);
-      ui.ok(`Took away the app's access to ${siteLabel(site)}`);
+      ui.ok(`Took away the app's access to ${label}`);
     }
   } catch (err) {
     if (!(err instanceof HttpError && err.status === 404)) {
-      ui.warn(`Couldn't take away the app's access to ${siteLabel(site)} (${firstLine(err)}). An admin can, with:`);
+      ui.warn(`Couldn't ${what} (${firstLine(err)}). An admin can, with:`);
       show();
       return;
     }
-    ui.ok(`The app's access to ${siteLabel(site)} was gone already`);
+    ui.ok(`The app's access to ${label} was gone already`);
   }
   delete site.grantId;
   delete site.grantedByInstaller;
+  delete site.previousRoles;
   ctx.save();
 }

@@ -1169,6 +1169,26 @@ test('paxPlan: with the SharePoint template, the report goes to the workspace ch
   assert.equal(config.semanticModel.enabled, true);
 });
 
+test('paxPlan: a new site warns that the old one keeps the app\'s access, with the command to take it away or put it back', async (t) => {
+  const OTHER_URL = 'https://contoso.sharepoint.com/sites/Other';
+  const granted = paxCtx(t, { answers: [false, 'sharepoint', OTHER_URL], pax: { destination: 'sharepoint', site: { ...GRANTED_SITE } } });
+  await paxPlan(granted.ctx, PRE);
+  const made = granted.out();
+  assert.ok(made.includes(`The app keeps its write access to ${SITE_ADDRESS} until it's taken away. A SharePoint or Global Administrator can run:`), made);
+  assert.ok(made.includes("Invoke-MgGraphRequest -Method DELETE -Uri 'https://graph.microsoft.com/v1.0/sites/site-1/permissions/grant-1'"), made);
+  assert.equal(granted.config.pax.site.url, OTHER_URL);
+
+  const raised = paxCtx(t, {
+    answers: [false, 'sharepoint', OTHER_URL],
+    pax: { destination: 'sharepoint', site: { ...SITE, id: 'site-1', grantId: 'grant-1', previousRoles: ['read'] } },
+  });
+  await paxPlan(raised.ctx, PRE);
+  const text = raised.out();
+  assert.ok(text.includes(`The app keeps write access to ${SITE_ADDRESS} until it's put back to read. A SharePoint or Global Administrator can run:`), text);
+  assert.ok(text.includes("Invoke-MgGraphRequest -Method PATCH -Uri 'https://graph.microsoft.com/v1.0/sites/site-1/permissions/grant-1'"), text);
+  assert.doesNotMatch(text, /-Method DELETE/, "an admin's permission isn't deleted");
+});
+
 test('paxPlan: under --yes, a new SharePoint setup needs the site in the record', async (t) => {
   const { ctx } = paxCtx(t, { yes: true });
   await assert.rejects(paxPlan(ctx, PRE), {

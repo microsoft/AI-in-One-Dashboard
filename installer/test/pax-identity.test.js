@@ -35,6 +35,7 @@ import {
   GRAPH_CLI_APP_ID,
   mayBeLate,
   parseSiteUrl,
+  restoreCommands,
   revokeCommands,
   revokeSiteGrant,
   sameLibrary,
@@ -1333,6 +1334,13 @@ test("revokeCommands: an admin deletes the app's permission on the site", () => 
   ]);
 });
 
+test("restoreCommands: an admin puts the app's permission on the site back to its roles", () => {
+  assert.deepEqual(restoreCommands({ ...SITE_RECORD, id: SITE_ID, grantId: 'perm-1' }, ['read']), [
+    'Connect-MgGraph -Scopes Sites.FullControl.All',
+    `Invoke-MgGraphRequest -Method PATCH -Uri 'https://graph.microsoft.com/v1.0/sites/${SITE_ID}/permissions/perm-1' -ContentType 'application/json' -Body (@{ roles = @('read') } | ConvertTo-Json)`,
+  ]);
+});
+
 /** Lists the parse errors and the commands in the PowerShell on stdin, without running it. */
 const PARSE = [
   '$t = [Console]::In.ReadToEnd()',
@@ -1342,10 +1350,10 @@ const PARSE = [
   "foreach ($c in $a.FindAll({ $args[0] -is [System.Management.Automation.Language.CommandAst] }, $true)) { 'C:' + $c.GetCommandName() }",
 ].join('; ');
 
-test('grantCommands and revokeCommands: parse as PowerShell, with quotes in the values kept inside their strings', (t) => {
+test('grantCommands, revokeCommands and restoreCommands: parse as PowerShell, with quotes in the values kept inside their strings', (t) => {
   const hostile = "x'; Write-Output pwned; '";
   const site = { ...SITE_RECORD, path: "/sites/O'Brien", id: `${HOST},x'y,z`, grantId: hostile };
-  const input = `${[...grantCommands(site, hostile), ...revokeCommands(site)].join('\n')}\n`;
+  const input = `${[...grantCommands(site, hostile), ...revokeCommands(site), ...restoreCommands(site, ['read', hostile])].join('\n')}\n`;
   const r = spawnSync('pwsh', ['-NoProfile', '-NonInteractive', '-Command', PARSE], { input, encoding: 'utf8', windowsHide: true, timeout: 60_000 });
   if (/** @type {any} */ (r.error)?.code === 'ENOENT') {
     t.skip('needs PowerShell');
@@ -1359,7 +1367,7 @@ test('grantCommands and revokeCommands: parse as PowerShell, with quotes in the 
       .filter((l) => l.startsWith('C:'))
       .map((l) => l.slice(2))
       .sort(),
-    ['Connect-MgGraph', 'Connect-MgGraph', 'ConvertTo-Json', 'Invoke-MgGraphRequest', 'Invoke-MgGraphRequest', 'Invoke-MgGraphRequest'],
+    ['Connect-MgGraph', 'Connect-MgGraph', 'Connect-MgGraph', 'ConvertTo-Json', 'ConvertTo-Json', 'Invoke-MgGraphRequest', 'Invoke-MgGraphRequest', 'Invoke-MgGraphRequest', 'Invoke-MgGraphRequest'],
   );
 });
 
@@ -1625,8 +1633,60 @@ for (const [roles, was] of WEAK_GRANTS) {
     has(plain(p.ui), `  ✓ Changed the app's access to AI in One from ${was} to write\n`);
     assert.equal(paxOf(p).site?.grantId, 'perm-1');
     assert.equal(paxOf(p).site?.grantedByInstaller, undefined);
+    assert.deepEqual(paxOf(p).site?.previousRoles, roles.length ? roles : undefined, 'uninstall puts back the roles an admin gave');
   });
 }
+
+test("ensureSiteAccess: a grant to the app other than the one on record is an admin's, so the record's provenance goes", async (t) => {
+  const p = paxCtx(t, { pax: { site: { ...SITE_RECORD, grantId: 'perm-old', grantedByInstaller: true, previousRoles: ['read'] } } });
+  p.sites.addPerm(APP_ID, ['owner']);
+  const r = await ensureSiteAccess(p.ctx, { consented: true });
+  assert.equal(r.ok, true);
+  const site = paxOf(p).site;
+  assert.equal(site?.grantId, 'perm-1');
+  assert.equal(site?.grantedByInstaller, undefined, 'uninstall leaves it alone');
+  assert.equal(site?.previousRoles, undefined);
+});
+
+/** @type {PaxSite} */
+const RAISED = { ...SITE_RECORD, id: SITE_ID, name: 'AI in One', webUrl: SITE_URL, grantId: 'perm-1', previousRoles: ['read'] };
+const PUT_BACK = `Put the app's access to ${SITE_URL} back to read? You sign in again, with Sites.FullControl.All.`;
+
+test("revokeSiteGrant: an admin's grant the installer raised to write goes back to what it was", async (t) => {
+  const p = paxCtx(t, { pax: { site: { ...RAISED } } });
+  p.sites.addPerm(APP_ID, ['write'], 'perm-1');
+  await revokeSiteGrant(p.ctx);
+  assert.deepEqual(p.ui.asked, [PUT_BACK]);
+  assert.deepEqual(callArgs(p.sites, 'updateGrant'), [[SITE_ID, 'perm-1', ['read']]]);
+  assert.deepEqual(callArgs(p.sites, 'revoke'), [], "the admin's permission stays");
+  assert.deepEqual(p.sites.perms[SITE_ID].map((x) => x.roles), [['read']]);
+  has(plain(p.ui), `  ✓ Put the app's access to ${SITE_URL} back to read\n`);
+  const site = paxOf(p).site;
+  assert.equal(site?.grantId, undefined);
+  assert.equal(site?.previousRoles, undefined);
+  assert.equal(p.saves(), 1);
+});
+
+test('revokeSiteGrant: a raised grant stays at write when the user says no or SharePoint refuses, with the command to put it back', async (t) => {
+  const no = paxCtx(t, { ui: fakeUi({ answers: [false] }), pax: { site: { ...RAISED } } });
+  await revokeSiteGrant(no.ctx);
+  const out = plain(no.ui);
+  has(out, `    The app keeps write access to ${SITE_URL}. An admin can put it back to read with:\n`);
+  for (const line of restoreCommands(RAISED, ['read'])) has(out, `      ${line}\n`);
+  assert.deepEqual(no.sites.names(), []);
+  assert.deepEqual(paxOf(no).site?.previousRoles, ['read']);
+  assert.equal(no.saves(), 0);
+
+  const refused = paxCtx(t, { pax: { site: { ...RAISED } } });
+  refused.sites.addPerm(APP_ID, ['write'], 'perm-1');
+  refused.sites.failures.updateGrant = [httpError(403, 'Access denied')];
+  await revokeSiteGrant(refused.ctx);
+  const said = plain(refused.ui);
+  has(said, `  ! Couldn't put the app's access to ${SITE_URL} back to read (Access denied). An admin can, with:\n`);
+  for (const line of restoreCommands(RAISED, ['read'])) has(said, `      ${line}\n`);
+  assert.deepEqual(paxOf(refused).site?.previousRoles, ['read']);
+  assert.equal(refused.saves(), 0);
+});
 
 test('ensureSiteAccess: "An admin" shows the commands that give the app write on this one site, and checks once', async (t) => {
   const p = paxCtx(t, { ui: fakeUi({ answers: ['admin', 'skip'] }) });
