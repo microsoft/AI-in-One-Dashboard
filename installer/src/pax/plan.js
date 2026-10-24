@@ -502,13 +502,22 @@ export function paxPlanReview(ctx, pre) {
     });
   }
 
+  const wanted = paxPermissions(pax);
+  const dropped = config.app.appId ? (config.app.permissions ?? []).filter((p) => !wanted.includes(p)) : [];
+  const leaving = pax.destination === 'local' && pax.site?.grantId ? pax.site : undefined;
+  const graphDetail = [
+    pre && !pre.canConsent ? 'You can\'t grant it yourself. You get a link for a Global Administrator or Privileged Role Administrator to approve.' : '',
+    dropped.length && config.app.existing ? `It no longer needs ${dropped.join(', ')}. You can remove them from your app registration.` : '',
+    dropped.length && !config.app.existing ? `Takes away ${dropped.join(', ')}, which this setup no longer needs.` : '',
+    leaving ? `The files no longer go to ${siteAddress(leaving)}, so the installer offers to take back the app's access there.` : '',
+  ].filter(Boolean);
   /** @type {ReviewGrant[]} */
   const grants = [
     {
       who: appWho,
-      what: `Microsoft Graph application permissions: ${paxPermissions(pax).join(', ')}`,
+      what: `Microsoft Graph application permissions: ${wanted.join(', ')}`,
       where: 'Your tenant, through admin consent',
-      detail: pre && !pre.canConsent ? 'You can\'t grant it yourself. You get a link for a Global Administrator or Privileged Role Administrator to approve.' : undefined,
+      detail: graphDetail.length ? graphDetail.join(' ') : undefined,
     },
   ];
   if (site) {

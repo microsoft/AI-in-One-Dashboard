@@ -5,6 +5,8 @@
  * PC can't make one, the client secret) the scheduled task signs in with.
  */
 import { existsSync, rmSync } from 'node:fs';
+import { GRAPH_APP_ID, paxPermissions, paxUnneeded } from '../catalog.js';
+import { apiPermissionsUrl, resolveAppRoles } from '../clients/graph.js';
 import { HttpError } from '../http.js';
 import { commandLine } from '../launch.js';
 import { addMonths, graphRoles } from '../steps/identity.js';
@@ -12,7 +14,7 @@ import { CERT_MONTHS, PAX_APP_NAME, secretPath } from './names.js';
 import { runPwshOf } from './pc.js';
 import { inspectCertificate, makeCertificate, protectSecret, removeCertificate } from './scripts.js';
 
-export { AGENT365_PERMISSIONS, PAX_PERMISSIONS, paxPermissions } from '../catalog.js';
+export { AGENT365_PERMISSIONS, PAX_PERMISSIONS, paxPermissions, paxUnneeded } from '../catalog.js';
 
 /** @typedef {import('../install.js').Ctx} Ctx */
 
@@ -89,6 +91,7 @@ export async function ensurePaxApp(ctx) {
     app.objectId = application.id;
     app.displayName = application.displayName;
     app.existing = false;
+    app.permissions = paxPermissions(paxOf(ctx));
     ctx.save();
     ui.ok(`Created app registration "${PAX_APP_NAME}" (${app.appId})`);
   }
@@ -103,6 +106,76 @@ export async function ensurePaxApp(ctx) {
     app.servicePrincipalId = sp.id;
   }
   ctx.save();
+}
+
+/**
+ * Takes the Graph permissions this setup no longer needs off the installer's app: the Agent 365
+ * pair once it's off, and Sites.Selected once the files stay on the PC. They come off its API
+ * permissions, and their admin consent goes when the signed-in user can take it away; otherwise
+ * the installer says who can. An app the user brought keeps them: the installer says which ones
+ * this setup doesn't use. Only the permissions an earlier setup may have asked for are looked at.
+ * @param {Ctx} ctx
+ * @param {{ canConsent: boolean }} who
+ */
+export async function dropUnneededPermissions(ctx, who) {
+  const { ui, config, api } = ctx;
+  const app = config.app;
+  const pax = paxOf(ctx);
+  const done = () => {
+    app.permissions = paxPermissions(pax);
+    ctx.save();
+  };
+  const names = paxUnneeded(pax).filter((p) => !app.permissions || app.permissions.includes(p));
+  if (!names.length || !app.appId || !app.servicePrincipalId) return done();
+  const appId = app.appId;
+  const spId = app.servicePrincipalId;
+  const { sp: graphSp } = await paxGraphRoles(ctx);
+  const roles = resolveAppRoles(graphSp, names, names).roles;
+  const application = await api.graph.findApplication(appId);
+  const entry = /** @type {any[]} */ (application?.requiredResourceAccess ?? []).find((r) => r.resourceAppId === GRAPH_APP_ID);
+  const declared = roles.filter((r) => /** @type {any[]} */ (entry?.resourceAccess ?? []).some((a) => a.id === r.id));
+  const assigned = (await api.graph.appRoleAssignments(spId)).filter((a) => a.resourceId === graphSp.id && roles.some((r) => r.id === a.appRoleId));
+  const extra = roles.filter((r) => declared.includes(r) || assigned.some((a) => a.appRoleId === r.id)).map((r) => r.value);
+  if (!extra.length) return done();
+  const name = app.displayName ?? appId;
+  if (app.existing) {
+    ui.note(`"${name}" has Graph application permissions this setup doesn't use: ${extra.join(', ')}. You can remove them, and their admin consent, on its API permissions page:`);
+    ui.info(apiPermissionsUrl(appId));
+    return done();
+  }
+
+  let left = false;
+  if (declared.length) {
+    const list = declared.map((r) => r.value).join(', ');
+    try {
+      await api.graph.removeRequiredAccess(application, declared.map((r) => r.id));
+      ui.ok(`Took the permissions this setup no longer needs off its API permissions: ${list}`);
+    } catch (err) {
+      if (!forbidden(err)) throw err;
+      left = true;
+      ui.warn(`You can't change the API permissions of "${name}". An admin can remove these, which this setup no longer needs: ${list}.`);
+    }
+  }
+  if (assigned.length) {
+    const list = roles.filter((r) => assigned.some((a) => a.appRoleId === r.id)).map((r) => r.value).join(', ');
+    let gone = false;
+    if (who.canConsent) {
+      try {
+        for (const a of assigned) await api.graph.deleteAppRoleAssignment(spId, a.id);
+        gone = true;
+        ui.ok(`Took away the admin consent this setup no longer needs: ${list}`);
+      } catch (err) {
+        if (!forbidden(err)) throw err;
+      }
+    }
+    if (!gone) {
+      left = true;
+      ui.warn(`The admin consent for ${list} stays, though this setup no longer needs it. A Global Administrator or Privileged Role Administrator can take it away.`);
+    }
+  }
+  if (!left) return done();
+  ui.info('They can do it on the app\'s API permissions page:');
+  ui.info(apiPermissionsUrl(appId));
 }
 
 /**

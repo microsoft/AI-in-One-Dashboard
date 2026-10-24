@@ -1246,6 +1246,22 @@ test('paxPlanReview: a local plan without consent, a certificate or Python, and 
   assert.deepEqual(review.costs, []);
 });
 
+test('paxPlanReview: says which permissions, and which site access, a changed setup takes away', (t) => {
+  const own = paxCtx(t, { pax: { site: SITE, destination: 'local', localFolder: 'C:\\Data' }, config: { app: { ...emptyConfig().app, appId: APP_ID, displayName: PAX_APP_NAME, permissions: ['AuditLogsQuery.Read.All', 'User.Read.All', 'Organization.Read.All', 'Sites.Selected', 'CopilotPackages.Read.All', 'Application.Read.All'] } } });
+  own.config.pax.site = { ...SITE, grantId: 'perm-1' };
+  const made = /** @type {any} */ (paxPlanReview(own.ctx, PRE)).grants[0].detail;
+  assert.equal(
+    made,
+    `Takes away Sites.Selected, CopilotPackages.Read.All, Application.Read.All, which this setup no longer needs. The files no longer go to ${SITE_ADDRESS}, so the installer offers to take back the app's access there.`,
+  );
+  own.config.app.existing = true;
+  own.config.pax.site = { ...SITE };
+  const brought = /** @type {any} */ (paxPlanReview(own.ctx, PRE)).grants[0].detail;
+  assert.equal(brought, 'It no longer needs Sites.Selected, CopilotPackages.Read.All, Application.Read.All. You can remove them from your app registration.');
+  const fresh = paxCtx(t, { pax: { site: SITE } });
+  assert.equal(/** @type {any} */ (paxPlanReview(fresh.ctx, PRE)).grants[0].detail, undefined, 'a new app has nothing to take away');
+});
+
 test('confirmPaxPlan: shows the plan and asks to go ahead', async (t) => {
   const { ctx, out, fake } = paxCtx(t, { pax: { site: SITE, signedOut: true }, runFirstLoad: true, answers: [false] });
   assert.equal(await confirmPaxPlan(ctx, PRE), false);

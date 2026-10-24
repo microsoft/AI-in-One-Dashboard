@@ -170,6 +170,25 @@ export function graphApi(http) {
       return true;
     },
 
+    /**
+     * Takes Graph app roles off the app's required permissions, keeping the rest.
+     * @param {any} application
+     * @param {string[]} appRoleIds
+     * @returns {Promise<string[]>}  The IDs it took off.
+     */
+    async removeRequiredAccess(application, appRoleIds) {
+      const current = /** @type {any[]} */ (application.requiredResourceAccess ?? []);
+      const graph = current.find((r) => r.resourceAppId === GRAPH_APP_ID);
+      /** @param {any} a */
+      const goes = (a) => a.type === 'Role' && appRoleIds.includes(a.id);
+      const removed = /** @type {any[]} */ (graph?.resourceAccess ?? []).filter(goes).map((a) => /** @type {string} */ (a.id));
+      if (!removed.length) return [];
+      const keep = graph.resourceAccess.filter((/** @type {any} */ a) => !goes(a));
+      const others = current.filter((r) => r.resourceAppId !== GRAPH_APP_ID);
+      await http.patch(`/applications/${application.id}`, { requiredResourceAccess: [...others, ...(keep.length ? [{ ...graph, resourceAccess: keep }] : [])] });
+      return removed;
+    },
+
     /** New apps take a few seconds to replicate, so 400/404 are retried briefly. @param {string} appId */
     createServicePrincipal: (appId) => http.post('/servicePrincipals', { appId }, replicationRetry),
 
@@ -298,6 +317,13 @@ export function graphApi(http) {
      */
     grantAppRole: (resourceId, principalId, appRoleId) =>
       http.post(`/servicePrincipals/${resourceId}/appRoleAssignedTo`, { principalId, resourceId, appRoleId }, replicationRetry),
+
+    /**
+     * Takes one application permission's admin consent away.
+     * @param {string} servicePrincipalId  Our app's service principal ID.
+     * @param {string} assignmentId
+     */
+    deleteAppRoleAssignment: (servicePrincipalId, assignmentId) => http.del(`/servicePrincipals/${servicePrincipalId}/appRoleAssignments/${assignmentId}`),
 
   };
 }

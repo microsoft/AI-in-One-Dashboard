@@ -213,3 +213,13 @@ export const paxPermissions = (pax) => [
   ...(pax?.destination === 'local' ? PAX_PERMISSIONS.filter((p) => p !== 'Sites.Selected') : PAX_PERMISSIONS),
   ...(pax?.agent365 ? AGENT365_PERMISSIONS : []),
 ];
+
+/**
+ * The PAX route's Graph application permissions that another PAX setup asks for and this one
+ * doesn't: the Agent 365 pair when it's off, and Sites.Selected when the files stay on the PC.
+ * @param {{ agent365?: boolean, destination?: string } | undefined} pax
+ */
+export const paxUnneeded = (pax) => {
+  const wanted = paxPermissions(pax);
+  return [...PAX_PERMISSIONS, ...AGENT365_PERMISSIONS].filter((p) => !wanted.includes(p));
+};

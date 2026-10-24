@@ -5,11 +5,13 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { test } from 'node:test';
-import { adminConsentUrl, apiPermissionsUrl } from '../src/clients/graph.js';
+import { adminConsentUrl, apiPermissionsUrl, graphApi } from '../src/clients/graph.js';
 import { emptyConfig, emptyPax } from '../src/config.js';
+import { createClient } from '../src/http.js';
 import {
   AGENT365_PERMISSIONS,
   daysLeft,
+  dropUnneededPermissions,
   ensureCredential,
   ensurePaxApp,
   OWN_APP,
@@ -17,6 +19,7 @@ import {
   PAX_PERMISSIONS,
   paxGraphRoles,
   paxPermissions,
+  paxUnneeded,
   removePaxCredentials,
   RENEW_DAYS,
   retireCredentials,
@@ -37,6 +40,7 @@ import {
   parseSiteUrl,
   restoreCommands,
   revokeCommands,
+  leaveSite,
   revokeSiteGrant,
   sameLibrary,
   SITE_ADMIN_SCOPE,
@@ -142,7 +146,7 @@ function paxGraph(o = {}) {
   const apps = new Map();
   /** @type {Map<string, any>} */
   const sps = new Map();
-  /** @type {{ principalId: string, resourceId: string, appRoleId: string }[]} */
+  /** @type {{ id?: string, principalId: string, resourceId: string, appRoleId: string }[]} */
   const assignments = [];
   /** @type {any[]} */
   const made = [];
@@ -245,7 +249,20 @@ function paxGraph(o = {}) {
     },
     async grantAppRole(resourceId, principalId, appRoleId) {
       call('grantAppRole', [resourceId, principalId, appRoleId]);
-      assignments.push({ principalId, resourceId, appRoleId });
+      assignments.push({ id: `assign-${assignments.length + 1}`, principalId, resourceId, appRoleId });
+    },
+    async removeRequiredAccess(application, appRoleIds) {
+      call('removeRequiredAccess', [application.id, appRoleIds]);
+      const entry = application.requiredResourceAccess.find((r) => r.resourceAppId === GRAPH_RESOURCE);
+      const removed = (entry?.resourceAccess ?? []).filter((a) => a.type === 'Role' && appRoleIds.includes(a.id)).map((a) => a.id);
+      if (entry) entry.resourceAccess = entry.resourceAccess.filter((a) => !removed.includes(a.id));
+      return removed;
+    },
+    async deleteAppRoleAssignment(servicePrincipalId, assignmentId) {
+      call('deleteAppRoleAssignment', [servicePrincipalId, assignmentId]);
+      const i = assignments.findIndex((a) => a.id === assignmentId && a.principalId === servicePrincipalId);
+      if (i < 0) throw httpError(404, `No assignment ${assignmentId}`);
+      assignments.splice(i, 1);
     },
   };
   return {
@@ -546,7 +563,7 @@ const paxOf = (p) => /** @type {PaxConfig & Record<string, any>} */ (p.config.pa
 
 /** Every PAX permission, consented on Graph for the PAX app's service principal. @param {ReturnType<typeof paxGraph>} graph */
 const consentAll = (graph) => {
-  for (const v of PAX_PERMISSIONS) graph.assignments.push({ principalId: 'sp-pax', resourceId: 'graph-sp', appRoleId: roleId(v) });
+  for (const v of PAX_PERMISSIONS) graph.assignments.push({ id: `a-${v}`, principalId: 'sp-pax', resourceId: 'graph-sp', appRoleId: roleId(v) });
 };
 
 test('PAX permissions: exactly the Graph application permissions PAX -Rollup needs app-only, and Sites.Selected', () => {
@@ -565,6 +582,13 @@ test('paxPermissions: files kept in a folder on the PC go to no site, so there i
   assert.deepEqual(paxPermissions(/** @type {any} */ ({ ...emptyPax(), destination: 'local' })), local);
   assert.deepEqual(paxPermissions(/** @type {any} */ ({ ...emptyPax(), destination: 'local', agent365: true })), [...local, ...AGENT365_PERMISSIONS]);
   assert.deepEqual(paxPermissions(/** @type {any} */ ({ ...emptyPax(), destination: 'sharepoint' })), [...PAX_PERMISSIONS]);
+});
+
+test('paxUnneeded: the PAX permissions another PAX setup asks for and this one does not', () => {
+  assert.deepEqual(paxUnneeded(/** @type {any} */ ({ ...emptyPax(), agent365: true })), []);
+  assert.deepEqual(paxUnneeded(/** @type {any} */ ({ ...emptyPax(), agent365: false })), [...AGENT365_PERMISSIONS]);
+  assert.deepEqual(paxUnneeded(/** @type {any} */ ({ ...emptyPax(), destination: 'local', agent365: true })), ['Sites.Selected']);
+  assert.deepEqual(paxUnneeded(/** @type {any} */ ({ ...emptyPax(), destination: 'local' })), ['Sites.Selected', ...AGENT365_PERMISSIONS]);
 });
 
 test('PAX permissions: Sites.Selected is the only SharePoint or files permission, and nothing asks for a tenant-wide one', () => {
@@ -635,6 +659,7 @@ test('ensurePaxApp: creates "AI in One (PAX)" with the PAX permissions, and its 
     objectId: 'obj-new-1',
     displayName: PAX_APP_NAME,
     existing: false,
+    permissions: [...PAX_PERMISSIONS],
     servicePrincipalId: 'sp-new-1',
   });
   const out = plain(p.ui);
@@ -797,6 +822,134 @@ test('daysLeft: days from now, in fractions, and NaN when it is not a date', () 
   assert.ok(Number.isNaN(daysLeft(undefined, NOW)));
   assert.ok(Number.isNaN(daysLeft('soon', NOW)));
   assert.equal(RENEW_DAYS, 30);
+});
+
+/** The app registration declares these Graph permissions and has admin consent for them. @param {ReturnType<typeof paxCtx>} p @param {string[]} values */
+const withPermissions = (p, values) => {
+  p.graph.addApp({ requiredResourceAccess: [{ resourceAppId: GRAPH_RESOURCE, resourceAccess: values.map((v) => ({ id: roleId(v), type: 'Role' })) }] });
+  for (const v of values) p.graph.assignments.push({ id: `a-${v}`, principalId: 'sp-pax', resourceId: 'graph-sp', appRoleId: roleId(v) });
+};
+/** The Graph app role IDs the app declares. @param {ReturnType<typeof paxCtx>} p */
+const declaredOn = (p) => (p.graph.apps.get(APP_ID)?.requiredResourceAccess.find((/** @type {any} */ r) => r.resourceAppId === GRAPH_RESOURCE)?.resourceAccess ?? []).map((/** @type {any} */ a) => a.id);
+const BOTH = [...PAX_PERMISSIONS, ...AGENT365_PERMISSIONS];
+
+test('dropUnneededPermissions: with Agent 365 off, the installer\'s app loses its two permissions and their admin consent', async (t) => {
+  const p = paxCtx(t, { pax: { agent365: false } });
+  p.config.app.permissions = [...BOTH];
+  withPermissions(p, BOTH);
+  await dropUnneededPermissions(p.ctx, { canConsent: true });
+  assert.deepEqual(p.graph.args('removeRequiredAccess'), [['obj-pax', AGENT365_PERMISSIONS.map(roleId)]]);
+  assert.deepEqual(p.graph.args('deleteAppRoleAssignment'), AGENT365_PERMISSIONS.map((v) => ['sp-pax', `a-${v}`]));
+  assert.deepEqual(declaredOn(p), PAX_PERMISSIONS.map(roleId));
+  assert.deepEqual(p.graph.assignments.map((a) => a.appRoleId), PAX_PERMISSIONS.map(roleId));
+  assert.deepEqual(p.config.app.permissions, [...PAX_PERMISSIONS]);
+  const out = plain(p.ui);
+  has(out, `✓ Took the permissions this setup no longer needs off its API permissions: ${AGENT365_PERMISSIONS.join(', ')}\n`);
+  has(out, `✓ Took away the admin consent this setup no longer needs: ${AGENT365_PERMISSIONS.join(', ')}\n`);
+});
+
+test('dropUnneededPermissions: files kept on the PC take Sites.Selected, and its consent, off the installer\'s app', async (t) => {
+  const p = paxCtx(t, { pax: { destination: 'local' } });
+  p.config.app.permissions = [...PAX_PERMISSIONS];
+  withPermissions(p, [...PAX_PERMISSIONS]);
+  await dropUnneededPermissions(p.ctx, { canConsent: true });
+  const local = PAX_PERMISSIONS.filter((v) => v !== 'Sites.Selected');
+  assert.deepEqual(p.graph.args('removeRequiredAccess'), [['obj-pax', [roleId('Sites.Selected')]]]);
+  assert.deepEqual(p.graph.args('deleteAppRoleAssignment'), [['sp-pax', 'a-Sites.Selected']]);
+  assert.deepEqual(declaredOn(p), local.map(roleId));
+  assert.deepEqual(p.config.app.permissions, local);
+});
+
+test('dropUnneededPermissions: without the right to take consent away, it says who can and keeps the old list for the next run', async (t) => {
+  const p = paxCtx(t, { pax: { agent365: false } });
+  p.config.app.permissions = [...BOTH];
+  withPermissions(p, BOTH);
+  await dropUnneededPermissions(p.ctx, { canConsent: false });
+  assert.deepEqual(p.graph.args('removeRequiredAccess'), [['obj-pax', AGENT365_PERMISSIONS.map(roleId)]]);
+  assert.deepEqual(p.graph.args('deleteAppRoleAssignment'), []);
+  assert.deepEqual(p.config.app.permissions, BOTH);
+  const out = plain(p.ui);
+  has(out, `! The admin consent for ${AGENT365_PERMISSIONS.join(', ')} stays, though this setup no longer needs it. A Global Administrator or Privileged Role Administrator can take it away.\n`);
+  has(out, apiPermissionsUrl(APP_ID));
+});
+
+test('dropUnneededPermissions: when Entra refuses to change the API permissions, an admin is told which to remove; other errors stop it', async (t) => {
+  const p = paxCtx(t, { pax: { agent365: false } });
+  p.config.app.permissions = [...BOTH];
+  withPermissions(p, BOTH);
+  p.graph.failures.removeRequiredAccess = [httpError(403, 'Insufficient privileges to complete the operation.')];
+  await dropUnneededPermissions(p.ctx, { canConsent: true });
+  assert.deepEqual(p.graph.args('deleteAppRoleAssignment'), AGENT365_PERMISSIONS.map((v) => ['sp-pax', `a-${v}`]), 'the consent still goes');
+  assert.deepEqual(p.config.app.permissions, BOTH);
+  const out = plain(p.ui);
+  has(out, `! You can't change the API permissions of "${PAX_APP_NAME}". An admin can remove these, which this setup no longer needs: ${AGENT365_PERMISSIONS.join(', ')}.\n`);
+  has(out, apiPermissionsUrl(APP_ID));
+
+  const q = paxCtx(t, { pax: { agent365: false } });
+  q.config.app.permissions = [...BOTH];
+  withPermissions(q, BOTH);
+  q.graph.failures.removeRequiredAccess = [httpError(500, 'Server error')];
+  await assert.rejects(dropUnneededPermissions(q.ctx, { canConsent: true }), /Server error/);
+});
+
+test('dropUnneededPermissions: an app the user brought keeps its permissions, and the installer says which this setup does not use', async (t) => {
+  const p = paxCtx(t, { pax: { agent365: false } });
+  p.config.app.existing = true;
+  p.config.app.permissions = [...BOTH];
+  withPermissions(p, BOTH);
+  await dropUnneededPermissions(p.ctx, { canConsent: true });
+  assert.deepEqual(p.graph.args('removeRequiredAccess'), []);
+  assert.deepEqual(p.graph.args('deleteAppRoleAssignment'), []);
+  assert.deepEqual(p.config.app.permissions, [...PAX_PERMISSIONS]);
+  const out = plain(p.ui);
+  has(out, `"${PAX_APP_NAME}" has Graph application permissions this setup doesn't use: ${AGENT365_PERMISSIONS.join(', ')}.`);
+  has(out, apiPermissionsUrl(APP_ID));
+});
+
+test('dropUnneededPermissions: no Graph calls when the last setup asked for no more than this one', async (t) => {
+  const p = paxCtx(t, { pax: { agent365: false } });
+  p.config.app.permissions = [...PAX_PERMISSIONS];
+  await dropUnneededPermissions(p.ctx, { canConsent: true });
+  assert.deepEqual(p.graph.names(), []);
+  assert.deepEqual(p.config.app.permissions, [...PAX_PERMISSIONS]);
+});
+
+test('dropUnneededPermissions: a record from before the list was kept is checked against the app, then recorded', async (t) => {
+  const p = paxCtx(t, { pax: { agent365: false } });
+  withPermissions(p, [...PAX_PERMISSIONS]);
+  await dropUnneededPermissions(p.ctx, { canConsent: true });
+  assert.deepEqual(p.graph.args('removeRequiredAccess'), []);
+  assert.deepEqual(p.graph.args('deleteAppRoleAssignment'), []);
+  assert.deepEqual(p.config.app.permissions, [...PAX_PERMISSIONS]);
+  assert.equal(plain(p.ui), '');
+});
+
+test('graph client: removeRequiredAccess keeps every other permission, and deleteAppRoleAssignment takes one consent away', async () => {
+  /** @type {{ method: string, path: string, body?: any }[]} */
+  const sent = [];
+  const fetchImpl = /** @type {typeof fetch} */ (
+    /** @type {unknown} */ (
+      async (/** @type {string} */ input, /** @type {any} */ init) => {
+        const url = new URL(String(input));
+        sent.push({ method: init?.method ?? 'GET', path: url.pathname.replace(/^\/v1\.0/, ''), body: init?.body ? JSON.parse(init.body) : undefined });
+        return new Response(null, { status: 204 });
+      }
+    )
+  );
+  const graph = graphApi(createClient({ baseUrl: 'https://graph.microsoft.com/v1.0', getToken: async () => 'token', fetchImpl, sleep: async () => {} }));
+  const other = { resourceAppId: 'other-api', resourceAccess: [{ id: 'x', type: 'Role' }] };
+  const access = [{ id: 'r1', type: 'Role' }, { id: 'r2', type: 'Role' }, { id: 'r2', type: 'Scope' }];
+  const application = { id: 'obj-pax', requiredResourceAccess: [other, { resourceAppId: GRAPH_RESOURCE, resourceAccess: access }] };
+  assert.deepEqual(await graph.removeRequiredAccess(application, ['r2', 'r9']), ['r2']);
+  assert.deepEqual(await graph.removeRequiredAccess(application, ['r9']), [], 'nothing to take off: no call');
+  const last = { id: 'obj-last', requiredResourceAccess: [{ resourceAppId: GRAPH_RESOURCE, resourceAccess: [{ id: 'r1', type: 'Role' }] }] };
+  assert.deepEqual(await graph.removeRequiredAccess(last, ['r1']), ['r1']);
+  await graph.deleteAppRoleAssignment('sp-pax', 'assign-1');
+  assert.deepEqual(sent, [
+    { method: 'PATCH', path: '/applications/obj-pax', body: { requiredResourceAccess: [other, { resourceAppId: GRAPH_RESOURCE, resourceAccess: [access[0], access[2]] }] } },
+    { method: 'PATCH', path: '/applications/obj-last', body: { requiredResourceAccess: [] } },
+    { method: 'DELETE', path: '/servicePrincipals/sp-pax/appRoleAssignments/assign-1', body: undefined },
+  ]);
 });
 
 test('ensureCredential: makes a certificate in the user store and adds only its public key to the app', async (t) => {
@@ -1999,6 +2152,25 @@ test("revokeSiteGrant: an admin's grant stays, with the command to take it away"
   assert.deepEqual(p.sites.names(), []);
   assert.equal(paxOf(p).site?.grantId, 'perm-1');
   assert.equal(p.saves(), 0);
+});
+
+test('leaveSite: files that now stay on the PC take back the site access the installer gave, and only then', async (t) => {
+  const p = paxCtx(t, { pax: { destination: 'local', localFolder: 'C:\\Data', site: { ...GRANTED } } });
+  p.sites.addPerm(APP_ID, ['write'], 'perm-1');
+  await leaveSite(p.ctx);
+  assert.deepEqual(p.ui.asked, [TAKE_AWAY]);
+  assert.deepEqual(callArgs(p.sites, 'revoke'), [[SITE_ID, 'perm-1']]);
+  const out = plain(p.ui);
+  has(out, '    The files now stay on this PC, so the app no longer needs its access to the SharePoint site.\n');
+  has(out, `  ✓ Took away the app's access to ${SITE_URL}\n`);
+  assert.equal(paxOf(p).site?.grantId, undefined);
+
+  for (const pax of [{ site: { ...GRANTED } }, { destination: 'local', localFolder: 'C:\\Data', site: { ...SITE_RECORD, id: SITE_ID } }]) {
+    const q = paxCtx(t, { pax });
+    await leaveSite(q.ctx);
+    assert.equal(plain(q.ui), '', 'still on SharePoint, or no grant to take back');
+    assert.deepEqual(q.sites.names(), []);
+  }
 });
 
 test('revokeSiteGrant: takes away the grant the installer made, once the user says so, and only that one', async (t) => {

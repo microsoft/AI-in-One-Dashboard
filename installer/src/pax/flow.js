@@ -18,13 +18,13 @@ import { modelUrl } from '../steps/model.js';
 import { nextSteps, stepsLeftTitle } from '../steps/next-steps.js';
 import { reportUrl } from '../steps/report.js';
 import { c } from '../ui.js';
-import { daysLeft, ensureCredential, ensurePaxApp, removePaxCredentials, RENEW_DAYS } from './identity.js';
+import { daysLeft, dropUnneededPermissions, ensureCredential, ensurePaxApp, removePaxCredentials, RENEW_DAYS } from './identity.js';
 import { defaultLocalFolder, KEPT_DIRS, paxFiles, runDir, stateRoot, TASK_NAME } from './names.js';
 import { ensurePaxTools, runPwshOf } from './pc.js';
 import { filesLabel, taskLogon } from './plan.js';
 import { connectModel, deployPaxModel, ensurePaxWorkspace, ensureRefreshSchedule, FIRST_REFRESH_MS, forgetMissingModel, localGuidance, paxViewerAccess, refreshPaxModel } from './report.js';
 import { checkAccess, taskInfo } from './scripts.js';
-import { describeCheck, ensureSiteAccess, folderLabel, revokeSiteGrant, sizeOf } from './site.js';
+import { describeCheck, ensureSiteAccess, folderLabel, leaveSite, revokeSiteGrant, sizeOf } from './site.js';
 import { describeRun, describeStopped, ensureTask, logonOf, noDataYet, noPasswordWarning, readLastRun, removeTask, staleRun, startRun, waitForRun } from './task.js';
 import { writeWrapper } from './wrapper.js';
 
@@ -107,7 +107,9 @@ async function setUp(ctx, o) {
   await ensureCredential(ctx, { certificates: probe.certificates !== false });
   step('Microsoft Graph permissions');
   const consented = await ensureConsent(ctx, { canConsent: o.canConsent });
+  await dropUnneededPermissions(ctx, { canConsent: o.canConsent });
   step(pax.destination === 'local' ? 'Local folder' : 'SharePoint site access');
+  await leaveSite(ctx);
   const site = await ensureSiteAccess(ctx, { consented });
   if (consented && !site.ok) stepsOk = false;
   step('Scheduled task');
