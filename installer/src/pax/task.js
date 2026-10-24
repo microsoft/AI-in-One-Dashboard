@@ -6,7 +6,7 @@
  * Scheduler, where Windows asks for their password; the installer never sees it.
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname } from 'node:path';
+import { dirname, win32 } from 'node:path';
 import { commandLine } from '../launch.js';
 import { lastRunPath, runDir, seedRequestPath, TASK_NAME, wrapperPath } from './names.js';
 import { runPwshOf } from './pc.js';
@@ -49,6 +49,8 @@ export const POLL_MS = 15_000;
  * @property {boolean} [done]
  * @property {number} [window]  The days each run of PAX loads.
  * @property {number | null} [rows]
+ * @property {string} [next]  The first day still to load.
+ * @property {number} [stops]  How many runs in a row stopped while they loaded a one-day window, before this one.
  */
 
 /** @param {Ctx} ctx */
@@ -369,7 +371,12 @@ export function describeStopped(run) {
   ];
   if (run.mode === 'seed') {
     const seed = run.seed;
-    lines.push(seed?.loaded ? `It had loaded the history from ${seed.from} to ${seed.loaded}. The next run carries on from there.` : CARRIES_ON);
+    // This run stopped too, before it finished a window, or the count would be back at 0.
+    const stops = seed?.window === 1 && seed.next ? (seed.stops ?? 0) + 1 : 0;
+    if (stops >= 2) {
+      const logs = run.log ? ` PAX's logs are in ${win32.join(win32.dirname(run.log), 'pax')}.` : '';
+      lines.push(`The history is stuck at ${seed?.next}: the last ${stops} runs stopped while they loaded that one day. Each run tries it again.${logs}`);
+    } else lines.push(seed?.loaded ? `It had loaded the history from ${seed.from} to ${seed.loaded}. The next run carries on from there.` : CARRIES_ON);
   } else lines.push('The next run loads those days again.');
   lines.push(`To run it now: ${commandLine('run')}`);
   return lines;

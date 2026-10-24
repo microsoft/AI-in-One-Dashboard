@@ -10,7 +10,9 @@
     The first run (the seed) loads the history in windows of a few weeks, oldest first, and saves
     its progress after each one. A run that stops part way, at the task's 4-hour limit or when you
     sign out, carries on from the last window that finished, and a run starts no new window that
-    might not finish in time. The files are published as the history loads. Each later run loads
+    might not finish in time. On a PC with no local files, the first run fetches the published
+    ones first, and they stay published as they are until the whole history has loaded; on a
+    first install there are none, so the files are published as the history loads. Each later run loads
     the last few days and appends them to the local Interactions file. PAX drops the rows the file
     already has, so days that overlap aren't counted twice. Days with no Copilot interactions
     aren't an error: the files stay as they were. When PAX finishes, the files are uploaded to the
@@ -75,6 +77,9 @@ $Streams = @(
     [pscustomobject]@{ Name = 'Users'; File = 'AIO_Users.csv'; Pattern = '*_Users.csv'; Wanted = $true }
     [pscustomobject]@{ Name = 'Agent365'; File = 'AIO_Agent365.csv'; Pattern = 'Agent365_*.csv'; Wanted = [bool]$Settings.Agent365 }
 )
+# Neither the data folder nor the seed folder has an Interactions file yet. Set from the start, so a
+# run that's going, or one that was stopped, still tells "check" there's no data yet.
+$TestNoData = { -not ((Test-Path -LiteralPath (Join-Path $DataDir 'AIO_Interactions.csv')) -or (Test-Path -LiteralPath (Join-Path $SeedDir 'AIO_Interactions.csv'))) }
 
 $Result = [ordered]@{
     startedAt   = (Get-Date).ToUniversalTime().ToString('o')
@@ -90,7 +95,7 @@ $Result = [ordered]@{
     records     = $null
     rows        = $null
     seed        = $null
-    noData      = $false
+    noData      = & $TestNoData
     log         = $RunLog
     warnings    = @()
     message     = $null
@@ -163,8 +168,9 @@ function Get-Count($Metrics, [string]$Name) {
 
 # The history's progress, kept in seed.request while it loads: the days from and next (the first
 # day still to load), the days each run of PAX loads (window), whether a window was loading when
-# the run stopped, whether every window has loaded (done) and whether they found any Copilot
-# interactions (found). Anything else in the file, such as the installer's request to load the
+# the run stopped, whether every window has loaded (done), whether they found any Copilot
+# interactions (found), and how many runs in a row stopped while they loaded a one-day window
+# (stops). Anything else in the file, such as the installer's request to load the
 # history again, gives nothing, so the history starts afresh.
 function Read-SeedProgress {
     try {
@@ -178,6 +184,7 @@ function Read-SeedProgress {
             done    = [bool]$p.done
             found   = [bool]$p.found
             rows    = if ($null -ne $p.rows) { [long]$p.rows } else { $null }
+            stops   = if ($p.PSObject.Properties['stops']) { [int]$p.stops } else { 0 }
         }
         if ($progress.window -lt 1 -or $progress.next -lt $progress.from) { return $null }
         $progress
@@ -196,6 +203,7 @@ function Save-SeedProgress($Progress) {
         done    = $Progress.done
         found   = $Progress.found
         rows    = $Progress.rows
+        stops   = $Progress.stops
     }
     $new = $SeedRequest + '.new'
     $saved | ConvertTo-Json | Set-Content -LiteralPath $new -Encoding utf8
@@ -209,6 +217,8 @@ function Set-SeedResult($Progress) {
         done   = $Progress.done
         window = $Progress.window
         rows   = $Progress.rows
+        next   = Format-Day $Progress.next
+        stops  = $Progress.stops
     }
 }
 
@@ -670,6 +680,31 @@ function Complete-Seed($Progress) {
     $message
 }
 
+# A first load on a PC with no local files fetches the published ones first. Then the windows that
+# load don't replace a published history: they're published once the whole history has loaded,
+# and the files fetched here are kept as .previous.csv. A first install finds none.
+function Get-PublishedFiles {
+    $null = New-Item -ItemType Directory -Force -Path $DataDir
+    foreach ($s in @($Streams | Where-Object Wanted)) {
+        $local = Join-Path $DataDir $s.File
+        if (Test-Path -LiteralPath $local) { continue }
+        if ($Settings.Destination -eq 'sharepoint') {
+            if (Receive-RemoteFile $s.File $local) { Write-RunLog "Downloaded $($s.File) from SharePoint. It stays published as it is until the history has loaded." }
+            continue
+        }
+        $published = Join-Path $Settings.LocalFolder $s.File
+        if (-not (Test-Path -LiteralPath $published) -or (Get-Item -LiteralPath $published).Length -le 0) { continue }
+        $partial = $local + '.download'
+        try {
+            Copy-Item -LiteralPath $published -Destination $partial -Force
+            Move-Item -LiteralPath $partial -Destination $local -Force
+        } finally {
+            Remove-Item -LiteralPath $partial -Force -ErrorAction SilentlyContinue
+        }
+        Write-RunLog "Copied $($s.File) from $($Settings.LocalFolder). It stays there as it is until the history has loaded."
+    }
+}
+
 # Loads the history in windows, oldest first, into the seed folder, and saves its progress after
 # each one, so a run that stops carries on from the last window that finished. A run starts no new
 # window that might not finish before the task's time limit. Says where to publish from: the seed
@@ -679,14 +714,23 @@ function Invoke-Seed {
     $progress = if ($Seed) { $null } else { Read-SeedProgress }
     if (-not $progress) {
         Clear-Folder $SeedDir
+        if (-not (Test-Path -LiteralPath (Join-Path $DataDir 'AIO_Interactions.csv'))) {
+            Get-PublishedFiles
+            $Result.noData = & $TestNoData
+        }
         $from = $Today.AddDays(-[int]$Settings.SeedDays)
-        $progress = [ordered]@{ from = $from; next = $from; window = [int]$Settings.SeedWindowDays; loading = $false; done = $false; found = $false; rows = $null }
+        $progress = [ordered]@{ from = $from; next = $from; window = [int]$Settings.SeedWindowDays; loading = $false; done = $false; found = $false; rows = $null; stops = 0 }
         Write-RunLog ('Loading the history from {0}, {1} days at a time.' -f (Format-Day $from), $progress.window)
     } elseif ($progress.loading) {
         # The last run stopped while it loaded a window, probably at the task's time limit.
+        if ($progress.window -le 1) { $progress.stops = [int]$progress.stops + 1 }
         $progress.window = [int][math]::Max(1, [math]::Floor($progress.window / 2))
         $progress.loading = $false
-        Write-RunLog ('The last run stopped before it finished. The history carries on loading from {0}, {1} days at a time.' -f (Format-Day $progress.next), $progress.window) 'WARN'
+        if ($progress.stops -ge 2) {
+            Write-RunLog ('The history is stuck at {0}: {1} runs in a row stopped while they loaded that one day. This run tries it again. PAX''s logs are in {2}.' -f (Format-Day $progress.next), $progress.stops, $PaxLogDir) 'WARN'
+        } else {
+            Write-RunLog ('The last run stopped before it finished. The history carries on loading from {0}, {1} at a time.' -f (Format-Day $progress.next), $(if ($progress.window -eq 1) { 'one day' } else { '{0} days' -f $progress.window })) 'WARN'
+        }
     } elseif (-not $progress.done) {
         Write-RunLog ('Carrying on loading the history from {0}.' -f (Format-Day $progress.next))
     }
@@ -708,11 +752,13 @@ function Invoke-Seed {
         try {
             $run = Invoke-Window $SeedDir $progress.next $end
             $progress.next = $end
+            $progress.stops = 0
             if ($run.Rows -ge 0) { $progress.rows = [long]$progress.rows + $run.Rows }
         } finally {
             $progress.loading = $false
             Save-SeedProgress $progress
             Set-SeedResult $progress
+            $Result.noData = & $TestNoData
             Save-Result
         }
         $windows++
@@ -798,7 +844,7 @@ try {
         if ($Settings.Destination -eq 'sharepoint') { $script:Token = Get-GraphToken }
         Publish-Files $publishFrom
     }
-    $Result.noData = -not ((Test-Path -LiteralPath $interactions) -or (Test-Path -LiteralPath (Join-Path $SeedDir 'AIO_Interactions.csv')))
+    $Result.noData = & $TestNoData
     $Result.status = if (@($Result.warnings).Count) { 'warning' } else { 'ok' }
     $published = @($Result.files).Count
     $Result.message = if ($note -and -not $published) {

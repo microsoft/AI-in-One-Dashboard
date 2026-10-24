@@ -584,6 +584,36 @@ test('status: a history run that stopped before it finished says how far it got,
   assert.doesNotMatch(text, /is going/);
 });
 
+test('status and check: a history stuck on one day says so from the second stop, and names the PAX logs', async (t) => {
+  const log = 'C:\\Users\\ana\\AppData\\Local\\AI in One\\PAX\\logs\\run-20260601-020000.log';
+  const stuck = { mode: 'seed', status: 'running', startedAt: '2026-06-01T02:00:00Z', log, seed: { from: '2025-12-03', next: '2026-02-02', loaded: '2026-02-01', done: false, window: 1, stops: 0 } };
+  const first = paxCtx(t, { pax: { ...REGISTERED, site: SITE }, taskInfo: { exists: true, state: 'Ready' } });
+  writeLastRun(first.env, stuck);
+  await runPaxCommand(first.ctx, 'status', { wait: false });
+  assert.ok(first.out().includes('It had loaded the history from 2025-12-03 to 2026-02-01. The next run carries on from there.'), first.out());
+  assert.doesNotMatch(first.out(), /stuck/);
+
+  const message =
+    "The history is stuck at 2026-02-02: the last 2 runs stopped while they loaded that one day. Each run tries it again. PAX's logs are in C:\\Users\\ana\\AppData\\Local\\AI in One\\PAX\\logs\\pax.";
+  const second = paxCtx(t, { pax: { ...REGISTERED, site: SITE }, taskInfo: { exists: true, state: 'Ready' } });
+  writeLastRun(second.env, { ...stuck, seed: { ...stuck.seed, stops: 1 } });
+  await runPaxCommand(second.ctx, 'status', { wait: false });
+  assert.ok(second.out().includes(message), second.out());
+  assert.ok(second.out().includes(`To run it now: ${commandLine('run')}`), second.out());
+  assert.doesNotMatch(second.out(), /carries on from there/);
+
+  const wide = paxCtx(t, { pax: { ...REGISTERED, site: SITE }, taskInfo: { exists: true, state: 'Ready' } });
+  writeLastRun(wide.env, { ...stuck, seed: { ...stuck.seed, window: 2, stops: 1 } });
+  await runPaxCommand(wide.ctx, 'status', { wait: false });
+  assert.doesNotMatch(wide.out(), /stuck/, 'only a one-day window can be stuck');
+
+  const check = paxCtx(t, { pax: { ...REGISTERED, destination: 'local' }, taskInfo: { exists: true, state: 'Ready' } });
+  check.config.pax.localFolder = join(check.dir, 'Not there');
+  writeLastRun(check.env, { ...stuck, seed: { ...stuck.seed, stops: 4 } });
+  await runPaxCommand(check.ctx, 'check', { wait: false });
+  assert.ok(check.out().includes(message.replace('the last 2 runs', 'the last 5 runs')), check.out());
+});
+
 test('status: a daily run that stopped, and one with nothing loaded yet', async (t) => {
   const daily = paxCtx(t, { pax: { ...REGISTERED, site: SITE }, taskInfo: { exists: true, state: 'Ready' } });
   writeLastRun(daily.env, { mode: 'daily', status: 'running', startedAt: '2026-06-01T02:00:00Z' });

@@ -420,6 +420,17 @@ Invoke-Case 'receive-empty' { $global:Queue.Enqueue(@{ size = 0 }); Receive-Remo
 Invoke-Case 'receive-missing' { $global:Queue.Enqueue(@{ status = 404 }); Receive-RemoteFile $I $Target }
 Invoke-Case 'receive-forbidden' { $global:Queue.Enqueue(@{ status = 403 }); Receive-RemoteFile $I $Target }
 Invoke-Case 'receive-retried' { $global:Queue.Enqueue(@{ status = 503 }); Receive-RemoteFile $I $Target }
+function Get-DataFiles { @(Get-ChildItem -LiteralPath $DataDir -File | ForEach-Object { $_.Name } | Sort-Object) -join ',' }
+Invoke-Case 'fetch-sharepoint' { Get-PublishedFiles; Get-DataFiles }
+Invoke-Case 'fetch-sharepoint-none' { $global:Queue.Enqueue(@{ status = 404 }); $global:Queue.Enqueue(@{ status = 404 }); Get-PublishedFiles; Get-DataFiles }
+Invoke-Case 'fetch-keeps-local' { Set-Lines $Target @('Day,Call,Row', '2026-06-01,9,9'); Get-PublishedFiles; Get-DataFiles }
+Invoke-Case 'fetch-local' {
+    $Settings.Destination = 'local'
+    Set-Lines (Join-Path $Settings.LocalFolder $I) @('Day,Call,Row', '2026-04-01,0,1')
+    [IO.File]::WriteAllText((Join-Path $Settings.LocalFolder 'AIO_Users.csv'), '')
+    Get-PublishedFiles
+    Get-DataFiles
+}
 $Users = Join-Path $DataDir 'AIO_Users.csv'
 Invoke-Case 'publish-header-only' { Set-Lines $Target @('Day,Call,Row'); Set-Lines $Users @('Id', 'user1'); Publish-Files $DataDir }
 Invoke-Case 'publish-blank-then-rows' { Set-Lines $Target @('', 'Day,Call,Row', '', '2026-05-01,0,1'); Set-Lines $Users @('Id', 'user1'); Publish-Files $DataDir }
@@ -462,7 +473,7 @@ function extract(re, what) {
 const block = (name) => extract(new RegExp(String.raw`\n\$${name} = @\(\n[\s\S]*?\n\)\n`), `a $${name} block`);
 /** @param {string} name */
 const fn = (name) => extract(new RegExp(String.raw`\nfunction ${name}\b[^\n]*\{\n[\s\S]*?\n\}\n`), `a ${name} function`);
-const FUNCTIONS = ['Write-RunLog', 'Get-HttpStatus', 'Invoke-Graph', 'Get-AuthHeader', 'Get-DriveItemUri', 'Receive-RemoteFile', 'Publish-Files', 'Assert-PaxRun'];
+const FUNCTIONS = ['Write-RunLog', 'Get-HttpStatus', 'Invoke-Graph', 'Get-AuthHeader', 'Get-DriveItemUri', 'Receive-RemoteFile', 'Publish-Files', 'Assert-PaxRun', 'Get-PublishedFiles'];
 const casesScript = () => [SETUP, block('RollupFailures'), block('Streams'), ...FUNCTIONS.map(fn), MOCKS, CASES].join('\n');
 
 describe("the task script's pinned PAX behaviour", () => {
@@ -565,6 +576,34 @@ describe("the task script's functions, under pwsh", { skip: SKIP }, () => {
         assert.equal(c.ok, true, show(c));
         assert.equal(c.value, false);
         assert.equal(c.target, false);
+    });
+    test('a first load on a new PC fetches the published files from SharePoint first', () => {
+        const USERS_ITEM = ITEM.replace(INTERACTIONS, USERS);
+        const c = get('fetch-sharepoint');
+        assert.equal(c.ok, true, show(c));
+        assert.equal(c.value, `${INTERACTIONS},${USERS}`, show(c));
+        assert.deepEqual(c.calls, [GET, WEB, `REST GET ${USERS_ITEM}`, `WEB ${USERS_ITEM}:/content`]);
+        assert.equal(c.targetText, `${OLD.join('\r\n')}\r\n`);
+        assert.deepEqual(c.partial, []);
+        assert.deepEqual(c.sent, [], 'nothing is published while it fetches');
+
+        const none = get('fetch-sharepoint-none');
+        assert.equal(none.ok, true, show(none));
+        assert.equal(none.value, '', 'a true first install has nothing to fetch');
+
+        const kept = get('fetch-keeps-local');
+        assert.equal(kept.ok, true, show(kept));
+        assert.ok(!kept.calls.some((/** @type {string} */ x) => x.endsWith(ITEM)), show(kept));
+        assert.equal(kept.targetText, 'Day,Call,Row\r\n2026-06-01,9,9\r\n', 'a local file is never replaced');
+    });
+    test('a first load on a new PC copies the files from the local folder first, but not an empty one', () => {
+        const c = get('fetch-local');
+        assert.equal(c.ok, true, show(c));
+        assert.equal(c.value, INTERACTIONS, show(c));
+        assert.deepEqual(c.calls, []);
+        assert.equal(c.targetText, 'Day,Call,Row\r\n2026-04-01,0,1\r\n');
+        assert.equal(c.local, c.targetText, 'the published copy stays as it is');
+        assert.deepEqual(c.partial, []);
     });
     test('a 403 fails at once, and a 503 is retried', () => {
         const forbidden = get('receive-forbidden');
@@ -726,12 +765,77 @@ describe("the task script's runs, under pwsh with a fake PAX", { skip: SKIP, con
         assert.equal(r.last.seed?.loaded, '2026-05-01', explain(r));
         assert.equal(r.last.noData, false);
         assert.deepEqual(published(inst, INTERACTIONS), history('2026-03-03,1,1', '2026-04-02,2,1'));
+        assert.doesNotMatch(runLog(r), /Copied \S+ from |Downloaded /, 'a true first install has nothing to fetch, so it publishes as it loads');
 
         const rest = await run(inst, { now: '2026-06-01T08:00:00Z', plan: [ONE] });
         assert.match(runLog(rest), /Carrying on loading the history from 2026-05-02\./, explain(rest));
         expectRun(rest, { code: 0, status: 'ok', message: 'Loaded the history from 2026-03-03 to 2026-05-31. Published 2 files.' });
         assert.equal(rest.seed, null);
         assert.deepEqual(data(inst, INTERACTIONS), history('2026-03-03,1,1', '2026-04-02,2,1', '2026-05-02,1,1'));
+    });
+
+    test('a first load on a new PC keeps the published files until the whole history has loaded', async (t) => {
+        const inst = install(t);
+        put(join(inst.localFolder, INTERACTIONS), OLD);
+        put(join(inst.localFolder, USERS), OLD_USERS);
+        writeFileSync(N.seedRequestPath(inst.env), '2026-06-01T02:00:00.000Z\n');
+        const slow = { rows: 1, minutes: 100 };
+        const r = await run(inst, { now: NOW, plan: [slow, slow] });
+        expectRun(r, {
+            code: 0,
+            status: 'ok',
+            message: 'Loaded the history from 2026-03-03 to 2026-05-01. The rest loads at the next run; until then the published files stay as they were.',
+        });
+        assert.match(runLog(r), /Copied AIO_Interactions\.csv from .*Published\. It stays there as it is until the history has loaded\./, explain(r));
+        assert.deepEqual(data(inst, INTERACTIONS), OLD);
+        assert.deepEqual(published(inst, INTERACTIONS), OLD, 'two windows never replace the full history');
+        assert.deepEqual(published(inst, USERS), OLD_USERS);
+        assert.equal(r.last.noData, false);
+
+        const rest = await run(inst, { now: '2026-06-01T08:00:00Z', plan: [ONE] });
+        expectRun(rest, { code: 0, status: 'ok', message: 'Loaded the history from 2026-03-03 to 2026-05-31. Published 2 files.' });
+        assert.doesNotMatch(runLog(rest), /Copied \S+ from /);
+        const loaded = history('2026-03-03,1,1', '2026-04-02,2,1', '2026-05-02,1,1');
+        assert.deepEqual(published(inst, INTERACTIONS), loaded);
+        assert.deepEqual(data(inst, 'AIO_Interactions.previous.csv'), OLD);
+        assert.equal(rest.seed, null);
+    });
+
+    test('a history stuck on one day counts the stops, says so from the second, and resets when a day loads', async (t) => {
+        const inst = install(t);
+        const stuck = { from: '2026-05-30', next: '2026-05-30', window: 1, loading: true, done: false, found: false, rows: null, stops: 1 };
+        writeFileSync(N.seedRequestPath(inst.env), JSON.stringify(stuck));
+        const r = await run(inst, { now: NOW, plan: [{ rows: 1, kill: true }] });
+        assert.equal(r.code, 137, explain(r));
+        const paxLogs = join(inst.runDir, 'logs', 'pax');
+        const warning = `The history is stuck at 2026-05-30: 2 runs in a row stopped while they loaded that one day. This run tries it again. PAX's logs are in ${paxLogs}.`;
+        assert.ok(r.last.warnings.includes(warning), explain(r));
+        assert.deepEqual(pick(r.last.seed, ['next', 'window', 'stops']), { next: '2026-05-30', window: 1, stops: 2 });
+        assert.deepEqual(pick(r.seed, ['next', 'window', 'loading', 'stops']), { next: '2026-05-30', window: 1, loading: true, stops: 2 });
+
+        const day = await run(inst, { now: '2026-06-01T09:00:00Z', plan: [ONE, { rows: 1, kill: true }] });
+        assert.equal(day.code, 137, explain(day));
+        assert.ok(day.last.warnings.includes(warning.replace('2 runs', '3 runs')), explain(day));
+        assert.deepEqual(pick(day.last.seed, ['next', 'stops']), { next: '2026-05-31', stops: 0 }, 'a day that loads resets the count');
+        assert.deepEqual(pick(day.seed, ['next', 'loading', 'stops']), { next: '2026-05-31', loading: true, stops: 0 });
+
+        const again = await run(inst, { now: '2026-06-01T15:00:00Z', plan: [ONE] });
+        expectRun(again, { code: 0, status: 'warning' });
+        assert.ok(again.last.warnings.includes('The last run stopped before it finished. The history carries on loading from 2026-05-31, one day at a time.'), explain(again));
+        assert.equal(again.seed, null);
+    });
+
+    test("a first load's result says there's no data yet from the start, and stops saying so after a window with rows", async (t) => {
+        const empty = install(t);
+        const r = await run(empty, { now: NOW, plan: [{ rows: 0, kill: true }] });
+        assert.equal(r.code, 137, explain(r));
+        assert.equal(r.last.status, 'running', explain(r));
+        assert.equal(r.last.noData, true, 'a run that was stopped on an empty tenant still says there is no data yet');
+
+        const some = install(t);
+        const s = await run(some, { now: NOW, plan: [ONE, { rows: 1, kill: true }] });
+        assert.equal(s.code, 137, explain(s));
+        assert.equal(s.last.noData, false, explain(s));
     });
 
     test("exit 10 retries the window once with -AutoCompleteness, ignoring the first attempt's log", async (t) => {

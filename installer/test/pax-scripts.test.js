@@ -897,7 +897,7 @@ test('wrapper template: runs PAX as the app with -Rollup and -SkipVersionCheck, 
     '$Today = $RunStarted.ToUniversalTime().Date',
     '$start = $Today.AddDays(-[int]$Settings.WindowDays)',
     '$from = $Today.AddDays(-[int]$Settings.SeedDays)',
-    "$progress = [ordered]@{ from = $from; next = $from; window = [int]$Settings.SeedWindowDays; loading = $false; done = $false; found = $false; rows = $null }",
+    "$progress = [ordered]@{ from = $from; next = $from; window = [int]$Settings.SeedWindowDays; loading = $false; done = $false; found = $false; rows = $null; stops = 0 }",
     "$Day.ToString('yyyy-MM-dd', [Globalization.CultureInfo]::InvariantCulture)",
     "$metrics = Join-Path $LogDir ('pax-metrics-{0}-{1}.json' -f $Stamp, $Result.attempts)",
     'if ($AutoCompleteness) { $paxArgs.AutoCompleteness = $true }',
@@ -974,10 +974,14 @@ test('wrapper template: on a new PC it downloads the SharePoint copies before PA
   const shape = wrapperShape(t);
   if (!shape) return;
   const get = shape.commands.filter((c) => c.name === 'Receive-RemoteFile');
-  assert.deepEqual(get.map((c) => [c.fn, c.guards, c.loop]), [['', ['-not $seedRequested', SP], true]]);
+  // A daily run on a new PC appends to the SharePoint copies; a first load fetches them to hold them back.
+  assert.deepEqual(get.map((c) => [c.fn, c.guards, c.loop]), [['Get-PublishedFiles', [SP], true], ['', ['-not $seedRequested', SP], true]]);
+  const fetch = shape.commands.filter((c) => c.name === 'Get-PublishedFiles');
+  assert.deepEqual(fetch.map((c) => [c.fn, c.guards]), [['Invoke-Seed', ["-not (Test-Path -LiteralPath (Join-Path $DataDir 'AIO_Interactions.csv'))", '-not $progress']]]);
+  const main = get.find((c) => c.fn === '');
   const firstInit = shape.commands.find((c) => c.name === 'Initialize-WorkDir');
   const firstPax = firstPaxRun(shape);
-  assert.ok(firstInit && firstPax && get[0].offset < firstPax.offset);
+  assert.ok(main && firstInit && firstPax && main.offset < firstPax.offset);
 });
 
 test('wrapper template: reaches Graph only by path in the one library, with no search, nothing tenant-wide and no broad permission', (t) => {
@@ -1054,7 +1058,7 @@ test('wrapper template: loads Agent 365 only when chosen, and a local folder get
   if (!shape) return;
   const where = (/** @type {string} */ name) => shape.commands.filter((c) => c.name === name).map((c) => [c.fn, c.guards]);
   assert.deepEqual(where('Send-RemoteFile'), [['Publish-Files', [SP]]]);
-  assert.deepEqual(where('Receive-RemoteFile'), [['', ['-not $seedRequested', SP]]]);
+  assert.deepEqual(where('Receive-RemoteFile'), [['Get-PublishedFiles', [SP]], ['', ['-not $seedRequested', SP]]]);
   assert.deepEqual(where('Test-SiteAccess'), [['', ['$CheckAccess']]]);
   assert.deepEqual(where('Get-GraphToken').filter(([fn]) => fn !== 'Test-SiteAccess'), [['', [SP]], ['', [SP, '$publishFrom']]]);
   const copies = shape.commands.filter((c) => c.name === 'Copy-Item' && c.fn === 'Publish-Files');
