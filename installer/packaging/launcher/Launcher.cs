@@ -236,8 +236,22 @@ internal static class Launcher
         return @"\\?\" + full;
     }
 
+    // The PAX route's state, which its scheduled task runs from: not a version of the installer.
+    // installer/src/pax/names.js (KEPT_DIRS) and install.ps1 list the same folders.
+    internal static readonly string[] KeptDirs = { "pax", "pax-run", "managed-app" };
+
+    /// <summary>Whether a folder in the home folder is the installer's state rather than an unpacked version.</summary>
+    internal static bool Kept(string name)
+    {
+        foreach (string kept in KeptDirs)
+        {
+            if (string.Equals(name, kept, StringComparison.OrdinalIgnoreCase)) return true;
+        }
+        return false;
+    }
+
     /// <summary>Removes what earlier versions unpacked, unless they're still running.</summary>
-    private static void RemoveOtherVersions(string home, string id)
+    internal static void RemoveOtherVersions(string home, string id)
     {
         string[] dirs;
         try { dirs = Directory.GetDirectories(home); }
@@ -246,7 +260,7 @@ internal static class Launcher
         foreach (string dir in dirs)
         {
             string name = Path.GetFileName(dir);
-            if (name == id) continue;
+            if (name == id || Kept(name)) continue;
             // Another copy may be unpacking right now.
             if (name.Contains(Partial) && Directory.GetLastWriteTimeUtc(dir) > DateTime.UtcNow.AddHours(-1)) continue;
             string doomed = dir;

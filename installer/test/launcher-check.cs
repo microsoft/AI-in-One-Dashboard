@@ -145,6 +145,22 @@ internal static class LauncherCheck
         return File.Exists(path) ? File.ReadAllText(path) : null;
     }
 
+    // Other versions go. This version, a copy unpacking right now and the PAX route's state stay.
+    private static void CheckCleanup(string home)
+    {
+        string current = "0.2.0-bbbbbbbbbb";
+        string[] kept = { current, "pax", "PAX-Run", "managed-app", "0.2.0-cccccccccc.partial-1" };
+        string[] gone = { "0.1.0-aaaaaaaaaa", "~stale", "pax2" };
+        foreach (string dir in kept) File.WriteAllText(Path.Combine(Directory.CreateDirectory(Path.Combine(home, dir)).FullName, "file.txt"), dir);
+        foreach (string dir in gone) File.WriteAllText(Path.Combine(Directory.CreateDirectory(Path.Combine(home, dir)).FullName, "file.txt"), dir);
+        Launcher.RemoveOtherVersions(home, current);
+        foreach (string dir in kept) Check(Read(Path.Combine(home, dir, "file.txt")) == dir, "cleanup keeps " + dir);
+        foreach (string dir in gone) Check(!Directory.Exists(Path.Combine(home, dir)), "cleanup removes " + dir);
+        Check(Directory.GetDirectories(home).Length == kept.Length, "cleanup leaves nothing else: " + string.Join(", ", Directory.GetDirectories(home)));
+        Check(Launcher.Kept("pax") && Launcher.Kept("Pax-Run") && Launcher.Kept("MANAGED-APP"), "the PAX route's folders are kept whatever their case");
+        Check(!Launcher.Kept("pax2") && !Launcher.Kept("0.2.0-pax") && !Launcher.Kept(""), "only those folders are kept");
+    }
+
     private static int Main(string[] args)
     {
         string dest = Path.Combine(args[0], "unpacked");
@@ -188,6 +204,7 @@ internal static class LauncherCheck
         Check(!Directory.Exists(dest), "unpacked folder removed");
 
         CheckMoves(Path.Combine(args[0], "home"));
+        CheckCleanup(Path.Combine(args[0], "versions"));
 
         Check(Launcher.AwakeFlags == 0x80000001, "keep-awake asks for ES_CONTINUOUS | ES_SYSTEM_REQUIRED");
         Check(Launcher.KeepAwake(true), "keep-awake turned on");

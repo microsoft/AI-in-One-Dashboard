@@ -1,9 +1,10 @@
 name: installer-exe
 
-# Builds AIInOneInstaller.exe, the download that runs the Fabric installer without a clone of this
-# repo or a terminal, and install.ps1 with AIInOneInstaller.zip, which run the same payload from
-# PowerShell for organisations that block downloaded exes. The payload is the installer and the
-# Classic Fabric files it deploys (see installer/packaging/payload.js). A tag such as
+# Builds AIInOneInstaller.exe, the download that runs the installer without a clone of this repo
+# or a terminal, and install.ps1 with AIInOneInstaller.zip, which run the same payload from
+# PowerShell for organisations that block downloaded exes. The payload is the installer, the
+# Classic Fabric files and the Power BI templates it deploys, the AI in One app's build and the
+# managed apps CLI that deploys it (see installer/packaging/payload.js). A tag such as
 # installer-v0.1.0 also drafts a release with them, to publish by hand: this workflow never
 # publishes one.
 #
@@ -26,6 +27,9 @@ on:
       # The Classic Fabric files the payload carries. Nothing from the archive.
       - 'Classic Editions/3. Fabric/**'
       - '!Classic Editions/3. Fabric/archive/**'
+      # The PAX path's Power BI template, at the repo root, and the app, which the payload carries built.
+      - '*PBI-SharePoint*.pbit'
+      - 'app/**'
       - '.github/workflows/installer-exe.yml'
   release:
     types: [published]
@@ -54,10 +58,10 @@ jobs:
           $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
           if ($env:TAG -ne "installer-v$version") { throw "Tag $env:TAG doesn't match the installer's version $version." }
 
-      # The lock file may resolve through Microsoft's internal mirror of npm, which runners can't reach.
+      # The lock files may resolve through Microsoft's internal mirror of npm, which runners can't reach.
       - name: Use the public npm registry
         working-directory: 'installer'
-        run: node packaging/public-registry.js package-lock.json
+        run: node packaging/public-registry.js package-lock.json managed-cli/package-lock.json ../app/package-lock.json
 
       - name: Install the installer's dependencies
         working-directory: 'installer'
@@ -70,6 +74,15 @@ jobs:
       - name: Type-check the installer
         working-directory: 'installer'
         run: npm run typecheck
+
+      # The payload carries the app built, so the PC that deploys it needs no npm.
+      - name: Install the app's dependencies
+        working-directory: 'app'
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Build the app
+        working-directory: 'app'
+        run: npm run build
 
       - name: Build the exe
         working-directory: 'installer'
@@ -88,6 +101,20 @@ jobs:
             if (-not (Test-Path -LiteralPath (Join-Path $preview $f))) { throw "preview wrote no $f." }
           }
           if (-not (Get-ChildItem -LiteralPath (Join-Path $preview 'notebooks') -Filter '*.ipynb')) { throw 'preview wrote no notebooks.' }
+          # The PAX path's: the scheduled task's script and definition, the permissions and the report.
+          $previewPax = Join-Path $env:RUNNER_TEMP 'preview-pax'
+          & $exe preview --target pax --config (Join-Path $env:RUNNER_TEMP 'smoke-pax.json') --out $previewPax
+          if ($LASTEXITCODE) { throw "preview --target pax failed with exit code $LASTEXITCODE." }
+          foreach ($f in 'Run-AIO-PAX.ps1', 'task.xml', 'graph-permissions.txt', 'model.bim', 'report\definition.pbir') {
+            if (-not (Test-Path -LiteralPath (Join-Path $previewPax $f))) { throw "preview --target pax wrote no $f." }
+          }
+          # The exe unpacked its payload, with the app's build and the managed apps CLI, next to it.
+          $unpacked = Get-ChildItem -LiteralPath (Join-Path $env:LOCALAPPDATA 'AIInOne') -Directory |
+            Where-Object { Test-Path -LiteralPath (Join-Path $_.FullName 'node\node.exe') } | Select-Object -First 1
+          if (-not $unpacked) { throw "The exe unpacked nothing under $env:LOCALAPPDATA\AIInOne." }
+          foreach ($f in 'f\app\dist\index.html', 'f\installer\managed-cli\node_modules\@microsoft\managed-apps-cli\dist\Bin.js') {
+            if (-not (Test-Path -LiteralPath (Join-Path $unpacked.FullName $f))) { throw "The payload has no $f." }
+          }
 
       # Unpacks into its own LOCALAPPDATA, so it doesn't reuse what the exe unpacked above.
       - name: Smoke-test install.ps1

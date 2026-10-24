@@ -4,12 +4,15 @@
  * The payload unpacks to:
  *   node/node.exe            Node.js, which runs everything below
  *   f/installer/             the installer, with its own notebooks and its production dependencies
- *   f/<templates>            the Classic Fabric notebooks, pipeline and Power BI template it deploys
+ *   f/installer/managed-cli/ the pinned managed apps CLI, which deploys the AI in One app
+ *   f/<templates>            the Classic Fabric notebooks, pipeline and Power BI template it deploys,
+ *                            and the Power BI template the PAX path deploys
+ *   f/app/dist/              the AI in One app, built
  * `f` stands in for the repo root, which keeps paths short when unpacked under the user's profile.
  */
 import { posix } from 'node:path';
 import { NOTEBOOKS, NOTEBOOKS_DIR } from '../src/catalog.js';
-import { DEFAULT_SOURCE_DIR, PIPELINE_TEMPLATE, findModelTemplate } from '../src/sources.js';
+import { DEFAULT_SOURCE_DIR, PIPELINE_TEMPLATE, findModelTemplate, findPaxModelTemplate } from '../src/sources.js';
 import { MODEL_TEMPLATE } from '../src/transform/model.js';
 
 export { EXE_NAME } from '../src/launch.js';
@@ -46,12 +49,12 @@ export function nodeVersionOk(version = process.versions.node) {
 const slash = (p) => p.replaceAll('\\', '/');
 
 /**
- * The files under the source folder that `loadSources` reads, relative to it: every notebook, the
- * pipeline template and the Power BI template. Taken from the installer's own lists, so what ships
- * can't drift from what it deploys.
+ * The files under the source folder that the Fabric path deploys, relative to it: every notebook,
+ * the pipeline template and the Power BI template. Taken from the installer's own lists, so what
+ * ships can't drift from what it deploys.
  * @returns {string[]}
  */
-export function sourceFiles() {
+export function fabricSourceFiles() {
   return [
     PIPELINE_TEMPLATE,
     ...NOTEBOOKS.map((nb) => posix.join(nb.dir ?? NOTEBOOKS_DIR, nb.file)),
@@ -60,21 +63,35 @@ export function sourceFiles() {
 }
 
 /**
- * What install.ps1 checks out of the release's commit in Azure Cloud Shell: the installer and the
- * files it deploys, rather than the whole repo. Patterns for `git sparse-checkout set --no-cone`,
- * anchored at the repo root.
+ * The files under the source folder that `loadSources` reads, relative to it: the Fabric path's,
+ * and the Power BI template the PAX path deploys. The app's build isn't in git, so build-exe.js
+ * adds it.
  * @returns {string[]}
  */
-export function sourcePaths() {
-  return ['/installer/', ...sourceFiles().map((f) => `/${f}`)];
+export function sourceFiles() {
+  const pax = findPaxModelTemplate(DEFAULT_SOURCE_DIR);
+  return [...fabricSourceFiles(), ...(pax ? [slash(pax)] : [])];
 }
 
 /**
- * Whether a tracked installer file ships, given its path relative to the installer folder.
+ * What install.ps1 checks out of the release's commit in Azure Cloud Shell: the installer and the
+ * files the Fabric path deploys, rather than the whole repo. The PAX path needs Windows, for its
+ * scheduled task, so Cloud Shell leaves out its template. Patterns for
+ * `git sparse-checkout set --no-cone`, anchored at the repo root.
+ * @returns {string[]}
+ */
+export function sourcePaths() {
+  return ['/installer/', ...fabricSourceFiles().map((f) => `/${f}`)];
+}
+
+/**
+ * Whether a tracked installer file ships, given its path relative to the installer folder. The
+ * managed apps CLI's package files ship so build-exe.js can install the pinned CLI next to them.
  * @param {string} rel
  */
 export function installerFile(rel) {
-  return /^(bin|src|assets)\//.test(rel) || ['package.json', 'package-lock.json', 'README.md'].includes(rel);
+  return /^(bin|src|assets)\//.test(rel)
+    || ['package.json', 'package-lock.json', 'README.md', 'managed-cli/package.json', 'managed-cli/package-lock.json'].includes(rel);
 }
 
 /**
@@ -97,12 +114,18 @@ export function fileVersion(version) {
 }
 
 /**
+ * The sign-in library the managed apps CLI uses carries native builds for every system it supports,
+ * and loads only the one for the system it runs on. The payload runs on x64 Windows only.
+ */
+const OTHER_SYSTEMS = /(^|\/)node_modules\/@azure\/msal-node-runtime\/dist\/(linux|macos|windows\/(arm64|x86))\//i;
+
+/**
  * Whether an installed package's file can be left out of the payload. Nothing reads source maps
- * when the installer runs, and they'd add to every download.
+ * when the installer runs, nor native builds for other systems, and they'd add to every download.
  * @param {string} rel  Relative to the payload root.
  */
 export function prunable(rel) {
-  return /(^|\/)node_modules\/.+\.map$/i.test(rel);
+  return /(^|\/)node_modules\/.+\.map$/i.test(rel) || OTHER_SYSTEMS.test(rel);
 }
 
 /**

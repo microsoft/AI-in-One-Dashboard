@@ -4,11 +4,11 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join, posix } from 'node:path';
 import { test } from 'node:test';
 import { NOTEBOOKS, NOTEBOOKS_DIR } from '../src/catalog.js';
-import { DEFAULT_SOURCE_DIR, PIPELINE_TEMPLATE } from '../src/sources.js';
+import { DEFAULT_SOURCE_DIR, PIPELINE_TEMPLATE, findPaxModelTemplate } from '../src/sources.js';
 import { MODEL_TEMPLATE } from '../src/transform/model.js';
 import {
-  EXE_NAME, MAX_NATIVE_PATH, MAX_PAYLOAD_PATH, MIN_NODE, MIRROR_REGISTRY, PUBLIC_REGISTRY, SOURCE_ROOT, fileVersion, installerFile, leakedIds,
-  localIds, nodeVersionOk, payloadId, prunable, publicRegistry, sourceFiles, sourcePaths, tooLong,
+  EXE_NAME, MAX_NATIVE_PATH, MAX_PAYLOAD_PATH, MIN_NODE, MIRROR_REGISTRY, PUBLIC_REGISTRY, SOURCE_ROOT, fabricSourceFiles, fileVersion, installerFile,
+  leakedIds, localIds, nodeVersionOk, payloadId, prunable, publicRegistry, sourceFiles, sourcePaths, tooLong,
 } from '../packaging/payload.js';
 import { SCRIPT_NAME, ZIP_NAME } from '../packaging/script.js';
 
@@ -16,6 +16,11 @@ const CLASSIC = 'Classic Editions/3. Fabric';
 const EXE = 'AIInOneInstaller.exe';
 const ARCHIVED = /(^|\/)archive\/|Archived Templates/i;
 const WORKFLOWS = ['installer-tests.yml', 'installer-exe.yml'];
+// The workflows' glob for the PAX path's Power BI template: `*` matches anything but `/`.
+const PAX_TEMPLATE_GLOB = '*PBI-SharePoint*.pbit';
+const PAX_TEMPLATE_PATHS = /^[^/]*PBI-SharePoint[^/]*\.pbit$/;
+const PAX_TEMPLATE = findPaxModelTemplate(DEFAULT_SOURCE_DIR);
+const MSAL = 'f/installer/managed-cli/node_modules/@azure/msal-node-runtime/dist';
 
 /** @param {string} rel  Relative to the repo root. */
 const repoFile = (rel) => readFileSync(new URL(`../../${rel}`, import.meta.url), 'utf8');
@@ -32,7 +37,11 @@ test('packaging: ships every file the installer deploys, and nothing archived', 
   assert.ok(files.includes(PIPELINE_TEMPLATE.replaceAll('\\', '/')));
   assert.ok(files.includes(MODEL_TEMPLATE));
   for (const nb of NOTEBOOKS) assert.ok(files.includes(posix.join(nb.dir ?? NOTEBOOKS_DIR, nb.file)), nb.file);
-  assert.equal(files.length, NOTEBOOKS.length + 2, 'the notebooks, the pipeline and the Power BI template');
+  // The PAX path's Power BI template, found the way the installer finds it.
+  assert.ok(PAX_TEMPLATE, 'the repo has the PAX path\'s Power BI template');
+  assert.ok(files.includes(PAX_TEMPLATE.replaceAll('\\', '/')));
+  assert.deepEqual(files, [...fabricSourceFiles(), PAX_TEMPLATE.replaceAll('\\', '/')]);
+  assert.equal(files.length, NOTEBOOKS.length + 3, 'the notebooks, the pipeline and the two Power BI templates');
   assert.equal(new Set(files).size, files.length, 'no file twice');
   assert.equal(files.filter((f) => f.startsWith(`${CLASSIC}/notebooks/`)).length, 3, 'the Classic notebooks');
   assert.equal(files.filter((f) => f.startsWith('installer/assets/notebooks/')).length, 2, "the installer's own notebooks");
@@ -44,15 +53,23 @@ test('packaging: ships every file the installer deploys, and nothing archived', 
   assert.deepEqual(tooLong(files.map((f) => `${SOURCE_ROOT}/${f}`)), []);
 });
 
-test('packaging: Cloud Shell checks out the installer and the same files the payload carries', () => {
-  assert.deepEqual(sourcePaths(), ['/installer/', ...sourceFiles().map((f) => `/${f}`)]);
+test('packaging: Cloud Shell checks out the installer and the files the Fabric path deploys', () => {
+  assert.deepEqual(sourcePaths(), ['/installer/', ...fabricSourceFiles().map((f) => `/${f}`)]);
+  // The PAX path needs Windows, so Cloud Shell would only download its template.
+  assert.ok(!sourcePaths().some((p) => /PBI-SharePoint/i.test(p)));
 });
 
 test('packaging: ships the installer code and its own notebooks, not its tests or tooling', () => {
-  for (const f of ['bin/aio-install.js', 'src/cli.js', 'src/web/index.html', 'assets/notebooks/AIO_Data_Check.ipynb', 'package.json', 'package-lock.json', 'README.md']) {
+  for (const f of [
+    'bin/aio-install.js', 'src/cli.js', 'src/web/index.html', 'assets/notebooks/AIO_Data_Check.ipynb', 'package.json', 'package-lock.json', 'README.md',
+    // build-exe.js installs the pinned managed apps CLI from these.
+    'managed-cli/package.json', 'managed-cli/package-lock.json',
+  ]) {
     assert.ok(installerFile(f), f);
   }
-  for (const f of ['test/cli.test.js', 'packaging/build-exe.js', 'jsconfig.json', '.gitignore', 'aio-install.json']) assert.ok(!installerFile(f), f);
+  for (const f of ['test/cli.test.js', 'packaging/build-exe.js', 'jsconfig.json', '.gitignore', 'aio-install.json', 'managed-cli/node_modules/a/index.js']) {
+    assert.ok(!installerFile(f), f);
+  }
   // build-exe.js stages these with the installer rather than copying them twice.
   for (const f of sourceFiles().filter((s) => s.startsWith('installer/'))) assert.ok(installerFile(f.slice('installer/'.length)), f);
 });
@@ -86,8 +103,19 @@ test('packaging: long paths are caught, with a tighter limit for native binaries
   assert.deepEqual(tooLong([ok, 'node/node.exe'], { max: 10, native: 100 }), [ok]);
 });
 
-test('packaging: source maps in installed packages are left out, and nothing else', () => {
-  for (const f of ['f/installer/node_modules/a/index.js.map', 'f/installer/node_modules/@s/b/build/x.d.ts.map']) assert.ok(prunable(f), f);
+test('packaging: source maps, and the sign-in library\'s builds for other systems, are left out, and nothing else', () => {
+  for (const f of [
+    'f/installer/node_modules/a/index.js.map',
+    'f/installer/node_modules/@s/b/build/x.d.ts.map',
+    `${MSAL}/linux/ubuntu/x64/msal-node-runtime.node`,
+    `${MSAL}/linux/rhel8_9/x64/libmsalruntime.so`,
+    `${MSAL}/macos/arm64/msal-node-runtime.node`,
+    `${MSAL}/windows/arm64/msalruntime_arm64.dll`,
+    `${MSAL}/windows/x86/msal-node-runtime.node`,
+    `${MSAL}/index.cjs.map`,
+  ]) {
+    assert.ok(prunable(f), f);
+  }
   for (const f of [
     'f/installer/node_modules/a/index.js',
     'f/installer/node_modules/a/map.js',
@@ -95,6 +123,14 @@ test('packaging: source maps in installed packages are left out, and nothing els
     'f/x.map',
     'node/node.exe',
     'node/LICENSE',
+    // The payload runs on x64 Windows, and the loader picks its build from beside these.
+    `${MSAL}/windows/x64/msal-node-runtime.node`,
+    `${MSAL}/windows/x64/msalruntime.dll`,
+    `${MSAL}/index.cjs`,
+    `${MSAL}/index.js`,
+    'f/installer/managed-cli/node_modules/@microsoft/managed-apps-cli/dist/Bin.js',
+    'f/installer/managed-cli/node_modules/other/dist/linux/x64/a.node',
+    'f/app/dist/index.html',
     ...sourceFiles().map((s) => `${SOURCE_ROOT}/${s}`),
   ]) {
     assert.ok(!prunable(f), f);
@@ -141,10 +177,12 @@ test('packaging: the workflow uploads, and the signing pipeline signs, the files
 });
 
 test('packaging: changes to the installer, the files it deploys or the workflows run the workflows', () => {
-  for (const f of sourceFiles()) assert.ok(f.startsWith('installer/') || f.startsWith(`${CLASSIC}/`), `nothing runs the workflows when ${f} changes`);
+  for (const f of sourceFiles()) {
+    assert.ok(f.startsWith('installer/') || f.startsWith(`${CLASSIC}/`) || PAX_TEMPLATE_PATHS.test(f), `nothing runs the workflows when ${f} changes`);
+  }
   for (const name of WORKFLOWS) {
     const yml = repoFile(`.github/workflows/${name}`);
-    for (const p of ['installer/**', `${CLASSIC}/**`, `!${CLASSIC}/archive/**`, `.github/workflows/${name}`]) {
+    for (const p of ['installer/**', `${CLASSIC}/**`, `!${CLASSIC}/archive/**`, PAX_TEMPLATE_GLOB, 'app/**', `.github/workflows/${name}`]) {
       assert.match(yml, new RegExp(`^ +- '${literal(p)}'$`, 'm'), `${name} runs on ${p}`);
     }
   }
@@ -158,6 +196,37 @@ test('packaging: an installer tag builds the installer alone, and only drafts it
   // The repo's Latest release is the dashboard's.
   assert.match(yml, / --draft --latest=false /);
   assert.doesNotMatch(yml, /--draft=false|--latest(=true)?\s*\\?$/m);
-  // No app to build yet.
-  for (const name of WORKFLOWS) assert.doesNotMatch(repoFile(`.github/workflows/${name}`), /\bapp\/|working-directory: '?app'?$|managed-apps|npm run build(?!:exe)/m, name);
+});
+
+test('packaging: the exe workflow builds the app from the public registry before the exe, and checks the payload carries it', () => {
+  const yml = repoFile('.github/workflows/installer-exe.yml');
+  // Every lock file the build installs from, rewritten first: the installer's, the managed apps CLI's and the app's.
+  const rewrite = /^ +run: node packaging\/public-registry\.js (.+)$/m.exec(yml);
+  assert.ok(rewrite, 'rewrites the lock files');
+  assert.deepEqual(rewrite[1].trim().split(/\s+/), ['package-lock.json', 'managed-cli/package-lock.json', '../app/package-lock.json']);
+  /** @param {RegExp} re */
+  const at = (re) => {
+    const m = re.exec(yml);
+    assert.ok(m, `the workflow has ${re}`);
+    return m.index;
+  };
+  const steps = [
+    at(/public-registry\.js/),
+    at(/working-directory: 'app'\r?\n +run: npm ci --ignore-scripts --no-audit --no-fund\r?$/m),
+    at(/working-directory: 'app'\r?\n +run: npm run build\r?$/m),
+    at(/run: npm run build:exe -- --release /),
+  ];
+  assert.deepEqual([...steps].sort((a, b) => a - b), steps, 'in that order');
+  assert.match(yml, /& \$exe preview --target pax /);
+  for (const f of [String.raw`f\app\dist\index.html`, String.raw`f\installer\managed-cli\node_modules\@microsoft\managed-apps-cli\dist\Bin.js`]) {
+    assert.ok(yml.includes(`'${f}'`), `checks the payload has ${f}`);
+  }
+  // The tests on Linux need neither.
+  assert.doesNotMatch(repoFile('.github/workflows/installer-tests.yml'), /working-directory: '?app'?\r?$|managed-apps|npm run build(?!:exe)/m);
+});
+
+test('packaging: the workflows\' glob finds the PAX path\'s Power BI template, and only at the repo root', () => {
+  assert.ok(PAX_TEMPLATE);
+  assert.match(PAX_TEMPLATE.replaceAll('\\', '/'), PAX_TEMPLATE_PATHS);
+  assert.doesNotMatch('Classic Editions/x PBI-SharePoint.pbit', PAX_TEMPLATE_PATHS);
 });
