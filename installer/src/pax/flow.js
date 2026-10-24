@@ -509,6 +509,7 @@ async function refresh(ctx, opts) {
     return connectModel(ctx);
   }
   const r = await refreshPaxModel(ctx, { timeoutMs: opts.wait ? FIRST_REFRESH_MS : 0 });
+  if (r.ok || r.running) await ensureRefreshSchedule(ctx);
   return !opts.wait || r.ok;
 }
 

@@ -31,7 +31,7 @@ import { noDataYet } from '../src/pax/task.js';
 import { reviewSetup, setupCategories, setupRecovery } from '../src/setup.js';
 import { APP_DIST, DEFAULT_SOURCE_DIR, findPaxModelTemplate, findRollupTemplate, loadSources, PIPELINE_TEMPLATE } from '../src/sources.js';
 import { nextSteps } from '../src/steps/next-steps.js';
-import { fakeUi } from './fakes.js';
+import { fakePowerBi, fakeUi } from './fakes.js';
 
 const NOW = new Date('2026-06-01T12:00:00.000Z');
 const TENANT = '00000000-0000-0000-0000-000000000001';
@@ -706,6 +706,52 @@ test('refresh: a model that was deleted from the workspace is forgotten, with no
   assert.equal(config.semanticModel.id, undefined);
   assert.ok(out().includes('AI in One isn\'t in "Copilot Reporting" any more.'), out());
   assert.ok(out().includes(`AI in One isn't deployed. Run "${commandLine('update')}".`), out());
+});
+
+/**
+ * The refresh command's ctx: AI in One is signed in, and Power BI has turned off the daily refresh
+ * the installer set, at the same times and in the same time zone.
+ * @param {import('node:test').TestContext} t
+ */
+function refreshCtx(t) {
+  const s = paxCtx(t, { pax: { ...REGISTERED, site: SITE }, config: { semanticModel: { ...model(true), id: 'm1', name: 'AI in One', bound: true, refreshTimes: ['06:00', '12:00'] } } });
+  s.config.fabric = { ...s.config.fabric, workspaceId: 'ws1', workspaceName: 'Copilot Reporting' };
+  /** @type {any} */ (s.ctx.api.fabric).listItems = async () => [{ id: 'm1', displayName: 'AI in One', type: 'SemanticModel' }];
+  const pbi = fakePowerBi();
+  Object.assign(pbi.refreshSchedule, { enabled: false, days: ['Monday'], times: ['06:00', '12:00'], localTimeZoneId: 'UTC' });
+  /** @type {any} */ (s.ctx.api).powerBi = pbi.api;
+  return { ...s, pbi };
+}
+
+const TURNED_OFF = 'Power BI had turned off the daily refresh of AI in One.';
+
+test('refresh --wait: turns back on the daily refresh Power BI turned off', async (t) => {
+  const { ctx, config, out, pbi } = refreshCtx(t);
+  assert.equal(await runPaxCommand(ctx, 'refresh', { wait: true }), true);
+  assert.deepEqual(pbi.calls, ['startRefresh m1', 'setRefreshSchedule m1 06:00,12:00']);
+  assert.equal(pbi.refreshSchedule.enabled, true);
+  assert.ok(out().includes(TURNED_OFF), out());
+  assert.deepEqual(config.semanticModel.refreshTimes, ['06:00', '12:00']);
+});
+
+test('refresh: turns the daily refresh back on while the refresh is still going', async (t) => {
+  const { ctx, out, pbi } = refreshCtx(t);
+  pbi.plainStates.push({ status: 'Unknown' });
+  assert.equal(await runPaxCommand(ctx, 'refresh', { wait: false }), true);
+  assert.ok(out().includes('AI in One is still refreshing.'), out());
+  assert.deepEqual(pbi.calls, ['startRefresh m1', 'setRefreshSchedule m1 06:00,12:00']);
+  assert.equal(pbi.refreshSchedule.enabled, true);
+  assert.ok(out().includes(TURNED_OFF), out());
+});
+
+test('refresh --wait: a refresh that fails leaves the daily refresh alone', async (t) => {
+  const { ctx, out, pbi } = refreshCtx(t);
+  pbi.plainStates.push({ status: 'Failed' });
+  assert.equal(await runPaxCommand(ctx, 'refresh', { wait: true }), false);
+  assert.ok(out().includes("AI in One's refresh failed"), out());
+  assert.deepEqual(pbi.calls, ['startRefresh m1'], 'no setRefreshSchedule');
+  assert.equal(pbi.refreshSchedule.enabled, false);
+  assert.ok(!out().includes(TURNED_OFF), out());
 });
 
 /** @param {string} s */
