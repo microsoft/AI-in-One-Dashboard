@@ -22,6 +22,7 @@ import {
   showPc,
   taskLogon,
   validateFolder,
+  validateLibrary,
   validateLocalFolder,
 } from '../src/pax/plan.js';
 import { PROBE, START_TASK_SCRIPT, TASK_INFO_SCRIPT, UNREGISTER_TASK_SCRIPT } from '../src/pax/scripts.js';
@@ -1018,6 +1019,15 @@ test('validateFolder: a folder path in the document library', () => {
   assert.equal(validateFolder('A'.repeat(300)), true, 'no length limit is coded');
 });
 
+test('validateLibrary: one library name, which the report can read', () => {
+  for (const v of ['', '  ']) assert.equal(validateLibrary(v), 'Required', JSON.stringify(v));
+  for (const ch of ['"', '*', ':', '<', '>', '?', '|', '#', '%', '/', '\\']) {
+    assert.equal(validateLibrary(`Reports${ch}AI`), 'Leave out these characters: " * : < > ? | # % / \\', ch);
+  }
+  assert.equal(validateLibrary(' Shared Documents '), true);
+  assert.equal(validateLibrary('Documents'), true);
+});
+
 test('validateLocalFolder: a full path on this PC', () => {
   assert.equal(validateLocalFolder('C:\\Data\\AI in One'), true);
   assert.equal(validateLocalFolder('  d:/Data  '), true, 'it trims first');
@@ -1143,6 +1153,38 @@ test('paxPlan: the advanced settings', async (t) => {
   assert.equal(config.pax.runAt, '05:30');
   assert.equal(config.pax.signedOut, true);
   assert.equal(ctx.runFirstLoad, false);
+});
+
+test("paxPlan: a pasted link to a folder or library the report can't read asks for the library and folder", async (t) => {
+  const FOLDER_LINK = 'https://contoso.sharepoint.com/:f:/r/sites/AIinOne/Shared%20Documents/Reports%20%231?csf=1&web=1';
+  const folder = paxCtx(t, { answers: [false, 'sharepoint', FOLDER_LINK, 'Shared Documents', 'Reports 1'] });
+  await paxPlan(folder.ctx, PRE);
+  const said = folder.out();
+  assert.ok(said.includes(`The report can't use the folder "Reports #1" (Leave out these characters: " * : < > ? | # % \\). Type the library and folder instead.`), said);
+  assert.ok(folder.fake.asked.includes('Document library') && folder.fake.asked.includes('Folder in the library'), folder.fake.asked.join(' | '));
+  assert.equal(folder.config.pax.site.url, SITE.url);
+  assert.equal(folder.config.pax.site.library, 'Shared Documents');
+  assert.equal(folder.config.pax.site.folder, 'Reports 1');
+
+  const LIBRARY_LINK = 'https://contoso.sharepoint.com/sites/AIinOne/Team%20%231/Forms/AllItems.aspx';
+  const library = paxCtx(t, { answers: [false, 'sharepoint', LIBRARY_LINK, 'Team 1', 'AI in One'] });
+  await paxPlan(library.ctx, PRE);
+  const text = library.out();
+  assert.ok(text.includes(`The report can't use the library "Team #1" (Leave out these characters: " * : < > ? | # % / \\). Type the library and folder instead.`), text);
+  assert.equal(library.config.pax.site.library, 'Team 1');
+  assert.equal(library.config.pax.site.folder, 'AI in One');
+
+  const fine = paxCtx(t, { answers: [false, 'sharepoint', 'https://contoso.sharepoint.com/:f:/r/sites/AIinOne/Shared%20Documents/Reports?csf=1&web=1'] });
+  await paxPlan(fine.ctx, PRE);
+  assert.ok(!fine.fake.asked.includes('Folder in the library'), "a folder the report can read isn't asked for again");
+  assert.equal(fine.config.pax.site.folder, 'Reports');
+});
+
+test("paxPlan: under --yes, a recorded link to a folder the report can't read stops the setup", async (t) => {
+  const ID_LINK = 'https://contoso.sharepoint.com/sites/AIinOne/Shared%20Documents/Forms/AllItems.aspx?id=%2Fsites%2FAIinOne%2FShared%20Documents%2F100%25%20done';
+  const { ctx, out } = paxCtx(t, { yes: true, pax: { site: { url: ID_LINK } } });
+  await assert.rejects(paxPlan(ctx, PRE), { message: 'Folder in the library: Leave out these characters: " * : < > ? | # % \\' });
+  assert.ok(out().includes(`The report can't use the folder "100% done"`), out());
 });
 
 test('paxPlan: a local folder', async (t) => {

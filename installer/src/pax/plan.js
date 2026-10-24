@@ -159,6 +159,30 @@ export function validateFolder(v) {
   return true;
 }
 
+/**
+ * A library's name, or the last part of its address. The report decodes the files' addresses,
+ * so a # or % in them would break it.
+ * @param {string} v
+ */
+export function validateLibrary(v) {
+  const library = v.trim();
+  if (!library) return 'Required';
+  if (/["*:<>?|#%\\/]/.test(library)) return 'Leave out these characters: " * : < > ? | # % / \\';
+  return true;
+}
+
+/**
+ * Why the report can't read the site's library or folder, which can come from a pasted link.
+ * @param {PaxSite} site
+ */
+function folderProblem(site) {
+  const library = validateLibrary(site.library ?? '');
+  if (library !== true) return `The report can't use the library "${site.library ?? ''}" (${library}).`;
+  const folder = validateFolder(site.folder || SP_FOLDER);
+  if (folder !== true) return `The report can't use the folder "${site.folder}" (${folder}).`;
+  return '';
+}
+
 /** @param {string} v */
 export function validateLocalFolder(v) {
   const path = v.trim();
@@ -234,8 +258,10 @@ async function chooseSite(ctx, pax, advanced) {
     pax.site = { url: parsed.url, host: parsed.host, path: parsed.path, library: parsed.library ?? DEFAULT_LIBRARY, folder: parsed.folder ?? SP_FOLDER };
   }
   const site = /** @type {PaxSite} */ (pax.site);
-  if (advanced) {
-    const library = (await ui.input('Document library', { default: site.library, validate: (v) => (v.trim() ? true : 'Required') })).trim();
+  const problem = folderProblem(site);
+  if (problem) ui.warn(`${problem} Type the library and folder instead.`);
+  if (advanced || problem) {
+    const library = (await ui.input('Document library', { default: site.library, validate: validateLibrary })).trim();
     const folder = cleanFolder(await ui.input('Folder in the library', { default: site.folder, validate: validateFolder }));
     moveFolder(site, library, folder);
   }
