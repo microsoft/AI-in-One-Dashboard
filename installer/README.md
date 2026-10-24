@@ -727,7 +727,7 @@ checks the SharePoint site, the AI in One app and whether this PC can run PAX: s
 [What PAX needs](#what-pax-needs).
 
 It doesn't check that unified audit logging is on, and the audit log load needs it. See
-**Before you run anything — unified audit logging must be ON** in the [main README](../README.md).
+[Before you run anything — unified audit logging must be ON](../docs/get-your-data.md#audit-logging).
 
 ## Troubleshooting
 

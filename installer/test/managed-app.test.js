@@ -401,7 +401,7 @@ test("real app: the CLI's lock file holds the pinned version, its engines are MI
 
 test("real app: APP_NAME and BUILD_PATH are the README's `ms app init` name and build path", (t) => {
   const readme = readFileSync(join(APP, 'README.md'), 'utf8');
-  const init = readme.match(/^\s*ms app init\b([^\r\n]*)/m);
+  const init = readme.match(/^\s*(?:npx\s+)?ms app init\b([^\r\n]*)/m);
   if (!init) {
     t.skip('app/README.md has no `ms app init` line to check against');
     return;
