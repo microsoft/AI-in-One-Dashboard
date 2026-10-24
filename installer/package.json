@@ -1,7 +1,7 @@
 {
   "name": "ai-in-one-installer",
-  "version": "0.1.0",
-  "description": "AI in One installer. Sets up the AI in One Dashboard's Classic Fabric edition: app registration, client secret (in the notebooks or Azure Key Vault), workspace, Lakehouse, notebooks, pipeline, schedule, semantic model, report and first load.",
+  "version": "0.2.0",
+  "description": "AI in One installer. Sets up the AI in One Dashboard in your tenant. In Microsoft Fabric: app registration, client secret (in the notebooks or Azure Key Vault), workspace, Lakehouse, notebooks, pipeline, schedule, semantic model, report and first load. With PAX: app registration, SharePoint folder, a scheduled task on a Windows PC, the report and the AI in One app.",
   "license": "MIT",
   "private": true,
   "type": "module",

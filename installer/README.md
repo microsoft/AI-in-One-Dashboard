@@ -1,10 +1,16 @@
 # AI in One installer
 
-The installer sets up the [Fabric edition](../Classic%20Editions/3.%20Fabric/README.md) of AI in
-One for you. It creates the app registration, the workspace, the Lakehouse, the notebooks and
-pipeline that load Copilot usage data, and the semantic model and report. Then it runs the first
-load and checks the data. It runs on your PC, signed in as you, and asks its questions in your
-browser or in the terminal.
+The installer sets up AI in One for you, one of two ways:
+
+- **On Fabric.** It sets up the [Fabric edition](../Classic%20Editions/3.%20Fabric/README.md): the
+  app registration, the workspace, the Lakehouse, the notebooks and pipeline that load Copilot
+  usage data, and the semantic model and report. Then it runs the first load and checks the data.
+- **With PAX, on a Windows PC.** A scheduled task on the PC runs
+  [PAX](https://github.com/microsoft/PAX) each day and puts its files in a SharePoint folder, for
+  the report and the AI in One app. It needs no Fabric capacity. See
+  [With PAX instead of Fabric](#with-pax-instead-of-fabric).
+
+It runs on your PC, signed in as you, and asks its questions in your browser or in the terminal.
 
 Check the [Prerequisites](#prerequisites) first. Then start the installer one of these ways. They
 all run the same installer and ask the same questions.
@@ -21,6 +27,9 @@ all run the same installer and ask the same questions.
 If your organisation's policy blocks a route, don't work around it. Use another route, or ask
 your IT team.
 
+For PAX, start the installer on the Windows PC or server that will run the scheduled task, signed
+in to Windows as the account the task should run as. Cloud Shell sets up Fabric only.
+
 When it finishes: [Check it worked](#check-it-worked).
 
 ## Run it
@@ -28,17 +37,19 @@ When it finishes: [Check it worked](#check-it-worked).
 1. Start the installer. Paste this into PowerShell (see [From PowerShell](#from-powershell)):
 
    ```powershell
-   irm https://github.com/microsoft/AI-in-One-Dashboard/releases/download/installer-v0.1.0/install.ps1 | iex
+   irm https://github.com/microsoft/AI-in-One-Dashboard/releases/download/installer-v0.2.0/install.ps1 | iex
    ```
 
-   Or [download the exe](https://github.com/microsoft/AI-in-One-Dashboard/releases/download/installer-v0.1.0/AIInOneInstaller.exe)
+   Or [download the exe](https://github.com/microsoft/AI-in-One-Dashboard/releases/download/installer-v0.2.0/AIInOneInstaller.exe)
    and open it. To check the exe, see [Check the download](#check-the-download). If your
    organisation blocks either, use another route in the table above.
 2. The first time, it takes about a minute to unpack. Then it opens in your browser. Keep its
    window open while you use the page, and keep the PC plugged in until it finishes. If you close
    the page, go back to that window and press **Enter** to open it again.
-3. Choose **Set up AI in One** and sign in.
-4. On **Setup settings**, open each category, answer its questions and save it:
+3. Under **Where should AI in One get its data?**, keep **Fabric** for the steps below, or choose
+   **PAX, on this Windows PC** and see [With PAX instead of Fabric](#with-pax-instead-of-fabric).
+   Then choose **Set up AI in One** and sign in.
+4. On **Setup settings**, open each category, answer its questions and save it. On Fabric:
    1. **Data collection.** What it loads: Copilot usage and licences, and org data. There's
       nothing to choose here.
    2. **Fabric placement.** The capacity, how many people are in the tenant, the workspace and the
@@ -66,10 +77,11 @@ When it finishes: [Check it worked](#check-it-worked).
    Loading 180 days of history can take from under an hour to several hours in a large tenant.
 7. When it finishes, open the link to the report.
 
-**In the terminal.** Run the installer without `--ui` and it asks the same things in order: what
-it collects, then **Change the advanced settings?** (**No** takes the defaults), then the
-capacity, workspace, app registration and where the secret goes. Then it shows the plan and asks
-**Go ahead?**. See [Advanced settings](#advanced-settings).
+**In the terminal.** Run the installer without `--ui` and it asks the same things in order. A new
+install first asks **Where should AI in One get its data?**, unless you add `--target fabric` or
+`--target pax`. On Fabric it then asks what it collects, then **Change the advanced settings?**
+(**No** takes the defaults), then the capacity, workspace, app registration and where the secret
+goes. Then it shows the plan and asks **Go ahead?**. See [Advanced settings](#advanced-settings).
 
 **Want to change an answer?** Choose **Back** on any question. It opens the previous question
 with your answer filled in. If you go back to the client secret, leave the box empty to keep the
@@ -297,11 +309,202 @@ It leaves alone, and lists: an app registration it didn't create, the Key Vault 
 the viewer group and a Lakehouse you already had. The install record still names the deleted
 items, so move it aside before you install again.
 
+## With PAX instead of Fabric
+
+With PAX, AI in One needs no Fabric capacity. A scheduled task on a Windows PC or server runs
+[PAX](https://github.com/microsoft/PAX), the Purview audit log processor, each day. The task's
+script then uploads PAX's files to a SharePoint folder, where the report and the AI in One app read
+them.
+
+Start the installer on the PC that will run the task, signed in to Windows as the account the task
+should run as, and choose **PAX, on this Windows PC** (or add `--target pax`). The install record
+keeps the route, so later commands don't need `--target`. To set up the other route as well, add
+`--config` with a new file name.
+
+### What PAX needs
+
+- **This PC, on most days**, with PowerShell 7 and Task Scheduler. When the PC is off or you're
+  signed out at the task's time, it runs when you next sign in, unless you choose
+  [signed-out runs](#signed-out-runs).
+- **PowerShell allowed to run local scripts.** The installer never changes the execution policy or
+  works round it. If the policy is `AllSigned` or `Restricted`, it stops and says what to do. If
+  Group Policy sets it, ask your IT team to allow `RemoteSigned`. Otherwise you can run
+  `Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned` yourself, if your
+  organisation allows it, then start the installer again. If App Control or AppLocker limits
+  PowerShell on the PC, ask your IT team.
+- **Python 3.10 or later**, which PAX needs to roll up the audit log. If it's missing, the
+  installer offers to install Python 3.13 for your account only, with `winget`. With `--yes` it
+  doesn't ask: install Python first.
+- **A SharePoint site you own**, for the files. Or a folder on this PC, for Power BI Desktop and
+  the app only.
+- **A Power BI Pro or Premium Per User licence**, to publish and share the report. The workspace
+  has no capacity, so each viewer needs one too.
+- **Permission to register apps in Entra**, or an app registration you own, and a Global
+  Administrator or Privileged Role Administrator to grant admin consent. There's no admin pack on
+  this route.
+- For the app, see [The AI in One app](#the-ai-in-one-app).
+
+**Check prerequisites** (`prereqs --target pax`) checks these, and whether this PC can run PAX. It
+changes nothing.
+
+### Setup settings with PAX
+
+1. **Data collection.** Copilot interactions from the Purview audit log, and users and their
+   licences from Entra ID. In the advanced settings, **Also collect the Agent 365 file?** adds a
+   list of your organisation's agents. Reading it as an app needs `CopilotPackages.Read.All` and
+   `Application.Read.All`, and is in preview, so it's off by default.
+2. **Where the files go.** **A SharePoint folder (recommended)**: paste the site's address, or the
+   folder's address from the browser's address bar. The files go in the `AI in One` folder of the
+   `Documents` library, unless the folder's address names another, or you change them in the
+   advanced settings. Then pick the Power BI workspace for the report, or
+   create one, named `AI in One` by default. Or choose **A folder on this PC**
+   (`Documents\AI in One` by default): only you can open the files, in Power BI Desktop or the app,
+   and no report is published. Last, **Deploy the AI in One app?**, yes by default.
+3. **Viewer access.** As on Fabric: a new group, `AI in One Viewers`, or a security group you
+   already have.
+4. **App registration.** **Create "AI in One (PAX)" (recommended)**, or use one you own: the
+   installer adds the task's certificate to it.
+5. **Schedule and loading.** How much history the first (seed) run loads (180 days by default),
+   the time the task runs each day (02:00 by default, in this PC's time zone), whether it also runs
+   while you're signed out, and whether the first load runs as soon as setup finishes.
+
+With `--yes`, a new install needs the site in the install record:
+`"pax": { "site": { "url": "https://<tenant>.sharepoint.com/sites/<site>" } }`.
+
+**Write access to the site.** With `Sites.Selected`, the app registration can open no site until
+it's given access to one. The installer asks who gives it. **I do** signs you in again, through
+Microsoft Graph Command Line Tools with `Sites.FullControl.All`, which needs admin consent and
+rights to manage the site, and gives write access to this one site. **An admin** shows the
+Microsoft Graph PowerShell commands to send a SharePoint admin. Signed in with
+`--use-az`, it always shows the commands. Then it checks the app can write to the folder.
+
+### What it sets up with PAX
+
+| What | Name |
+|---|---|
+| App registration | `AI in One (PAX)`, unless you bring your own. Microsoft Graph application permissions, with admin consent: `AuditLogsQuery.Read.All`, `User.Read.All` and `Organization.Read.All`, plus `Sites.Selected` with a SharePoint folder, and `CopilotPackages.Read.All` and `Application.Read.All` for the Agent 365 file |
+| Access to the SharePoint site | Write, on the site you chose and no other |
+| The task's sign-in | A certificate, `CN=AI in One (PAX)`, in your account's certificate store, valid for 12 months. Only its public key goes on the app registration. Where the PC can't make one, a client secret that Windows protects for your account on this PC |
+| PAX | The version this installer pins, downloaded from its GitHub release to `%LOCALAPPDATA%\AIInOne\pax\<version>` and checked against its SHA-256 |
+| Scheduled task | `AI in One - PAX refresh`, daily, running `Run-AIO-PAX.ps1` from `%LOCALAPPDATA%\AIInOne\pax-run` |
+| Files | `AIO_Interactions.csv`, `AIO_Users.csv` and, if you chose it, `AIO_Agent365.csv`, in the `AI in One` folder |
+| Workspace, semantic model and report | `AI in One`, from the PBI-SharePoint Power BI template, with no capacity. Only with a SharePoint folder |
+| Viewer group | `AI in One Viewers`, or a group you name |
+| The AI in One app | `AI in One`, a Copilot managed app, shared with the viewer group |
+
+### How the task runs
+
+- **The first (seed) run** loads the history you chose. It can take from under an hour to several
+  hours in a large tenant.
+- **Each daily run** loads the last 7 days and merges them into the files, with PAX's
+  `-AppendFile`, `-AppendUserInfo` and `-AppendAgent365Info`. PAX matches each message, so the
+  days that overlap earlier runs aren't counted twice, and audit records that arrived late are
+  added.
+- **Then it uploads the files** to the SharePoint folder as the app registration. On a new PC, or
+  if the files on this PC have gone, it first downloads the ones in SharePoint, so no history is
+  lost.
+- **If PAX says the data is incomplete** (exit code 10), it runs once more with
+  `-AutoCompleteness`. If a run fails, nothing is uploaded and the files in the folder stay as
+  they were.
+- **Its logs** are in `%LOCALAPPDATA%\AIInOne\pax-run\logs`: a log and PAX's metrics for each
+  run, and PAX's own logs in `logs\pax`. **Check status** (`status`) shows the last run.
+- **PAX is pinned.** The task checks PAX's SHA-256 before each run, and never updates it. A new
+  version of the installer brings a new PAX, through **Update** (`update`).
+
+### Signed-out runs
+
+By default the task runs only while you're signed in to this PC, and catches up when you next
+sign in. To have it run while you're signed out too, choose **Also run while you are signed out**.
+The installer never asks for your password, so it can't set that itself. When setup finishes, it
+shows these steps:
+
+1. Open Task Scheduler (`taskschd.msc`) and double-click **AI in One - PAX refresh**.
+2. Choose **Run whether user is logged on or not**. Leave **Do not store password** unticked: the
+   task needs your password to use its certificate or protected secret.
+3. Choose **OK** and type your password. Windows keeps it, not the installer.
+
+Then choose **Check status** (`status`). It says whether the task now runs while you're signed
+out.
+
+### The report
+
+With a SharePoint folder, the installer publishes the `AI in One` semantic model and report from
+the PBI-SharePoint Power BI template, with its parameters set to the files' addresses. If the
+workspace doesn't take the model from the installer, it shows the steps to publish it from Power BI
+Desktop instead, with the values to enter.
+
+The model reads the files with a person's sign-in, which Power BI takes only on the model's
+settings page. So the installer asks you to sign it in once: open the link it gives you, expand
+**Data source credentials**, and for each data source choose **Edit credentials**, **OAuth2** and
+**Organizational**, then **Sign in** as someone who can open the files, usually you. Power BI then
+refreshes the model each day, 4 and 10 hours after the task's time. **Run PAX now** (`run`)
+refreshes it as soon as the task finishes.
+
+With a folder on this PC, nothing is published. Open the Rollup Edition Power BI template
+(`AIO Dashboard - Rollup Edition`) in Power BI Desktop, and enter the files' paths, which the
+installer shows, when it asks for the parameters.
+
+### The AI in One app
+
+The AI in One app is a Copilot managed app that shows the same data in the browser, from the files
+people pick in it. With PAX, the installer deploys it by default, to your Power Platform developer
+environment or the one `--environment-id` names, and shares it with the viewer group.
+
+- **If the tenant isn't ready**, setup finishes at the report and says what's missing. A Power
+  Platform admin turns on **Allow app creation with the Copilot Managed Runtime CLI** and
+  **External artifacts in managed apps**, in the Power Platform admin center under **Copilot** >
+  **Settings** > **Managed apps**. Then run **Repair or change**, or `deploy-app`.
+- **Each person who opens it** needs Power Apps Premium or Copilot Credits. The Power Apps rights
+  in Microsoft 365 don't count. For credits, an admin turns on usage-based billing.
+- **To see data**, people choose **Change data** in the app and pick the CSV files from the
+  SharePoint folder, so they need read access to it. The installer doesn't give that: share the
+  folder with the viewer group.
+- **`deploy-app`** deploys it again from this copy of the installer, and turns the app step back on
+  if you turned it off. **Update** deploys it when its build has changed. `deploy-app` is in the
+  terminal only.
+- **From a clone**, the app step needs the app's build and the managed apps CLI, and Node.js 24.11
+  or later. In `app`, run `npm ci` and `npm run build`; then, from the repo's root, run
+  `npm ci --ignore-scripts --omit=dev --prefix installer/managed-cli`. Without them the step says
+  so and is skipped. The exe and the zip include both.
+- **On Fabric** the installer doesn't deploy the app: it reads PAX's files, not the Lakehouse
+  tables.
+
+### Commands with PAX
+
+| Command | With PAX |
+|---|---|
+| `run` (**Run PAX now**) | Starts the task now, waits for PAX to finish, then refreshes the model. `--no-wait` doesn't wait. `--backfill-days <n>` reloads n days of history, 1 to 180; fewer days than the files have now removes the older rows, so it asks first, and with `--yes` it doesn't start |
+| `check` (**Check the files**) | Checks the app registration can still write to the folder, looks for each file and when it last changed, then refreshes the model and tests it with a small query |
+| `refresh` (**Refresh**) | Refreshes the model now. If it isn't signed in to SharePoint yet, it shows you how first |
+| `status` (**Check status**) | The task and its last run, when its sign-in expires, and where the files, the model and the app are |
+| `update` (**Update**) | Brings PAX, the task's script, the model, the report and the app up to this version of the installer |
+| `rotate-secret` (**Renew the task's sign-in**) | A new certificate, or client secret, for the task. The old one comes off the app registration once the task has signed in with the new one. **Check status** warns when there are less than 30 days left |
+| `access` (**Manage access**) | As on Fabric, then shares the AI in One app with the viewer group, if it isn't yet |
+| `prereqs` (**Check prerequisites**) | Your roles and licences and the report's tenant setting, then the SharePoint site, Copilot managed apps in your environment, and whether this PC can run PAX: Windows, PowerShell 7 and its execution policy, Python 3.10 or later, Task Scheduler and a certificate. See [What PAX needs](#what-pax-needs) |
+| `preview` | Writes the task's script, its definition (`task.xml`), the app registration's permissions and, with a SharePoint folder, the model and report to a folder, without signing in |
+| `deploy-app` | Deploys the AI in One app again. Terminal only |
+| `rerun-failed` | Not used with PAX: use `run` |
+
+### Uninstall with PAX
+
+**Uninstall** (`uninstall`) removes the scheduled task, the AI in One app, the app registration's
+access to the site, and the task's certificate or secret. It asks before it deletes an app
+registration it created, and before it deletes the workspace (if it created it) or its own items in
+a workspace you had. Then it deletes PAX and the task's working files from `%LOCALAPPDATA%\AIInOne`.
+If the installer didn't give the site access itself, it shows the commands for an admin to take it
+away. It leaves alone, and lists: an app registration it didn't create, the viewer group and the
+files in the folder.
+
 ## Remove the installer
 
 Uninstalling AI in One doesn't remove the installer from your PC. To remove it, delete
 `%LOCALAPPDATA%\AIInOne`, or see **Remove it** under [From PowerShell](#from-powershell). Your
 install record in `Documents\AI in One` stays.
+
+With PAX, run **Uninstall** first. The scheduled task runs from the `pax` and `pax-run` folders in
+`%LOCALAPPDATA%\AIInOne`, and `managed-app` holds the AI in One app's deployment settings, so
+deleting the whole folder breaks the task. `install.ps1 -Uninstall` leaves those three folders,
+and says so.
 
 ## Check the download
 
@@ -328,7 +531,7 @@ Paste this into PowerShell (Windows PowerShell 5.1 or PowerShell 7). It runs the
 the exe, with the same browser steps:
 
 ```powershell
-irm https://github.com/microsoft/AI-in-One-Dashboard/releases/download/installer-v0.1.0/install.ps1 | iex
+irm https://github.com/microsoft/AI-in-One-Dashboard/releases/download/installer-v0.2.0/install.ps1 | iex
 ```
 
 It downloads `AIInOneInstaller.zip` from that release (Node.js and the installer), checks its
@@ -345,7 +548,7 @@ one.
   [installer releases](https://github.com/microsoft/AI-in-One-Dashboard/releases?q=installer-v&expanded=true)
   and stops. It doesn't switch versions on its own.
 - **Download and run.** To keep the files, download `install.ps1` and `AIInOneInstaller.zip` from
-  the [release](https://github.com/microsoft/AI-in-One-Dashboard/releases/tag/installer-v0.1.0)
+  the [release](https://github.com/microsoft/AI-in-One-Dashboard/releases/tag/installer-v0.2.0)
   and, where your execution policy allows scripts, run
   `.\install.ps1 -ZipPath .\AIInOneInstaller.zip`. The zip must be from the same release. Anything
   after the options goes to the installer, for example `... -ZipPath .\AIInOneInstaller.zip status`.
@@ -361,7 +564,8 @@ one.
 - **Remove it** with `.\install.ps1 -Uninstall` (from the download-and-run steps above), or by
   deleting `%LOCALAPPDATA%\AIInOne`. That doesn't touch what's in your tenant, or your install
   record in `Documents\AI in One`. To remove what's in your tenant, use **Uninstall** in the
-  installer first.
+  installer first. With PAX, `-Uninstall` keeps the folders the scheduled task runs from: see
+  [Remove the installer](#remove-the-installer).
 
 AppLocker or App Control rules that block programs under your profile stop the unpacked
 `node.exe`, as they stop the exe. The launcher and the exe spot this and say what to do instead of
@@ -375,7 +579,7 @@ If your organisation has installed an approved Node.js (22.13 or later on 22.x, 
 PowerShell launcher can run the installer with it instead of the `node.exe` in the zip:
 
 ```powershell
-$env:AI_IN_ONE_USE_INSTALLED_NODE = '1'; irm https://github.com/microsoft/AI-in-One-Dashboard/releases/download/installer-v0.1.0/install.ps1 | iex
+$env:AI_IN_ONE_USE_INSTALLED_NODE = '1'; irm https://github.com/microsoft/AI-in-One-Dashboard/releases/download/installer-v0.2.0/install.ps1 | iex
 ```
 
 Or, from the [download-and-run](#from-powershell) files,
@@ -389,6 +593,8 @@ Or, from the [download-and-run](#from-powershell) files,
   routes, so you can switch routes without a second install. The command it leaves behind,
   `aio-install.cmd`, keeps using the approved Node.js, and the update command the installer shows
   keeps the setting.
+- **The AI in One app.** Deploying it needs Node.js 24.11 or later. With an older Node.js, the
+  installer skips the app step and says so; the rest of the install carries on.
 
 ## Locked-down tenant / Azure Cloud Shell
 
@@ -398,7 +604,7 @@ Nothing runs on your PC: the installer runs in Cloud Shell and asks its question
 Choose **PowerShell** in Cloud Shell and paste the same command:
 
 ```powershell
-irm https://github.com/microsoft/AI-in-One-Dashboard/releases/download/installer-v0.1.0/install.ps1 | iex
+irm https://github.com/microsoft/AI-in-One-Dashboard/releases/download/installer-v0.2.0/install.ps1 | iex
 ```
 
 In Cloud Shell, `install.ps1` doesn't download the Windows zip. It fetches the installer's source
@@ -409,9 +615,9 @@ against the list nodejs.org publishes. It all goes in `~/.ai-in-one`. The first 
 or two.
 
 - **Options.** To pass options or a command, run
-  `& ([scriptblock]::Create((irm https://github.com/microsoft/AI-in-One-Dashboard/releases/download/installer-v0.1.0/install.ps1))) --use-az status`.
+  `& ([scriptblock]::Create((irm https://github.com/microsoft/AI-in-One-Dashboard/releases/download/installer-v0.2.0/install.ps1))) --use-az status`.
   In Bash, run
-  `pwsh -c "irm https://github.com/microsoft/AI-in-One-Dashboard/releases/download/installer-v0.1.0/install.ps1 | iex"`.
+  `pwsh -c "irm https://github.com/microsoft/AI-in-One-Dashboard/releases/download/installer-v0.2.0/install.ps1 | iex"`.
 - **Later commands.** It leaves `~/.ai-in-one/aio-install` behind, which works from Bash or
   PowerShell, for example `~/.ai-in-one/aio-install status`. To update, run a newer release's
   `irm` command.
@@ -435,7 +641,7 @@ or two.
   installer, run the same command again: it reuses what's in the install record, skips finished
   steps and doesn't create a second app. `--no-wait` saves waiting for the first load.
 - **Remove it** with
-  `& ([scriptblock]::Create((irm https://github.com/microsoft/AI-in-One-Dashboard/releases/download/installer-v0.1.0/install.ps1))) -Uninstall`,
+  `& ([scriptblock]::Create((irm https://github.com/microsoft/AI-in-One-Dashboard/releases/download/installer-v0.2.0/install.ps1))) -Uninstall`,
   or by deleting `~/.ai-in-one`. Your install record stays.
 
 `install.ps1` spots Cloud Shell from the environment variables it sets. To force it either way,
@@ -457,7 +663,8 @@ example `AIInOneInstaller.exe status`. From a clone, the install record is `aio-
 folder you run it from (Git ignores it in `installer`), unless `--config` names another file.
 `install --yes` keeps the secret in the notebooks for a new install: read
 [Where the secret goes](#where-the-secret-goes) first, and add `--key-vault` to use Key Vault
-instead. See [Commands and options](#commands-and-options).
+instead. See [Commands and options](#commands-and-options). With PAX, the AI in One app also needs
+its build and the managed apps CLI: see [The AI in One app](#the-ai-in-one-app).
 
 ## Prerequisites
 
@@ -480,6 +687,11 @@ read-only and works before anything is installed. It checks:
 - Only with Key Vault: **Owner, or Contributor and User Access Administrator**, on the
   subscription you'll use, and **Key Vault access for the app secret**.
 
+With PAX (`--target pax`, or a PAX install record), the list is different. There's no Fabric
+capacity, Key Vault or concealed user names, and only the report's tenant setting. Instead it
+checks the SharePoint site, the AI in One app and whether this PC can run PAX: see
+[What PAX needs](#what-pax-needs).
+
 It doesn't check that unified audit logging is on, and the audit log load needs it. See
 **Before you run anything — unified audit logging must be ON** in the [main README](../README.md).
 
@@ -492,15 +704,21 @@ It doesn't check that unified audit logging is on, and the audit log load needs 
   [After it finishes](#after-it-finishes).
 - **A load card says sign-in failed.** Check admin consent, and whether the client secret has
   expired: **Check status** says.
+- **With PAX, the files are out of date.** **Check status** shows the task's last run and when its
+  sign-in expires, and **Check the files** checks the app registration can still write to the
+  folder. Each run's log is in `%LOCALAPPDATA%\AIInOne\pax-run\logs`: see
+  [How the task runs](#how-the-task-runs).
 - **The page has lost its link to the installer.** Go back to the installer's window and press
   **Enter** to open it again.
 
 ### Known issues
 
-- The **Agent 365** page is empty: the installer leaves the template's `Agent 365 (highly
-  recommended)` parameter blank.
-- Audit records that arrive late, in a time window a run has already loaded, aren't fetched again.
-- Incremental runs don't write audit rows that have no `CreationDate`.
+- On Fabric, the **Agent 365** page is empty: the installer leaves the template's `Agent 365
+  (highly recommended)` parameter blank. With PAX, it's empty unless you chose the Agent 365 file.
+- On Fabric, audit records that arrive late, in a time window a run has already loaded, aren't
+  fetched again. With PAX, each daily run loads the last 7 days again, so it picks up records up to
+  7 days late.
+- On Fabric, incremental runs don't write audit rows that have no `CreationDate`.
 - The exe and `install.ps1` aren't code-signed yet. See [Check the download](#check-the-download).
 
 ## Commands and options
@@ -509,6 +727,9 @@ It doesn't check that unified audit logging is on, and the audit log load needs 
 aio-install [command] [options]
 aio-install --ui [options]
 ```
+
+The table describes Fabric. With PAX, some commands work differently: see
+[Commands with PAX](#commands-with-pax).
 
 | Command | In the browser | What it does |
 |---|---|---|
@@ -521,6 +742,7 @@ aio-install --ui [options]
 | `status` | **Check status** | Recent runs and refreshes, the last data check and when secrets expire |
 | `rotate-secret` | **Create new secrets** | New client secrets for the notebooks (or Key Vault) and the model's connection |
 | `access` | **Manage access** | The viewer group, its members and owners, and its Build on the model |
+| `deploy-app` | | With PAX: deploys the AI in One app again, from this copy of the installer |
 | `uninstall` | **Uninstall** | Deletes what the installer created. See [Uninstall](#uninstall) |
 | `prereqs` | **Check prerequisites** | Checks the roles, licences, capacities and tenant settings you have and lack |
 | `preview` | | Writes what would be deployed to a folder, without signing in |
@@ -532,15 +754,16 @@ aio-install --ui [options]
 | `--config <file>` | The install record (default `./aio-install.json`) |
 | `--source <dir>` | The repo folder to deploy from (default: this checkout) |
 | `--tenant <id>` | Tenant ID or domain to sign in to |
-| `--target fabric` | Where AI in One runs. Fabric is the only target for now |
+| `--target <target>` | Where AI in One gets its data: `fabric` (the default) or `pax`. A new install asks, except with `--yes`. The install record keeps it |
+| `--environment-id <id>` | With PAX: the Power Platform environment for a new AI in One app (default: your developer environment) |
 | `--device-code` | Signs in with a code on another device. The default in Azure Cloud Shell |
 | `--use-az` | Uses the account you're signed in to with the Azure CLI |
-| `--backfill-days <n>` | With `run`: reloads n days of audit history, 1 to 180 |
+| `--backfill-days <n>` | With `run`: reloads n days of audit history, 1 to 180. On Fabric it rebuilds the audit table with just those days; with PAX, the files |
 | `--out <dir>` | With `preview`: where to write (default `./aio-preview`) |
 | `--dry-run` | Same as `preview` |
-| `--no-key-vault`, `--secret-in-notebook` | With `install`: no Key Vault, the default for a new install |
-| `--key-vault` | With `install`: keeps the client secret in Azure Key Vault. Needed with `--yes` to choose Key Vault for a new install |
-| `--secret-days <n>` | With `install` or `rotate-secret`, and no Key Vault: how many days the secret lasts, 1 to 730 (default 90) |
+| `--no-key-vault`, `--secret-in-notebook` | Fabric, with `install`: no Key Vault, the default for a new install |
+| `--key-vault` | Fabric, with `install`: keeps the client secret in Azure Key Vault. Needed with `--yes` to choose Key Vault for a new install |
+| `--secret-days <n>` | Fabric, with `install` or `rotate-secret`, and no Key Vault: how many days the secret lasts, 1 to 730 (default 90) |
 | `--yes` | Takes saved answers and defaults without asking. It never lets Fabric clear a model's data |
 | `--allow-model-reset` | With `install`, `update` or `access`: clears the model's data and reloads it if Fabric can't keep it |
 | `--no-wait` | Doesn't wait for the first load or a refresh to finish |
@@ -567,11 +790,28 @@ land:
 - [microsoft/AnalyticsHub-Dashboard#186](https://github.com/microsoft/AnalyticsHub-Dashboard/pull/186):
   an honest first-load estimate, and status shows history progress.
 - [microsoft/AnalyticsHub-Dashboard#114](https://github.com/microsoft/AnalyticsHub-Dashboard/pull/114):
-  the managed app deployment, for the App Edition.
+  the managed app deployment. The AI in One app's step follows its pattern, so bring across its
+  later fixes.
+
+**The PAX route.** The task's script and the scheduled task follow ValueLens's
+(microsoft/ValueLens-for-Microsoft-Copilot, `4. SharePoint/scripts`: `Run-PAX-AIBV.ps1`,
+`Register-TaskScheduler.ps1` and `Upload-Rollups-SharePoint.ps1`), with two changes: the task runs
+without `-ExecutionPolicy Bypass`, and the script uploads the files itself under `Sites.Selected`,
+rather than through PAX's own SharePoint output, which asks for `Sites.ReadWrite.All`.
+
+- **PAX's pin.** `assets/pax/pax-release.json` holds PAX's version, release tag, URL, size and
+  SHA-256. Change them together. The task never updates PAX itself (`-SkipVersionCheck`).
+- **The managed apps CLI.** `managed-cli/` pins `@microsoft/managed-apps-cli`, with its own lock
+  file. `build:exe` installs it into the payload with `npm ci --ignore-scripts --omit=dev`.
+- **Lock files.** The installer's, the CLI's and the app's lock files may resolve through
+  Microsoft's internal npm mirror, which GitHub's runners can't reach, so the exe workflow runs
+  `packaging/public-registry.js` on all three before installing anything.
 
 **Build and test.** In `installer/`: `npm ci`, then `npm test`, `npm run typecheck` and
 `npm run build:exe`. `build:exe` writes `AIInOneInstaller.exe`, `AIInOneInstaller.zip` and
-`install.ps1` with the zip's SHA-256 and the commit written in.
+`install.ps1` with the zip's SHA-256 and the commit written in. For an exe that can deploy the AI
+in One app, build the app first: in `app/`, `npm ci --ignore-scripts`, then `npm run build`.
+Without that build, `build:exe` warns, and the exe skips the app step.
 
 **Releases.** Installer releases are tagged `installer-vX.Y.Z`, apart from the dashboard's own
 releases. Pushing the tag runs `.github/workflows/installer-exe.yml`, which builds the files and
@@ -582,7 +822,7 @@ and pre-releases, and takes the highest `installer-v` version.
 
 - Bump `version` in `package.json` and the `installer-v` links in this README together: a test
   checks they match.
-- The pinned links work once `installer-v0.1.0` is published.
+- The pinned links work once `installer-v0.2.0` is published.
 - The exe isn't code-signed yet. The ESRP pipeline is
   `installer/packaging/sign-installer.azure-pipelines.yml`, with the variable group
   `ai-in-one-esrp`. With the repository variable `REQUIRE_SIGNED_INSTALLER` set to `true`, the

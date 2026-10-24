@@ -488,64 +488,42 @@ If you use PAX's `-AppendFile` switch to accumulate a growing raw Purview CSV ov
 
 <br>
 
-Many customers want **months of trailing data** in this dashboard, not just a single PAX run. Here's the current state of how to get there.
+Many customers want **months of trailing data** in this dashboard, not just a single PAX run. PAX's `-AppendFile` switch grows one set of rollup files across scheduled runs.
 
 ### What `-AppendFile` does in PAX
 
-PAX has an `-AppendFile` switch that appends new rows to an existing CSV instead of writing a fresh timestamped file. It's designed for exactly this scenario — running PAX on a schedule, accumulating audit history into one growing file over time. Key facts:
+`-AppendFile` merges a run's rows into an existing file instead of writing a new timestamped one. In PAX 1.11.15:
 
-- **The target file must already exist.** Run PAX **once without** `-AppendFile` to create the initial seed file, then use `-AppendFile <name>` on every subsequent run.
-- **CSV headers must match exactly** between the existing file and the new run. PAX validates this and exits with a clear error on mismatch.
-- **Only Purview audit data is appendable.** `-AppendFile` is **incompatible with `-IncludeUserInfo` / `-OnlyUserInfo`** because Entra/MAC user+licensing data is a **point-in-time snapshot** — appending old user state on top of new state would corrupt the picture. Same logic applies to Agent 365.
-- Each run still produces fresh timestamped log / telemetry / metrics files alongside the appended output.
+- **It works with `-Rollup` and `-RollupPlusRaw`.** Point it at the rolled-up `..._Interactions.csv`. PAX matches rows on the full grain plus each message's `Message_Id_Raw`, so days that overlap between runs aren't counted twice, and rows that are only in the existing file are kept.
+- **The target file must already exist.** Run PAX once without `-AppendFile` to make the seed files, then append to them on every later run.
+- **The Users and Agent 365 files have their own switches.** `-AppendUserInfo` merges the run's users into an existing Users file and keeps people who have since left, marked `In_Latest_Append = FALSE`. `-AppendAgent365Info` does the same for the Agent 365 file. Each one turns on its `-Include…` switch for you.
+- **Each file needs one destination:** its `-Append…` switch or its `-OutputPath…` switch (`-OutputPath`, `-OutputPathUserInfo` or `-OutputPathAgent365Info`), never both.
+- **`-AppendFile` can't be used with `-OnlyUserInfo` or `-OnlyAgent365Info`**, which load no audit data.
+- **A file from an older PAX needs a one-time re-baseline.** PAX won't merge into a file that lacks the columns it matches on (for example, AIO files made before PAX 1.11.12). It leaves that file untouched, writes the run's rows to a new timestamped file, and says so. Make new seed files with the current PAX and append to those.
+- Each run still writes its own timestamped log and metrics files.
 
-### The catch: `-AppendFile` cannot currently be combined with `-Rollup` / `-RollupPlusRaw`
-
-This is the honest answer: as of today, PAX **blocks `-AppendFile` when `-Rollup` or `-RollupPlusRaw` is used**, and exits with an error. The rollup processor assigns INT surrogate keys (`Message_Id`, `ThreadId`, `UserKey`) per run, so appending rolled-up rows would produce mismatched keys and a broken file.
-
-> **Rollup-aware appending with the standalone processor:** Use the standalone processor in the [`scripts/`](scripts/) folder for this pattern:
-> 1. Use PAX with `-AppendFile` (no `-Rollup`) to accumulate a growing **raw** Purview audit CSV over time
-> 2. Run that accumulated raw file through the standalone processor to produce a freshly-keyed rollup file the dashboard can consume
->
-> This gives you the best of both worlds — incremental daily/weekly raw appends from PAX, plus a clean dashboard-ready rollup whenever you need to refresh the report. See the **⚙️ Standalone processor** section below for usage details.
-
-### What to do right now if you want months of data
-
-Until rollup-append lands, use one of these patterns:
-
-**Pattern A — full re-run of a rolling window (simplest, recommended for most)**
-
-Schedule PAX with `-Rollup` over a rolling window (e.g. last 60 or 90 days, depending on your Purview retention). Each run replaces the previous rollup output. Power BI just refreshes against the latest file. Trade-off: every run does a full export, which on large tenants takes longer than an incremental append would.
+### A daily refresh with `-AppendFile`
 
 ```powershell
-# Example: weekly run, last 90 days
-.\PAX_Purview_Audit_Log_Processor.ps1 -Rollup -IncludeAgent365Info `
-  -StartDate (Get-Date).AddDays(-90).ToString('yyyy-MM-dd') `
+# Once: the seed run, with as much history as you want (up to your audit log retention)
+.\PAX_Purview_Audit_Log_Processor.ps1 -Rollup `
+  -StartDate (Get-Date).AddDays(-180).ToString('yyyy-MM-dd') `
   -EndDate   (Get-Date).ToString('yyyy-MM-dd') `
-  -OutputPath "https://contoso.sharepoint.com/sites/CopilotAnalytics/Shared Documents/PAX Output"
+  -OutputPath "C:\Data\PAX" -IncludeUserInfo -OutputPathUserInfo "C:\Data\PAX"
+
+# Then on a schedule: the last 7 days, merged into the seed run's files
+.\PAX_Purview_Audit_Log_Processor.ps1 -Rollup `
+  -StartDate (Get-Date).AddDays(-7).ToString('yyyy-MM-dd') `
+  -EndDate   (Get-Date).ToString('yyyy-MM-dd') `
+  -AppendFile "C:\Data\PAX\<seed>_Interactions.csv" `
+  -AppendUserInfo "C:\Data\PAX\<seed>_Users.csv"
 ```
 
-**Pattern B — accumulate raw with `-AppendFile` now, convert to rollup when the standalone processor ships**
+Replace `<seed>_Interactions.csv` and `<seed>_Users.csv` with the names of the files the seed run wrote. The 7-day window overlaps earlier runs on purpose: audit records can arrive late, and PAX merges the overlap rather than counting it twice.
 
-If you want to start building up multi-month raw history immediately so you're ready the day the standalone processor releases, run PAX **without** `-Rollup` and use `-AppendFile` to grow a single raw Purview CSV over time.
+For the Agent 365 file, add `-IncludeAgent365Info -OutputPathAgent365Info "C:\Data\PAX"` to the seed run and `-AppendAgent365Info` with the seed's Agent 365 file to the scheduled run.
 
-```powershell
-# Step 1 (run ONCE) — create the initial seed file
-.\PAX_Purview_Audit_Log_Processor.ps1 -StartDate 2026-02-01 -EndDate 2026-02-28 `
-  -ActivityTypes CopilotInteraction -CombineOutput -OutputPath "C:\Data\PAX"
-
-# Step 2 (run on a schedule) — append each new day/week into the same file
-.\PAX_Purview_Audit_Log_Processor.ps1 -StartDate 2026-03-01 -EndDate 2026-03-07 `
-  -ActivityTypes CopilotInteraction -CombineOutput `
-  -AppendFile "Purview_Audit_UsageActivity_CombinedActivityTypes_<seed-timestamp>.csv" `
-  -OutputPath "C:\Data\PAX"
-```
-
-Important points for Pattern B:
-- The accumulated **raw** file produced this way **cannot** be opened by this dashboard directly — it must be processed first.
-- Run the standalone processor in the [`scripts/`](scripts/) folder against the accumulated raw file to produce dashboard-ready rollup output. See the **⚙️ Standalone processor** section below for usage details.
-- For current dashboards, also do a Pattern A run in parallel so you have a usable rollup file while you build up your raw history.
-- Don't forget: Entra/MAC user data and Agent 365 data still need to be fresh point-in-time exports — they cannot be appended.
+**Keeping the raw audit data too.** Run PAX without `-Rollup` and use `-AppendFile` to grow one raw Purview audit CSV, then run the standalone processor in the [`scripts/`](scripts/) folder on it whenever you need a dashboard-ready rollup. See the **⚙️ Standalone processor** section above.
 
 </details>
 
