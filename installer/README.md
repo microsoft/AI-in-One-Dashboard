@@ -379,14 +379,19 @@ Microsoft Graph PowerShell commands to send a SharePoint admin. Signed in with
 `--use-az`, it always shows the commands. Then it checks the app can write to the folder.
 
 **A link to the folder** works in place of the site's address: the browser's address for the
-folder, or its **Copy link** link. If the library's or folder's name has a character the report
-can't read, such as `#` or `%`, the installer asks you to type them instead.
+folder, or its **Copy link** link. If the link's folder or library has a character the report
+can't read, such as `#` or `%`, the installer asks you to type them instead. The report finds a
+library by its address, which doesn't change when the library is renamed, so the installer checks
+the address, not the name. If a library's address has a `#` or `%`, the installer offers the
+libraries the report can use; with `--yes`, it stops.
 
 **Changing the setup.** Run **Repair or change** again to change these settings. If you turn the
 Agent 365 file off, or move the files to this PC, the installer takes away what an app
-registration it created no longer needs: those Graph permissions, and its access to the site.
-Where you can't take them away yourself, it shows what an admin needs to do. For an app
-registration you brought, it says which permissions you can remove.
+registration it created no longer needs: those Graph permissions and, unless you keep it, its
+access to the site. Where you can't take them away yourself, it shows what an admin needs to do.
+It raises the site's access once; uninstall comes back to any that's left. For an app
+registration you brought, it says which permissions this setup no longer uses, which you can
+remove if nothing else needs them.
 
 ### What it sets up with PAX
 
