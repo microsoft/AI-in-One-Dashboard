@@ -247,9 +247,9 @@ hours in a large tenant. Later runs load again only from the start of the latest
 
 To change how much history is loaded after the first load, choose **Repair or change**: it asks
 **Load more audit history?**, with the number of days loaded now. Or run
-`aio-install run --backfill-days <n>`, from 1 to 180. That rebuilds the audit table with just
-those days, so fewer days than are loaded now removes the older rows: it asks first, and with
-`--yes` it doesn't start. In the browser, **Run now** can reload older history too.
+`aio-install run --backfill-days <n>`, from 1 to 180. That loads those days again: it replaces the
+audit rows from the first of them on and keeps older rows, so with fewer days than are loaded now,
+the older days stay. In the browser, **Run now** can reload older history too.
 
 ## Already set up by hand
 
@@ -258,14 +258,20 @@ Scheduled incremental runs of earlier versions duplicated rows:
 
 1. Import `Copilot_Audit_Log_Direct_Ingester.ipynb` again, keeping your `TENANT_ID`,
    `CLIENT_ID`, `CLIENT_SECRET` and other settings.
-2. Run it once with `MODE = 'backfill'` and a `BACKFILL_DAYS` that covers the history you want.
-   The backfill overwrites the table, so rows older than that are removed.
+2. Run it once with `MODE = 'backfill'` and a `BACKFILL_DAYS` that reaches back past the oldest
+   day with duplicates. The backfill replaces the rows from its first day on and keeps older rows.
 3. Set `MODE` back to `'incremental'`.
 
 The [notebook notes](../Classic%20Editions/3.%20Fabric/notebooks/AUDIT_LOG_INGESTER_NOTES.md)
-explain this. Or switch to the installer: pick your existing Lakehouse (it must have schemas), and
-the first load rebuilds the audit table. Turn off your own pipeline's or notebooks' schedules
-first. If one of the installer's names is taken, its own item gets the next free name.
+explain this. Or switch to the installer: pick your existing Lakehouse (it must have schemas).
+Turn off your own pipeline's or notebooks' schedules first. If one of the installer's names is
+taken, its own item gets the next free name.
+
+The installer's first load keeps the rows older than the days it loads, on an existing Lakehouse
+too, including any duplicates an earlier version of the notebook wrote there. To clear those, run
+a backfill that reaches back past the oldest duplicated day: the notebook as in step 2, or
+`aio-install run --backfill-days <n>` after setup. The audit log keeps 180 days by default and
+older rows can't be fetched again, so a backfill can't clear duplicates among them.
 
 ## Update, repair or change
 
@@ -797,7 +803,7 @@ The table describes Fabric. With PAX, some commands work differently: see
 | `--environment-id <id>` | With PAX: the Power Platform environment for a new AI in One app (default: your developer environment) |
 | `--device-code` | Signs in with a code on another device. The default in Azure Cloud Shell |
 | `--use-az` | Uses the account you're signed in to with the Azure CLI |
-| `--backfill-days <n>` | With `run`: reloads n days of audit history, 1 to 180. On Fabric it rebuilds the audit table with just those days; with PAX, the files |
+| `--backfill-days <n>` | With `run`: reloads n days of audit history, 1 to 180. On Fabric it replaces the audit rows from the first of those days on and keeps older rows; with PAX it rebuilds the files with just those days |
 | `--out <dir>` | With `preview`: where to write (default `./aio-preview`) |
 | `--dry-run` | Same as `preview` |
 | `--no-key-vault`, `--secret-in-notebook` | Fabric, with `install`: no Key Vault, the default for a new install |

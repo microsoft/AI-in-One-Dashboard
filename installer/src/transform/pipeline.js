@@ -280,7 +280,8 @@ function replacePlaceholders(value, ids) {
 }
 
 /**
- * Parameters for the first run: a backfill that rebuilds the audit table.
+ * Parameters for the first run, or a reload: a backfill, which replaces the audit rows from its
+ * first day on and keeps older rows.
  * @param {number} days
  */
 export function firstRunParameters(days) {

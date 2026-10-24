@@ -126,7 +126,6 @@ function reportJob(ctx, job, what, again) {
  * @property {boolean} [started]  This call started the run; false when one was already going.
  * @property {string} [status]  The job's status. NotStarted when it didn't wait.
  * @property {boolean} [ok]  The run completed and none of its loads failed.
- * @property {boolean} [declined]  Asked whether to start it, the person answered no, so nothing started.
  * @property {string[]} [failed]  The activities that failed. Each leaves an install partly set up.
  */
 
@@ -143,7 +142,8 @@ export function firstLoadEstimate(days) {
 const STUCK_MS = 24 * 3_600_000;
 
 /**
- * Starts the pipeline. With `backfillDays` it reloads that much audit history and rebuilds the curated table.
+ * Starts the pipeline. With `backfillDays` it loads that much audit history again: it replaces the
+ * audit rows from the first of those days on and keeps older rows.
  * It doesn't start a run while another is going: two at once overload a small capacity.
  * @param {Ctx} ctx
  * @param {{ backfillDays?: number, wait?: boolean, first?: boolean }} opts

@@ -93,8 +93,9 @@ Options:
                        in Azure Cloud Shell
   --use-az             Use the account you are signed in to with the Azure CLI. In Azure Cloud
                        Shell, run ${AZ_LOGIN} first
-  --backfill-days <n>  With run: reload n days of audit history, 1 to 180. On Fabric this rebuilds
-                       the audit table with just those days; with PAX, the files
+  --backfill-days <n>  With run: reload n days of audit history, 1 to 180. On Fabric this replaces
+                       the audit rows from the first of those days on and keeps older rows; with
+                       PAX it rebuilds the files with just those days
   --out <dir>          With preview: where to write (default ./aio-preview)
   --dry-run            Same as the preview command
   --no-key-vault       Fabric, with install: no Key Vault, the default for a new install. The client

@@ -55,6 +55,12 @@ Adds a second way to get the data, with PAX instead of Fabric, and the AI in One
 
 **Changed:**
 
+- **Fabric: a reload keeps older audit history.** A backfill, whether the first load,
+  `run --backfill-days <n>` or **Load more audit history**, replaces the audit rows only from its
+  first day on and keeps older rows, as the daily runs do. A reload of fewer days than are loaded
+  now starts without asking, with `--yes` too, and the install record keeps the most days loaded.
+  On a Lakehouse you set up by hand, the first load keeps rows older than the days it loads: see
+  **Already set up by hand** in the README.
 - Removing the installer (`install.ps1 -Uninstall`) keeps the `pax` and `pax-run` folders in
   `%LOCALAPPDATA%\AIInOne`, which the scheduled task runs from, and `managed-app`, which holds the
   AI in One app's deployment settings. With PAX, run **Uninstall** first.
