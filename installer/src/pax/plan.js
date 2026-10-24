@@ -27,7 +27,7 @@ import { CERT_MONTHS, CERT_SUBJECT, defaultLocalFolder, PAX_APP_NAME, paxFiles, 
 import { checkPc, pcRows } from './pc.js';
 import { loadRelease } from './release.js';
 import { refreshTimes } from './report.js';
-import { folderLabel, parseSiteUrl, restoreCommands, revokeCommands, siteAddress } from './site.js';
+import { folderLabel, libraryAddressProblem, parseSiteUrl, restoreCommands, revokeCommands, siteAddress } from './site.js';
 import { describeLogon } from './task.js';
 
 /** @typedef {import('../install.js').Ctx} Ctx */
@@ -160,8 +160,8 @@ export function validateFolder(v) {
 }
 
 /**
- * A library's name, or the last part of its address. The report decodes the files' addresses,
- * so a # or % in them would break it.
+ * The last part of a library's address, as a pasted link gives it. The report decodes the files'
+ * addresses, so a # or % in them would break it.
  * @param {string} v
  */
 export function validateLibrary(v) {
@@ -172,12 +172,30 @@ export function validateLibrary(v) {
 }
 
 /**
- * Why the report can't read the site's library or folder, which can come from a pasted link.
- * @param {PaxSite} site
+ * A library's name, as the user types it. The report reads the library by its address, which can
+ * differ from its name, so that's checked once the library is found.
+ * @param {string} v
  */
-function folderProblem(site) {
-  const library = validateLibrary(site.library ?? '');
-  if (library !== true) return `The report can't use the library "${site.library ?? ''}" (${library}).`;
+export function validateLibraryName(v) {
+  const library = v.trim();
+  if (!library) return 'Required';
+  if (/[\\/]/.test(library)) return 'Give one library name, without / or \\.';
+  return true;
+}
+
+/**
+ * Why the report can't read the site's library or folder. A library that has been found is
+ * checked by its address; a pasted link's library is the last part of its address already; a
+ * typed name is checked by its address once the library is found.
+ * @param {PaxSite} site
+ * @param {boolean} fromLink  The library came from a pasted link.
+ */
+function folderProblem(site, fromLink) {
+  const name = site.library ?? '';
+  const address = libraryAddressProblem(site.driveWebUrl);
+  if (address) return `The report can't use the library "${name}": ${address}.`;
+  const library = site.driveWebUrl ? true : fromLink ? validateLibrary(name) : validateLibraryName(name);
+  if (library !== true) return `The report can't use the library "${name}" (${library}).`;
   const folder = validateFolder(site.folder || SP_FOLDER);
   if (folder !== true) return `The report can't use the folder "${site.folder}" (${folder}).`;
   return '';
@@ -258,10 +276,17 @@ async function chooseSite(ctx, pax, advanced) {
     pax.site = { url: parsed.url, host: parsed.host, path: parsed.path, library: parsed.library ?? DEFAULT_LIBRARY, folder: parsed.folder ?? SP_FOLDER };
   }
   const site = /** @type {PaxSite} */ (pax.site);
-  const problem = folderProblem(site);
+  const problem = folderProblem(site, parsed.library !== undefined);
+  if (problem && ui.yes) throw new Error(`${problem} Run install again without --yes to choose another library or folder.`);
   if (problem) ui.warn(`${problem} Type the library and folder instead.`);
+  if (libraryAddressProblem(site.driveWebUrl)) {
+    // Whatever name is typed, the library is found again and its address checked.
+    delete site.driveId;
+    delete site.driveWebUrl;
+    delete site.checkedAt;
+  }
   if (advanced || problem) {
-    const library = (await ui.input('Document library', { default: site.library, validate: validateLibrary })).trim();
+    const library = (await ui.input('Document library', { default: site.library, validate: validateLibraryName })).trim();
     const folder = cleanFolder(await ui.input('Folder in the library', { default: site.folder, validate: validateFolder }));
     moveFolder(site, library, folder);
   }

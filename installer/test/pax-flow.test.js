@@ -23,6 +23,7 @@ import {
   taskLogon,
   validateFolder,
   validateLibrary,
+  validateLibraryName,
   validateLocalFolder,
 } from '../src/pax/plan.js';
 import { PROBE, START_TASK_SCRIPT, TASK_INFO_SCRIPT, UNREGISTER_TASK_SCRIPT } from '../src/pax/scripts.js';
@@ -1019,13 +1020,19 @@ test('validateFolder: a folder path in the document library', () => {
   assert.equal(validateFolder('A'.repeat(300)), true, 'no length limit is coded');
 });
 
-test('validateLibrary: one library name, which the report can read', () => {
+test("validateLibrary: the last part of a library's address, which the report can read", () => {
   for (const v of ['', '  ']) assert.equal(validateLibrary(v), 'Required', JSON.stringify(v));
   for (const ch of ['"', '*', ':', '<', '>', '?', '|', '#', '%', '/', '\\']) {
     assert.equal(validateLibrary(`Reports${ch}AI`), 'Leave out these characters: " * : < > ? | # % / \\', ch);
   }
   assert.equal(validateLibrary(' Shared Documents '), true);
   assert.equal(validateLibrary('Documents'), true);
+});
+
+test("validateLibraryName: a typed name needs only to be one name, since the library's address is checked once it's found", () => {
+  for (const v of ['', '  ']) assert.equal(validateLibraryName(v), 'Required', JSON.stringify(v));
+  for (const ch of ['/', '\\']) assert.equal(validateLibraryName(`Team${ch}1`), 'Give one library name, without / or \\.', ch);
+  for (const v of ['Team #1', '100% done', 'Q&A: 2026?', ' Documents ']) assert.equal(validateLibraryName(v), true, v);
 });
 
 test('validateLocalFolder: a full path on this PC', () => {
@@ -1183,8 +1190,33 @@ test("paxPlan: a pasted link to a folder or library the report can't read asks f
 test("paxPlan: under --yes, a recorded link to a folder the report can't read stops the setup", async (t) => {
   const ID_LINK = 'https://contoso.sharepoint.com/sites/AIinOne/Shared%20Documents/Forms/AllItems.aspx?id=%2Fsites%2FAIinOne%2FShared%20Documents%2F100%25%20done';
   const { ctx, out } = paxCtx(t, { yes: true, pax: { site: { url: ID_LINK } } });
-  await assert.rejects(paxPlan(ctx, PRE), { message: 'Folder in the library: Leave out these characters: " * : < > ? | # % \\' });
-  assert.ok(out().includes(`The report can't use the folder "100% done"`), out());
+  await assert.rejects(paxPlan(ctx, PRE), {
+    message: `The report can't use the folder "100% done" (Leave out these characters: " * : < > ? | # % \\). Run install again without --yes to choose another library or folder.`,
+  });
+  assert.ok(!out().includes('Type the library and folder instead'), out());
+});
+
+test("paxPlan: a library that has been found is checked by its address, which renaming it doesn't change", async (t) => {
+  const NAMED = { ...SITE, library: 'Team #1', driveId: 'drive-7', driveWebUrl: 'https://contoso.sharepoint.com/sites/AIinOne/Team%201', checkedAt: NOW.toISOString() };
+  const fine = paxCtx(t, { yes: true, pax: { site: { ...NAMED } } });
+  await paxPlan(fine.ctx, PRE);
+  assert.ok(!fine.fake.asked.includes('Document library'), fine.fake.asked.join(' | '));
+  assert.ok(!fine.out().includes("The report can't use"), fine.out());
+  assert.deepEqual(fine.config.pax.site, { ...NAMED });
+
+  const HASH = 'https://contoso.sharepoint.com/sites/AIinOne/Team%20%231';
+  const caught = `The report can't use the library "Team 1": its address, ${HASH}, has a # or %.`;
+  const stuck = paxCtx(t, { yes: true, pax: { site: { ...NAMED, library: 'Team 1', driveWebUrl: HASH } } });
+  await assert.rejects(paxPlan(stuck.ctx, PRE), { message: `${caught} Run install again without --yes to choose another library or folder.` });
+
+  const asked = paxCtx(t, { answers: [false, 'sharepoint', SITE.url, 'Team 1', 'AI in One'], pax: { site: { ...NAMED, library: 'Team 1', driveWebUrl: HASH } } });
+  await paxPlan(asked.ctx, PRE);
+  assert.ok(asked.out().includes(`${caught} Type the library and folder instead.`), asked.out());
+  const site = asked.config.pax.site;
+  assert.equal(site.library, 'Team 1');
+  assert.equal(site.driveId, undefined, 'found again, and its address checked, by the SharePoint step');
+  assert.equal(site.driveWebUrl, undefined);
+  assert.equal(site.checkedAt, undefined);
 });
 
 test('paxPlan: a local folder', async (t) => {

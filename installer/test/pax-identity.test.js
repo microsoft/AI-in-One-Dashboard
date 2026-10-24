@@ -1968,6 +1968,36 @@ test('ensureSiteAccess: with --yes, a site with no library by that name stops th
   assert.deepEqual(p.pwsh.kinds(), []);
 });
 
+test("ensureSiteAccess: a library whose address the report can't read offers only the libraries it can, or stops under --yes", async (t) => {
+  const BAD = `${SITE_URL}/Team%20%231`;
+  const drives = [
+    { id: 'drive-1', name: 'Documents', webUrl: `${SITE_URL}/Shared%20Documents`, driveType: 'documentLibrary' },
+    { id: 'drive-5', name: 'Team 1', webUrl: BAD, driveType: 'documentLibrary' },
+  ];
+  const why = `The report can't use the library "Team 1": its address, ${BAD}, has a # or %.`;
+  const u = fakeUi({ answers: ['me', 'drive-1'] });
+  const selects = recordSelects(u);
+  const p = paxCtx(t, { ui: u, pax: { site: { ...SITE_RECORD, library: 'Team 1' } } });
+  p.sites.drives[SITE_ID] = drives;
+  await ensureSiteAccess(p.ctx, { consented: false });
+  assert.deepEqual(selects[1], { message: `${why} Which library should the files go in?`, choices: [{ name: 'Documents', value: 'drive-1' }], def: 'drive-1' });
+  const site = paxOf(p).site;
+  assert.equal(site?.library, 'Documents');
+  assert.equal(site?.driveId, 'drive-1');
+  assert.equal(site?.driveWebUrl, `${SITE_URL}/Shared%20Documents`);
+
+  const q = paxCtx(t, { ui: fakeUi({ yes: true }), pax: { site: { ...SITE_RECORD, library: 'Team 1' } } });
+  q.sites.drives[SITE_ID] = drives;
+  const err = await rejection(ensureSiteAccess(q.ctx, { consented: true }));
+  assert.equal(err.message, `${why} Libraries the report can use: Documents. Run install again without --yes to choose one.`);
+  assert.equal(paxOf(q).site?.driveId, undefined);
+
+  const none = paxCtx(t, { ui: fakeUi({ yes: true }), pax: { site: { ...SITE_RECORD, library: 'Team 1' } } });
+  none.sites.drives[SITE_ID] = [drives[1]];
+  const stuck = await rejection(ensureSiteAccess(none.ctx, { consented: true }));
+  assert.equal(stuck.message, `${why} None of its libraries has an address the report can read.`);
+});
+
 test('ensureSiteAccess: only document libraries count, and a drive without a type is taken for one', async (t) => {
   const p = paxCtx(t);
   p.sites.drives[SITE_ID] = [{ id: 'drive-3', name: 'Documents', webUrl: `${SITE_URL}/Shared%20Documents`, driveType: 'personal' }];
@@ -2013,6 +2043,33 @@ test('ensureSiteAccess: when the library is not found, "Change the library" writ
   has(out, '  ✓ The app can write to Reports/AI in One in AI in One\n');
   assert.deepEqual(p.pwsh.kinds(), ['check', 'check']);
   assert.deepEqual(p.sleeps, []);
+});
+
+test("ensureSiteAccess: a check that finds a library whose address the report can't read fails at finding the library", async (t) => {
+  const BAD = `${SITE_URL}/Team%20%231`;
+  const unreadable = { ...PASSING, driveId: 'drive-5', driveName: 'Team 1', driveWebUrl: BAD };
+  const u = fakeUi({ answers: ['me', 'library', 'Reports'] });
+  const selects = recordSelects(u);
+  const p = paxCtx(t, { ui: u });
+  p.pwsh.checks.push(unreadable, { ...PASSING, driveId: 'drive-2', driveName: 'Reports', driveWebUrl: `${SITE_URL}/Reports` });
+  const r = await ensureSiteAccess(p.ctx, { consented: true });
+  assert.equal(r.ok, true);
+  assert.deepEqual(
+    selects.find((s) => s.message === SORTED)?.choices.map((c) => c.value),
+    ['check', 'library', 'skip'],
+  );
+  has(plain(p.ui), `  ! Finding the library didn't work: The report can't use the library "Team 1": its address, ${BAD}, has a # or %.\n`);
+  const site = paxOf(p).site;
+  assert.equal(site?.library, 'Reports');
+  assert.equal(site?.driveId, 'drive-2');
+  assert.equal(site?.driveWebUrl, `${SITE_URL}/Reports`);
+
+  const q = paxCtx(t, { ui: fakeUi({ yes: true }) });
+  q.pwsh.checks.push(unreadable);
+  const stopped = await ensureSiteAccess(q.ctx, { consented: true });
+  assert.equal(stopped.ok, false);
+  assert.equal(paxOf(q).site?.checkedAt, undefined, "a library the report can't read isn't recorded as checked");
+  assert.notEqual(paxOf(q).site?.driveWebUrl, BAD);
 });
 
 test('ensureSiteAccess: "Check again" runs the check again, and "Carry on without it" stops', async (t) => {

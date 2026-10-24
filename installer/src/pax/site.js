@@ -105,6 +105,9 @@ const siteLabel = (site) => site.webUrl ?? siteAddress(site);
 /** The folder as people see it in SharePoint. @param {PaxSite} site */
 export const folderLabel = (site) => `${site.library}/${site.folder || SP_FOLDER} in ${site.name ?? siteAddress(site)}`;
 
+/** The last part of a library's address, decoded, as the report reads it. @param {string | undefined} webUrl */
+const addressPart = (webUrl) => decode(String(webUrl ?? '').replace(/\/+$/, '').split('/').pop() ?? '');
+
 /**
  * Whether a library has the name the user gave, or that name is the last part of its address
  * (such as Shared Documents, for the library called Documents). The task's script matches the
@@ -114,8 +117,17 @@ export const folderLabel = (site) => `${site.library}/${site.folder || SP_FOLDER
  */
 export function sameLibrary(drive, library) {
   const want = library.trim().toLowerCase();
-  const last = decode(String(drive.webUrl ?? '').replace(/\/+$/, '').split('/').pop() ?? '').toLowerCase();
-  return String(drive.name ?? '').toLowerCase() === want || last === want;
+  return String(drive.name ?? '').toLowerCase() === want || addressPart(drive.webUrl).toLowerCase() === want;
+}
+
+/**
+ * Why the report can't read the files in the library at this address, or ''. The report decodes
+ * the files' addresses, so a # or % in the library's part of it would break them. Renaming a
+ * library doesn't change its address, so its name can have them when its address doesn't.
+ * @param {string | undefined} webUrl
+ */
+export function libraryAddressProblem(webUrl) {
+  return /[#%]/.test(addressPart(webUrl)) ? `its address, ${webUrl}, has a # or %` : '';
 }
 
 /**
@@ -234,7 +246,8 @@ function handOff(ctx, site, why) {
 
 /**
  * Finds the library by its name or the last part of its address, as the task's script does.
- * When the site has none by that name, asks which of its libraries to use.
+ * When the site has none by that name, or the report can't read the address of the one it has,
+ * asks which of the libraries the report can read to use.
  * @param {Ctx} ctx
  * @param {import('../clients/graph.js').SitesApi} sites
  * @param {PaxSite} site
@@ -242,17 +255,21 @@ function handOff(ctx, site, why) {
 async function chooseLibrary(ctx, sites, site) {
   const drives = (await sites.drives(/** @type {string} */ (site.id))).filter((d) => !d.driveType || d.driveType === 'documentLibrary');
   let drive = drives.find((d) => sameLibrary(d, site.library));
-  if (!drive) {
+  const unreadable = drive ? libraryAddressProblem(drive.webUrl) : '';
+  if (!drive || unreadable) {
     const where = site.name ?? siteAddress(site);
     if (!drives.length) throw new Error(`${where} has no document library to put the files in.`);
-    const names = drives.map((d) => String(d.name)).join(', ');
-    if (ctx.ui.yes) throw new Error(`${where} has no library called "${site.library}". Its libraries: ${names}. Run install again without --yes to choose one.`);
+    const why = unreadable ? `The report can't use the library "${site.library}": ${unreadable}.` : `${where} has no library called "${site.library}".`;
+    const usable = drives.filter((d) => !libraryAddressProblem(d.webUrl));
+    if (!usable.length) throw new Error(`${why} None of its libraries has an address the report can read.`);
+    const names = `${usable.length < drives.length ? 'Libraries the report can use' : 'Its libraries'}: ${usable.map((d) => String(d.name)).join(', ')}.`;
+    if (ctx.ui.yes) throw new Error(`${why} ${names} Run install again without --yes to choose one.`);
     const id = await ctx.ui.select(
-      `${where} has no library called "${site.library}". Which library should the files go in?`,
-      drives.map((d) => ({ name: String(d.name), value: String(d.id) })),
-      String(drives[0].id),
+      `${why} Which library should the files go in?`,
+      usable.map((d) => ({ name: String(d.name), value: String(d.id) })),
+      String(usable[0].id),
     );
-    drive = drives.find((d) => d.id === id) ?? drives[0];
+    drive = usable.find((d) => d.id === id) ?? usable[0];
     site.library = String(drive.name);
   }
   site.driveId = drive.id;
@@ -364,6 +381,19 @@ async function checkUntil(ctx, waitMs) {
 export const sizeOf = (bytes) => (bytes === undefined ? '' : bytes < 1024 * 1024 ? `${Math.max(1, Math.round(bytes / 1024))} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`);
 
 /**
+ * A passing check fails at finding the library when the report can't read the library's address,
+ * as when a library typed after a failed check has a # or % in it.
+ * @param {PaxSite} site
+ * @param {AccessCheck} check
+ * @returns {AccessCheck}
+ */
+function readable(site, check) {
+  const problem = check.ok ? libraryAddressProblem(check.driveWebUrl) : '';
+  if (!problem) return check;
+  return { ...check, ok: false, step: 'Finding the library', error: `The report can't use the library "${check.driveName ?? site.library}": ${problem}.` };
+}
+
+/**
  * Records what a passing check found, writes the script again with the library's ID, which each
  * run needs, and takes replaced keys off the app now the script signs in with the new one.
  * @param {Ctx} ctx
@@ -410,7 +440,7 @@ export async function ensureSiteAccess(ctx, o) {
 
   // When it has worked before, there may be nothing to do.
   if (o.consented && site.checkedAt) {
-    const check = await checkAccess(runPwshOf(ctx), ctx.env);
+    const check = readable(site, await checkAccess(runPwshOf(ctx), ctx.env));
     if (check.ok) return passed(ctx, site, check);
     ui.warn(describeCheck(check));
   }
@@ -422,7 +452,7 @@ export async function ensureSiteAccess(ctx, o) {
     ui.warn("The app can't sign in until an admin consents to its Graph permissions, so its access to the folder isn't checked yet.");
     return { ok: false };
   }
-  let check = await checkUntil(ctx, granted ? CHECK_WAIT_MS : 0);
+  let check = readable(site, await checkUntil(ctx, granted ? CHECK_WAIT_MS : 0));
   for (;;) {
     if (check.ok) return passed(ctx, site, check);
     ui.warn(describeCheck(check));
@@ -443,7 +473,7 @@ export async function ensureSiteAccess(ctx, o) {
       ctx.save();
       writeWrapper(config, { env: ctx.env });
     }
-    check = await checkAccess(runPwshOf(ctx), ctx.env);
+    check = readable(site, await checkAccess(runPwshOf(ctx), ctx.env));
   }
 }
 
