@@ -11,7 +11,7 @@ import { REPORT_NAME } from '../config.js';
 import { HttpError } from '../http.js';
 import { commandLine } from '../launch.js';
 import { ensureViewerGroup, grantModelAccess, shareReport } from '../steps/access.js';
-import { byName } from '../steps/fabric.js';
+import { byName, displayNames, freeName, noteRenamed } from '../steps/fabric.js';
 import { deployModel, modelSettingsUrl, REFRESH_FINAL, REFRESH_POLL_MS, verifyModel } from '../steps/model.js';
 import { DEFAULT_WORKSPACE_NAME } from '../steps/plan.js';
 import { deployReport } from '../steps/report.js';
@@ -134,7 +134,8 @@ export async function ensurePaxWorkspace(ctx) {
 }
 
 /**
- * Takes on a model and report published from Power BI Desktop under the model's name.
+ * Takes on a model and report published from Power BI Desktop under the model's name. Ones that
+ * were in the workspace before the model went to Power BI Desktop are never taken on.
  * @param {Ctx} ctx
  * @returns {Promise<boolean>}  false when there's no such model yet.
  */
@@ -142,16 +143,39 @@ async function adoptPublished(ctx) {
   const { ui, config, api } = ctx;
   const sm = config.semanticModel;
   const ws = /** @type {string} */ (config.fabric.workspaceId);
-  const model = byName(await api.fabric.listItems(ws, 'SemanticModel'), sm.name);
+  const before = new Set(sm.preexisting ?? []);
+  const fresh = (/** @type {any[]} */ items) => items.filter((i) => !before.has(i.id));
+  const model = byName(fresh(await api.fabric.listItems(ws, 'SemanticModel')), sm.name);
   if (!model) return false;
-  const report = byName(await api.fabric.listItems(ws, 'Report'), sm.report?.name ?? REPORT_NAME);
+  const report = byName(fresh(await api.fabric.listItems(ws, 'Report')), sm.name);
   sm.id = model.id;
+  sm.adopted = true;
   // Desktop's sign-in stays in Desktop. Power BI needs one of its own.
   sm.bound = false;
-  if (report) sm.report = { id: report.id, name: report.displayName, modelId: model.id };
+  if (report) sm.report = { id: report.id, name: report.displayName, modelId: model.id, adopted: true };
   ctx.save();
   ui.ok(`Found ${model.displayName}${report ? ` and the ${report.displayName} report` : ''}, published from Power BI Desktop`);
   return true;
+}
+
+/**
+ * Sends the model to Power BI Desktop: gives it a name no model or report in the workspace has,
+ * and notes what's there already, so only what the user publishes next is taken on.
+ * @param {Ctx} ctx
+ */
+async function goToDesktop(ctx) {
+  const { config, api } = ctx;
+  const sm = config.semanticModel;
+  const ws = /** @type {string} */ (config.fabric.workspaceId);
+  const models = await api.fabric.listItems(ws, 'SemanticModel');
+  const there = [...models, ...(await api.fabric.listItems(ws, 'Report'))];
+  const wanted = sm.name;
+  sm.name = freeName(wanted, displayNames(there));
+  sm.preexisting = there.map((i) => i.id);
+  sm.desktop = true;
+  ctx.save();
+  // The refused create has already said what the model would be called, going by the models alone.
+  if (sm.name !== freeName(wanted, displayNames(models))) noteRenamed(ctx, wanted, sm.name);
 }
 
 /**
@@ -173,6 +197,7 @@ export async function forgetMissingModel(ctx) {
   delete sm.report;
   delete sm.refreshTimes;
   delete sm.reload;
+  delete sm.adopted;
   ctx.save();
   return true;
 }
@@ -206,9 +231,8 @@ export async function deployPaxModel(ctx) {
     await deployModel(ctx, sm, { signature, definition: () => semanticModelDefinition(buildPaxModel(loadTemplateModel(file), urls), PBISM) });
   } catch (err) {
     if (sm.id || !workspaceRefused(err)) throw err;
-    sm.desktop = true;
-    ctx.save();
     ui.warn(`The workspace didn't take the model from the installer: ${/** @type {Error} */ (err).message}`);
+    await goToDesktop(ctx);
     ui.info('You publish it from Power BI Desktop instead. The steps come once the first load has written the files.');
     return { deployed: false, reportOk: true };
   }

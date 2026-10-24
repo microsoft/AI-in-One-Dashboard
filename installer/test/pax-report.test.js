@@ -547,10 +547,42 @@ test('deployPaxModel: takes on the model and report once they are published from
   const sm = s.config.semanticModel;
   assert.equal(sm.id, model.id);
   assert.equal(sm.bound, false, "Desktop's sign-in stays in Desktop");
-  assert.deepEqual(sm.report, { id: report.id, name: 'AI IN ONE', modelId: model.id });
+  assert.deepEqual(sm.report, { id: report.id, name: 'AI IN ONE', modelId: model.id, adopted: true });
+  assert.equal(sm.adopted, true, 'uninstall asks about it on its own');
   assert.equal(sm.desktop, true);
   assert.deepEqual(s.fabric.calls, []);
   assert.ok(s.text().includes(`${OK} Found ai in one and the AI IN ONE report, published from Power BI Desktop`), s.text());
+});
+
+test('deployPaxModel: never takes on a model or report that was in the workspace before it went to Desktop', async () => {
+  const s = setup();
+  const theirs = s.fabric.add('SemanticModel', 'AI in One', null);
+  const theirReport = s.fabric.add('Report', 'AI in One', null);
+  const refusal = httpError(403, 'The workspace has no capacity.');
+  s.fabric.failures.createSemanticModel = [refusal, refusal];
+  assert.deepEqual(await deployPaxModel(s.ctx), { deployed: false, reportOk: true });
+  const sm = s.config.semanticModel;
+  assert.equal(sm.name, 'AI in One 2', 'a name nothing in the workspace has');
+  assert.deepEqual(sm.preexisting, [theirs.id, theirReport.id]);
+  assert.equal(s.text().split('is already in the workspace').length, 2, `one note about the name: ${s.text()}`);
+  assert.ok(desktopSteps(s.config).some((step) => step.includes('save it as "AI in One 2"')));
+  assert.equal(await deployPaxModel(s.ctx).then((r) => r.deployed), false, 'theirs is never taken on');
+  assert.equal(sm.id, undefined);
+  const ours = s.fabric.add('SemanticModel', 'AI in One 2', null);
+  const ourReport = s.fabric.add('Report', 'AI in One 2', null);
+  assert.deepEqual(await deployPaxModel(s.ctx), { deployed: true, reportOk: true });
+  assert.equal(sm.id, ours.id);
+  assert.deepEqual(sm.report, { id: ourReport.id, name: 'AI in One 2', modelId: ours.id, adopted: true });
+});
+
+test('deployPaxModel: a report with the name pushes the Desktop name on, and says so', async () => {
+  const s = setup();
+  s.fabric.add('SemanticModel', 'AI in One', null);
+  s.fabric.add('Report', 'AI in One 2', null);
+  s.fabric.failures.createSemanticModel = [httpError(403, 'The workspace has no capacity.')];
+  await deployPaxModel(s.ctx);
+  assert.equal(s.config.semanticModel.name, 'AI in One 3');
+  assert.ok(s.text().includes('AI in One\'s is called "AI in One 3".'), s.text());
 });
 
 test('deployPaxModel: with nothing published from Desktop yet, tries the installer\'s deployment again', async () => {

@@ -68,7 +68,7 @@ export async function deletePrivateEndpoints(ctx, workspaceId) {
 /**
  * What the installer created in the workspace, in the order to delete them: the report before the
  * model it reads, the pipeline before the notebooks it runs, and the Lakehouse last. A Lakehouse
- * the user already had isn't on the list.
+ * the user already had isn't on the list, nor is a model or report it took on (see adoptedItems).
  * @param {import('../config.js').InstallConfig} config
  * @returns {CreatedItem[]}
  */
@@ -77,14 +77,29 @@ export function createdItems(config) {
   const sm = config.semanticModel;
   /** @type {CreatedItem[]} */
   const items = [];
-  if (sm?.report?.id) items.push({ kind: 'report', name: sm.report.name, id: sm.report.id });
-  if (sm?.id) items.push({ kind: 'semantic model', name: sm.name, id: sm.id });
+  if (sm?.report?.id && !sm.report.adopted) items.push({ kind: 'report', name: sm.report.name, id: sm.report.id });
+  if (sm?.id && !sm.adopted) items.push({ kind: 'semantic model', name: sm.name, id: sm.id });
   if (f.pipelineId) items.push({ kind: 'pipeline', name: f.pipelineName ?? PIPELINE_NAME, id: f.pipelineId });
   for (const nb of NOTEBOOKS) {
     const id = f.notebooks?.[nb.key];
     if (id) items.push({ kind: 'notebook', name: f.notebookNames?.[nb.key] ?? nb.displayName, id });
   }
   if (f.lakehouseId && !f.existingLakehouse) items.push({ kind: 'Lakehouse', name: f.lakehouseName ?? f.lakehouseId, id: f.lakehouseId });
+  return items;
+}
+
+/**
+ * The model and report the installer took on after they were published from Power BI Desktop,
+ * report first. It didn't make them, so uninstall asks about them on their own.
+ * @param {import('../config.js').InstallConfig} config
+ * @returns {CreatedItem[]}
+ */
+export function adoptedItems(config) {
+  const sm = config.semanticModel;
+  /** @type {CreatedItem[]} */
+  const items = [];
+  if (sm?.report?.id && sm.report.adopted) items.push({ kind: 'report', name: sm.report.name, id: sm.report.id });
+  if (sm?.id && sm.adopted) items.push({ kind: 'semantic model', name: sm.name, id: sm.id });
   return items;
 }
 

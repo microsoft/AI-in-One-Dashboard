@@ -12,7 +12,7 @@ import { HttpError } from '../http.js';
 import { commandLine } from '../launch.js';
 import { APP_NAME, deployTheApp, removeTheApp } from '../managed-app/flow.js';
 import { accessCommand, accessSummaryLines, ensureViewerGroup } from '../steps/access.js';
-import { createdItems, deleteAppRegistration, deleteItems, listOf } from '../steps/fabric-uninstall.js';
+import { adoptedItems, createdItems, deleteAppRegistration, deleteItems, listOf } from '../steps/fabric-uninstall.js';
 import { ensureConsent } from '../steps/identity.js';
 import { modelUrl } from '../steps/model.js';
 import { nextSteps, stepsLeftTitle } from '../steps/next-steps.js';
@@ -591,6 +591,8 @@ async function uninstall(ctx) {
   const appGone = await deleteAppRegistration(ctx);
   await removePaxCredentials(ctx, { keepApp: !appGone });
 
+  /** @type {string[]} */
+  let keptAdopted = [];
   if (f.workspaceId) {
     const name = f.workspaceName ?? f.workspaceId;
     if (f.createdWorkspace) {
@@ -608,6 +610,12 @@ async function uninstall(ctx) {
       if (items.length && (await ui.confirm(`Delete ${listOf(items.map((i) => `the ${i.kind} "${i.name}"`))} from workspace "${name}"? The workspace and everything else in it stay.`, true))) {
         await deleteItems(ctx, f.workspaceId, items);
       }
+      const adopted = adoptedItems(config);
+      const named = adopted.map((i) => `the ${i.kind} "${i.name}"`);
+      // Published from Power BI Desktop, not made by the installer: kept unless the user says otherwise, and always under --yes.
+      if (adopted.length && (await ui.confirm(`Delete ${listOf(named)} too? ${adopted.length === 1 ? 'It was' : 'They were'} published from Power BI Desktop, not made by the installer.`, false))) {
+        await deleteItems(ctx, f.workspaceId, adopted);
+      } else keptAdopted = named;
     }
   }
 
@@ -617,6 +625,7 @@ async function uninstall(ctx) {
   const left = [
     !appGone && config.app.appId && `the app registration${config.app.displayName ? ` "${config.app.displayName}"` : ''}`,
     config.access?.groupId && `the viewer group${config.access.groupName ? ` "${config.access.groupName}"` : ''}`,
+    ...keptAdopted,
     pax.destination === 'local' ? `the files in ${pax.localFolder ?? defaultLocalFolder()}` : pax.site && `the files in ${folderLabel(pax.site)}`,
   ].filter((s) => typeof s === 'string');
   if (left.length) ui.note(`Left alone: ${listOf(left)}. Remove them yourself if nothing else uses them.`);

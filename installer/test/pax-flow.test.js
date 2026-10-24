@@ -6,6 +6,7 @@ import { dirname, join } from 'node:path';
 import { test } from 'node:test';
 import { NOTEBOOKS, NOTEBOOKS_DIR } from '../src/catalog.js';
 import { emptyConfig, emptyPax, loadConfig, saveConfig, targetOf, TARGETS } from '../src/config.js';
+import { adoptedItems, createdItems } from '../src/steps/fabric-uninstall.js';
 import { commandLine } from '../src/launch.js';
 import { paxInstall, paxSummary, runPaxCommand, setUpTitles, withAccess, withApp, withReport } from '../src/pax/flow.js';
 import { defaultLocalFolder, FILES, lastRunPath, PAX_APP_NAME, paxFiles, runDir, secretPath, seedRequestPath, stateRoot, TASK_NAME, wrapperPath } from '../src/pax/names.js';
@@ -900,6 +901,58 @@ test('uninstall: a local install leaves its folder alone, and a declined workspa
   const text = out();
   assert.ok(text.includes('Left workspace "Contoso PAX" alone.'), text);
   assert.ok(text.includes('Left alone: the files in C:\\Data\\AI in One.'), text);
+});
+
+const ADOPTED_MODEL = {
+  ...emptyConfig().semanticModel,
+  id: 'm1',
+  name: 'AI in One',
+  desktop: true,
+  adopted: true,
+  report: { id: 'r1', name: 'AI in One', modelId: 'm1', adopted: true },
+};
+const ADOPTED_PROMPT = 'Delete the report "AI in One" and the semantic model "AI in One" too? They were published from Power BI Desktop, not made by the installer.';
+
+/** @param {any} t @param {{ answers?: boolean[], yes?: boolean }} o */
+function adoptedUninstall(t, o) {
+  const s = paxCtx(t, {
+    ...o,
+    pax: { ...REGISTERED, destination: 'local', localFolder: 'C:\\Data\\AI in One' },
+    config: { fabric: { ...emptyConfig().fabric, workspaceId: 'ws-1', workspaceName: 'Contoso PAX' }, semanticModel: { ...ADOPTED_MODEL } },
+  });
+  /** @type {string[]} */
+  const deleted = [];
+  /** @type {any} */ (s.ctx.api.fabric).deleteItem = async (/** @type {string} */ ws, /** @type {string} */ id) => {
+    deleted.push(`${ws}/${id}`);
+  };
+  return { ...s, deleted };
+}
+
+test('uninstall: items it took on are asked about on their own, and stay under --yes', async (t) => {
+  const { ctx, out, fake, deleted, calls } = adoptedUninstall(t, { yes: true });
+  assert.equal(await runPaxCommand(ctx, 'uninstall', { wait: false }), true);
+  assert.deepEqual(fake.asked, ['Uninstall AI in One?', ADOPTED_PROMPT], 'no "made by the installer" question for them');
+  assert.deepEqual(deleted, []);
+  assert.deepEqual(calls.deletedWorkspaces, []);
+  const text = out();
+  assert.ok(text.includes('Left alone: the report "AI in One", the semantic model "AI in One" and the files in C:\\Data\\AI in One.'), text);
+});
+
+test('uninstall: saying yes to the items it took on deletes them', async (t) => {
+  const { ctx, out, fake, deleted } = adoptedUninstall(t, { answers: [true, true] });
+  assert.equal(await runPaxCommand(ctx, 'uninstall', { wait: false }), true);
+  assert.deepEqual(fake.asked, ['Uninstall AI in One?', ADOPTED_PROMPT]);
+  assert.deepEqual(deleted, ['ws-1/r1', 'ws-1/m1'], 'the report before its model');
+  const text = out();
+  assert.ok(text.includes('Deleted the report "AI in One"'), text);
+  assert.doesNotMatch(text, /Left alone: [^\n]*semantic model/);
+});
+
+test('createdItems and adoptedItems: an item is on one list or the other', () => {
+  const config = emptyConfig();
+  config.semanticModel = { ...ADOPTED_MODEL, report: { id: 'r1', name: 'AI in One', modelId: 'm1' } };
+  assert.deepEqual(createdItems(config).map((i) => i.id), ['r1']);
+  assert.deepEqual(adoptedItems(config).map((i) => i.id), ['m1']);
 });
 
 test('validateFolder: a folder path in the document library', () => {

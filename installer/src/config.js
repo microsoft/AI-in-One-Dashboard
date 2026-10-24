@@ -174,6 +174,7 @@ export const secretMode = (config) => config.keyVault?.mode ?? 'keyvault';
  * @property {string} name
  * @property {string} [signature]  A hash of the template's report files when it was published.
  * @property {string} [modelId]  The model it reads.
+ * @property {boolean} [adopted]  PAX target: published from Power BI Desktop and found in the workspace, not made by the installer. Uninstall asks about it separately.
  */
 
 /**
@@ -198,6 +199,8 @@ export const secretMode = (config) => config.keyVault?.mode ?? 'keyvault';
  * @property {ModelReload} [reload]  Owed a reload: its definition was, or may have been, replaced and no refresh has finished since.
  * @property {ReportConfig} [report]  The AI in One report.
  * @property {boolean} [desktop]  PAX target: the workspace didn't take the model from the installer, so it was published from Power BI Desktop. The installer leaves its definition as it is.
+ * @property {string[]} [preexisting]  PAX target: the models and reports already in the workspace when the model went to Power BI Desktop. The installer never takes these on.
+ * @property {boolean} [adopted]  PAX target: published from Power BI Desktop and found in the workspace, not made by the installer. Uninstall asks about it separately.
  * @property {string[]} [refreshTimes]  PAX target: the times, HH:mm, the installer set Power BI to refresh it each day.
  */
 
