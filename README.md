@@ -12,6 +12,8 @@ All reports and guides can be found on the [Analytics Hub](https://microsoft.git
 
 **Cowork Billing:** [https://microsoft.github.io/Analytics-Hub/cowork-billing/](https://microsoft.github.io/Analytics-Hub/cowork-billing/)
 
+**Also see [ValueLens](https://github.com/microsoft/ValueLens-for-Microsoft-Copilot):** the next step on from AI in One, with full task-level activity, more focus on Cowork, model fit and efficiency, and comprehensive value estimation.
+
 **Also see [Analytics Hub for Microsoft Copilot](https://github.com/microsoft/AnalyticsHub-Dashboard):** one installer sets up an app on Microsoft Fabric or Azure that shows Copilot and agent adoption, value, consumption and governance in one place.
 
 <br>
