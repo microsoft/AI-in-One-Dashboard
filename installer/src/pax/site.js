@@ -504,17 +504,33 @@ export async function revokeSiteGrant(ctx) {
   delete site.grantId;
   delete site.grantedByInstaller;
   delete site.previousRoles;
+  delete site.left;
   ctx.save();
 }
 
 /**
  * Files that now stay on the PC no longer need the app's access to the SharePoint site they went
- * to, so the installer takes back what it gave there, or offers to, as uninstall does.
+ * to, so the installer takes back what it gave there, or offers to, as uninstall does. It says so
+ * once: access it leaves in place, an admin's or one the user keeps, is marked and left to
+ * uninstall, until the files go back to SharePoint.
  * @param {Ctx} ctx
  */
 export async function leaveSite(ctx) {
   const pax = ctx.config.pax;
-  if (pax?.destination !== 'local' || !pax.site?.grantId) return;
+  if (!pax?.site) return;
+  const site = pax.site;
+  if (pax.destination !== 'local') {
+    if (site.left) {
+      delete site.left;
+      ctx.save();
+    }
+    return;
+  }
+  if (!site.grantId || site.left) return;
   ctx.ui.note('The files now stay on this PC, so the app no longer needs its access to the SharePoint site.');
   await revokeSiteGrant(ctx);
+  if (site.grantId) {
+    site.left = true;
+    ctx.save();
+  }
 }

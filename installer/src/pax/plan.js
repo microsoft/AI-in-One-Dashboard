@@ -446,6 +446,18 @@ export const taskLogon = (pax) =>
     : describeLogon(pax.logonType);
 
 /**
+ * What happens to the app's access to a site the files no longer go to: the installer offers to
+ * take back access it gave or raised, and an admin's stays.
+ * @param {PaxSite} site
+ */
+function leavingDetail(site) {
+  const where = `The files no longer go to ${siteAddress(site)}`;
+  if (site.grantedByInstaller) return `${where}, so the installer offers to take back the app's access there.`;
+  if (site.previousRoles?.length) return `${where}, so the installer offers to put the app's access there back to ${site.previousRoles.join(', ')}.`;
+  return `${where}. The installer didn't give the app its access there, so it stays, and you get the commands an admin can use to take it away.`;
+}
+
+/**
  * What the PAX plan creates, who it gives access to what, and where it runs: the record a reviewer
  * reads before saying go ahead.
  * @param {Ctx} ctx
@@ -530,12 +542,12 @@ export function paxPlanReview(ctx, pre) {
 
   const wanted = paxPermissions(pax);
   const dropped = config.app.appId ? (config.app.permissions ?? []).filter((p) => !wanted.includes(p)) : [];
-  const leaving = pax.destination === 'local' && pax.site?.grantId ? pax.site : undefined;
+  const leaving = pax.destination === 'local' && pax.site?.grantId && !pax.site.left ? pax.site : undefined;
   const graphDetail = [
     pre && !pre.canConsent ? 'You can\'t grant it yourself. You get a link for a Global Administrator or Privileged Role Administrator to approve.' : '',
     dropped.length && config.app.existing ? `It no longer needs ${dropped.join(', ')}. You can remove them from your app registration.` : '',
     dropped.length && !config.app.existing ? `Takes away ${dropped.join(', ')}, which this setup no longer needs.` : '',
-    leaving ? `The files no longer go to ${siteAddress(leaving)}, so the installer offers to take back the app's access there.` : '',
+    leaving ? leavingDetail(leaving) : '',
   ].filter(Boolean);
   /** @type {ReviewGrant[]} */
   const grants = [

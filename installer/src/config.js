@@ -89,6 +89,7 @@ export const TARGETS = /** @type {const} */ (['fabric', 'pax']);
  * @property {string} [grantId]  The app's write permission on the site, so uninstall can take it away.
  * @property {boolean} [grantedByInstaller]  The installer gave that permission, rather than an admin.
  * @property {string[]} [previousRoles]  The roles an admin's permission gave the app before the installer raised it to write, so uninstall can put them back.
+ * @property {boolean} [left]  The files moved to the PC and the installer has said what happens to the app's access here, which stays, so later runs don't say it again. Cleared when the files go back to SharePoint.
  * @property {string} [checkedAt]  When the app last showed it can write to the folder.
  */
 

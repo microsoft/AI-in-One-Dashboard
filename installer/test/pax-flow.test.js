@@ -1290,12 +1290,19 @@ test('paxPlanReview: a local plan without consent, a certificate or Python, and 
 
 test('paxPlanReview: says which permissions, and which site access, a changed setup takes away', (t) => {
   const own = paxCtx(t, { pax: { site: SITE, destination: 'local', localFolder: 'C:\\Data' }, config: { app: { ...emptyConfig().app, appId: APP_ID, displayName: PAX_APP_NAME, permissions: ['AuditLogsQuery.Read.All', 'User.Read.All', 'Organization.Read.All', 'Sites.Selected', 'CopilotPackages.Read.All', 'Application.Read.All'] } } });
-  own.config.pax.site = { ...SITE, grantId: 'perm-1' };
-  const made = /** @type {any} */ (paxPlanReview(own.ctx, PRE)).grants[0].detail;
+  /** @param {Record<string, any>} grant */
+  const leaving = (grant) => {
+    own.config.pax.site = { ...SITE, grantId: 'perm-1', ...grant };
+    return /** @type {any} */ (paxPlanReview(own.ctx, PRE)).grants[0].detail;
+  };
+  const dropped = 'Takes away Sites.Selected, CopilotPackages.Read.All, Application.Read.All, which this setup no longer needs.';
+  assert.equal(leaving({ grantedByInstaller: true }), `${dropped} The files no longer go to ${SITE_ADDRESS}, so the installer offers to take back the app's access there.`);
+  assert.equal(leaving({ previousRoles: ['read'] }), `${dropped} The files no longer go to ${SITE_ADDRESS}, so the installer offers to put the app's access there back to read.`);
   assert.equal(
-    made,
-    `Takes away Sites.Selected, CopilotPackages.Read.All, Application.Read.All, which this setup no longer needs. The files no longer go to ${SITE_ADDRESS}, so the installer offers to take back the app's access there.`,
+    leaving({}),
+    `${dropped} The files no longer go to ${SITE_ADDRESS}. The installer didn't give the app its access there, so it stays, and you get the commands an admin can use to take it away.`,
   );
+  assert.equal(leaving({ grantedByInstaller: true, left: true }), dropped, 'said once already, so uninstall deals with it');
   own.config.app.existing = true;
   own.config.pax.site = { ...SITE };
   const brought = /** @type {any} */ (paxPlanReview(own.ctx, PRE)).grants[0].detail;

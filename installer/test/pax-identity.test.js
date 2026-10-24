@@ -2173,6 +2173,57 @@ test('leaveSite: files that now stay on the PC take back the site access the ins
   }
 });
 
+test("leaveSite: says it once; access it leaves in place, an admin's or one the user keeps, is left to uninstall", async (t) => {
+  /** @param {Record<string, any>} site @param {boolean[]} answers */
+  const leaveTwice = async (site, answers) => {
+    const p = paxCtx(t, { ui: fakeUi({ answers }), pax: { destination: 'local', localFolder: 'C:\\Data', site: { ...site } } });
+    p.sites.addPerm(APP_ID, ['write'], 'perm-1');
+    await leaveSite(p.ctx);
+    const first = plain(p.ui);
+    has(first, '    The files now stay on this PC, so the app no longer needs its access to the SharePoint site.\n');
+    assertRevokeCommands(first);
+    assert.equal(paxOf(p).site?.grantId, 'perm-1');
+    assert.equal(paxOf(p).site?.left, true);
+    const asked = [...p.ui.asked];
+    const saves = p.saves();
+    await leaveSite(p.ctx);
+    assert.equal(plain(p.ui), first, 'a later run with the files on the PC says nothing about the site');
+    assert.deepEqual(p.ui.asked, asked);
+    assert.equal(p.saves(), saves);
+    assert.deepEqual(p.sites.names(), []);
+    return p;
+  };
+
+  const admin = await leaveTwice({ ...SITE_RECORD, id: SITE_ID, name: 'AI in One', webUrl: SITE_URL, grantId: 'perm-1' }, []);
+  assert.deepEqual(admin.ui.asked, []);
+  await revokeSiteGrant(admin.ctx);
+  assert.equal(plain(admin.ui).split("The installer didn't give the app its access").length - 1, 2, 'uninstall still notes it');
+
+  const kept = await leaveTwice({ ...GRANTED }, [false, true]);
+  assert.deepEqual(kept.ui.asked, [TAKE_AWAY]);
+  await revokeSiteGrant(kept.ctx);
+  assert.deepEqual(kept.ui.asked, [TAKE_AWAY, TAKE_AWAY], 'uninstall still offers');
+  assert.deepEqual(callArgs(kept.sites, 'revoke'), [[SITE_ID, 'perm-1']]);
+  assert.equal(paxOf(kept).site?.grantId, undefined);
+  assert.equal(paxOf(kept).site?.left, undefined);
+});
+
+test('leaveSite: files that go back to SharePoint clear the mark, so leaving again says so again', async (t) => {
+  const p = paxCtx(t, { pax: { destination: 'local', localFolder: 'C:\\Data', site: { ...SITE_RECORD, id: SITE_ID, name: 'AI in One', webUrl: SITE_URL, grantId: 'perm-1', left: true } } });
+  await leaveSite(p.ctx);
+  assert.equal(plain(p.ui), '');
+  assert.equal(p.saves(), 0);
+  paxOf(p).destination = 'sharepoint';
+  await leaveSite(p.ctx);
+  assert.equal(plain(p.ui), '');
+  assert.equal(paxOf(p).site?.left, undefined);
+  assert.equal(p.saves(), 1);
+  paxOf(p).destination = 'local';
+  await leaveSite(p.ctx);
+  has(plain(p.ui), '    The files now stay on this PC, so the app no longer needs its access to the SharePoint site.\n');
+  assert.equal(paxOf(p).site?.left, true);
+});
+
 test('revokeSiteGrant: takes away the grant the installer made, once the user says so, and only that one', async (t) => {
   const p = paxCtx(t, { pax: { site: { ...GRANTED } } });
   p.sites.addPerm(APP_ID, ['write'], 'perm-1');
