@@ -149,6 +149,7 @@ async function adoptPublished(ctx) {
   if (!model) return false;
   const report = byName(fresh(await api.fabric.listItems(ws, 'Report')), sm.name);
   sm.id = model.id;
+  delete sm.refreshTimes;
   sm.adopted = true;
   // Desktop's sign-in stays in Desktop. Power BI needs one of its own.
   sm.bound = false;
@@ -237,6 +238,8 @@ export async function deployPaxModel(ctx) {
     return { deployed: false, reportOk: true };
   }
   if (keepSignIn && sm.id === before) sm.bound = true;
+  // A model made again, after the old one was deleted, has none of its refresh schedule.
+  if (sm.id !== before) delete sm.refreshTimes;
   delete sm.desktop;
   ctx.save();
   try {
@@ -454,8 +457,13 @@ export function refreshTimes(runAt) {
   return [...new Set(times)].sort();
 }
 
+/** @param {unknown} time  H:mm or HH:mm. */
+const hhmm = (time) => String(time).replace(/^(\d):/, '0$1:');
+
 /**
- * Has Power BI refresh the model each day after the task's run, unless it already does at those times.
+ * Has Power BI refresh the model each day after the task's run, unless its live schedule is
+ * already on at those times in the PC's time zone. Power BI turns a schedule off by itself, after
+ * four failed refreshes in a row or two months with nobody opening the report, so this reads it.
  * @param {Ctx} ctx
  * @returns {Promise<boolean>}
  */
@@ -466,8 +474,25 @@ export async function ensureRefreshSchedule(ctx) {
   const runAt = config.pax?.runAt ?? DEFAULT_RUN_AT;
   const times = refreshTimes(runAt);
   if (!sm.id) return false;
-  if (sm.refreshTimes?.join(',') === times.join(',')) return true;
   const zone = config.pax?.timeZone ?? 'UTC';
+  /** @type {any} */
+  let live = null;
+  try {
+    live = await api.powerBi.refreshSchedule(ws, sm.id);
+  } catch {
+    // Setting it says what's wrong, if anything is.
+  }
+  const liveTimes = (Array.isArray(live?.times) ? live.times.map(hhmm) : []).sort().join(',');
+  if (live?.enabled === true && liveTimes === times.join(',') && live.localTimeZoneId === zone) {
+    if (sm.refreshTimes?.join(',') !== times.join(',')) {
+      sm.refreshTimes = times;
+      ctx.save();
+    }
+    return true;
+  }
+  if (live?.enabled === false && sm.refreshTimes) {
+    ui.warn(`Power BI had turned off the daily refresh of ${sm.name}. It does that after four refreshes in a row fail, or when nobody opens the report for two months. Turning it back on.`);
+  }
   try {
     await api.powerBi.setRefreshSchedule(ws, sm.id, { enabled: true, days: WEEK, times, localTimeZoneId: zone, notifyOption: 'MailOnFailure' });
   } catch (err) {

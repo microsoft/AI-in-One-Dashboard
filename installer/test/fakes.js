@@ -719,7 +719,10 @@ export function fakePowerBi() {
       Object.assign(refreshSchedule, structuredClone(schedule));
       return null;
     },
-    refreshSchedule: async () => structuredClone(refreshSchedule),
+    refreshSchedule: async () => {
+      fail('refreshSchedule');
+      return structuredClone(refreshSchedule);
+    },
     refreshes: async () => {
       fail('refreshes');
       const latest = history[0];

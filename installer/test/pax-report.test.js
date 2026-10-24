@@ -419,6 +419,21 @@ test('deployPaxModel: a re-run with nothing changed leaves the model, its sign-i
   assert.ok(s.text().includes(`${OK} The AI in One report is in place`), s.text());
 });
 
+test('deployPaxModel: keeps the refresh times of a model left in place, and forgets them when the model is made again', async () => {
+  const s = setup();
+  await deployPaxModel(s.ctx);
+  const sm = s.config.semanticModel;
+  const first = sm.id;
+  sm.refreshTimes = ['06:00', '12:00'];
+  await deployPaxModel(s.ctx);
+  assert.equal(sm.id, first);
+  assert.deepEqual(sm.refreshTimes, ['06:00', '12:00']);
+  s.fabric.items.splice(s.fabric.items.findIndex((i) => i.id === first), 1);
+  await deployPaxModel(s.ctx);
+  assert.notEqual(sm.id, first);
+  assert.equal(sm.refreshTimes, undefined, "the new model has none of the old one's refresh schedule");
+});
+
 test('deployPaxModel: a new folder updates the model, which then needs signing in to the new files', async () => {
   const s = setup();
   await deployPaxModel(s.ctx);
@@ -541,11 +556,13 @@ test('connectModel: a Desktop model that was deleted is forgotten, and the steps
 test('deployPaxModel: takes on the model and report once they are published from Power BI Desktop', async () => {
   const s = setup();
   s.config.semanticModel.desktop = true;
+  s.config.semanticModel.refreshTimes = ['06:00', '12:00'];
   const model = s.fabric.add('SemanticModel', 'ai in one', null);
   const report = s.fabric.add('Report', 'AI IN ONE', null);
   assert.deepEqual(await deployPaxModel(s.ctx), { deployed: true, reportOk: true });
   const sm = s.config.semanticModel;
   assert.equal(sm.id, model.id);
+  assert.equal(sm.refreshTimes, undefined, 'a model it takes on has no schedule from the installer yet');
   assert.equal(sm.bound, false, "Desktop's sign-in stays in Desktop");
   assert.deepEqual(sm.report, { id: report.id, name: 'AI IN ONE', modelId: model.id, adopted: true });
   assert.equal(sm.adopted, true, 'uninstall asks about it on its own');
@@ -728,6 +745,47 @@ test('ensureRefreshSchedule: when Power BI won\'t take the schedule, says how to
   assert.equal(s.config.semanticModel.refreshTimes, undefined);
   assert.ok(s.text().includes("! Couldn't have Power BI refresh AI in One each day: Forbidden"), s.text());
   assert.ok(s.text().includes(`Open ${modelSettingsUrl('ws-1', 'm1')}, expand "Refresh", turn on "Configure a refresh schedule" and add 06:00 and 12:00 (UTC).`), s.text());
+});
+
+test('ensureRefreshSchedule: reads the live schedule, and turns it back on when Power BI turned it off', async () => {
+  const s = setup({ config: spConfig({ timeZone: 'GMT Standard Time' }) });
+  deployed(s);
+  const sm = s.config.semanticModel;
+  assert.equal(await ensureRefreshSchedule(s.ctx), true);
+  const off = "Power BI had turned off the daily refresh of AI in One. It does that after four refreshes in a row fail, or when nobody opens the report for two months. Turning it back on.";
+
+  s.powerBi.calls.length = 0;
+  s.powerBi.refreshSchedule.enabled = false;
+  assert.equal(await ensureRefreshSchedule(s.ctx), true);
+  assert.deepEqual(s.powerBi.calls, ['setRefreshSchedule m1 06:00,12:00'], 'the recorded times match, but the schedule is off');
+  assert.equal(s.powerBi.refreshSchedule.enabled, true);
+  assert.equal(s.text().split(off).length, 2, s.text());
+
+  s.powerBi.calls.length = 0;
+  s.powerBi.refreshSchedule.localTimeZoneId = 'UTC';
+  assert.equal(await ensureRefreshSchedule(s.ctx), true);
+  assert.deepEqual(s.powerBi.calls, ['setRefreshSchedule m1 06:00,12:00'], 'another time zone is put back');
+  assert.equal(s.powerBi.refreshSchedule.localTimeZoneId, 'GMT Standard Time');
+
+  s.powerBi.calls.length = 0;
+  s.powerBi.refreshSchedule.times = ['6:00', '12:00', '18:00'];
+  assert.equal(await ensureRefreshSchedule(s.ctx), true);
+  assert.deepEqual(s.powerBi.calls, ['setRefreshSchedule m1 06:00,12:00'], 'other times are put back');
+
+  s.powerBi.calls.length = 0;
+  s.powerBi.refreshSchedule.times = ['12:00', '6:00'];
+  delete sm.refreshTimes;
+  const saves = s.saves();
+  assert.equal(await ensureRefreshSchedule(s.ctx), true);
+  assert.deepEqual(s.powerBi.calls, [], 'a live schedule that is on at the times, in the time zone, is left alone');
+  assert.deepEqual(sm.refreshTimes, ['06:00', '12:00'], 'and recorded');
+  assert.equal(s.saves(), saves + 1);
+  assert.equal(s.text().split(off).length, 2, 'said once');
+
+  s.powerBi.failures.refreshSchedule = [httpError(500, 'Server error')];
+  s.powerBi.refreshSchedule.enabled = false;
+  assert.equal(await ensureRefreshSchedule(s.ctx), true);
+  assert.deepEqual(s.powerBi.calls, ['setRefreshSchedule m1 06:00,12:00'], "when it can't read the schedule, it sets it");
 });
 
 test('ensureRefreshSchedule: nothing to schedule until the model is deployed', async () => {
