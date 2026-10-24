@@ -455,8 +455,16 @@ export async function revokeSiteGrant(ctx) {
     return;
   }
   try {
-    await siteAdminApi(ctx).revoke(site.id, site.grantId);
-    ui.ok(`Took away the app's access to ${siteLabel(site)}`);
+    const sites = siteAdminApi(ctx);
+    const appId = ctx.config.app?.appId;
+    if (!appId || !appGrant([await sites.permission(site.id, site.grantId)], appId)) {
+      ui.warn(
+        `The permission the install record names on ${siteLabel(site)} (${site.grantId}) isn't the app's, so the installer left it alone and took it off the record. An admin can check the site's permissions.`,
+      );
+    } else {
+      await sites.revoke(site.id, site.grantId);
+      ui.ok(`Took away the app's access to ${siteLabel(site)}`);
+    }
   } catch (err) {
     if (!(err instanceof HttpError && err.status === 404)) {
       ui.warn(`Couldn't take away the app's access to ${siteLabel(site)} (${firstLine(err)}). An admin can, with:`);

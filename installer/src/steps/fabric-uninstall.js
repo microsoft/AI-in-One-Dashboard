@@ -179,8 +179,8 @@ async function deleteModelConnection(ctx) {
 }
 
 /**
- * Offers to delete the app registration, only when the installer created it. No by default, so
- * --yes keeps it.
+ * Offers to delete the app registration, only when the installer created it and the app with the
+ * recorded app ID is still the object it recorded. No by default, so --yes keeps it.
  * @param {Ctx} ctx
  * @returns {Promise<boolean>}  Whether it's gone.
  */
@@ -188,7 +188,29 @@ export async function deleteAppRegistration(ctx) {
   const { ui, config, api } = ctx;
   const app = config.app;
   if (!app.objectId || app.existing || app.adminPack) return false;
-  const name = app.displayName ?? app.appId ?? app.objectId;
+  let name = app.displayName ?? app.appId ?? app.objectId;
+  const keep = `Delete it in the Microsoft Entra admin center, under App registrations, if nothing else uses it.`;
+  if (!app.appId) {
+    ui.note(`The install record doesn't give the app ID of the app registration "${name}", so the installer can't check it's the one it made. It stays. ${keep}`);
+    return false;
+  }
+  /** @type {{ id: string, displayName?: string } | null} */
+  let live;
+  try {
+    live = await api.graph.findApplication(app.appId);
+  } catch (err) {
+    ui.warn(`Couldn't look up the app registration "${name}": ${reason(err)}. It stays. ${keep}`);
+    return false;
+  }
+  if (!live) {
+    ui.ok(`The app registration "${name}" was already gone`);
+    return true;
+  }
+  if (live.id !== app.objectId) {
+    ui.warn(`The app registration with app ID ${app.appId} isn't the one the installer made (its object ID doesn't match the install record), so it stays.`);
+    return false;
+  }
+  name = live.displayName ?? name;
   const sure = await ui.confirm(
     `Delete the app registration "${name}" too? Only do this if nothing else uses it. Entra keeps it under Deleted applications for 30 days.`,
     false,

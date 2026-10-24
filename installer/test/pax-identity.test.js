@@ -411,7 +411,7 @@ function fakeSites() {
       call('permission', [siteId, id]);
       const p = listOf(siteId).find((x) => x.id === id);
       if (!p) throw httpError(404, 'Item not found');
-      return { id: p.id, roles: [...p.roles] };
+      return { id: p.id, roles: [...p.roles], grantedToIdentitiesV2: [{ application: { id: p.appId, displayName: 'An app' } }] };
     },
     async grant(siteId, app, roles) {
       call('grant', [siteId, app, roles]);
@@ -1964,6 +1964,29 @@ test('revokeSiteGrant: a grant that is gone already is taken off the record', as
   assert.equal(paxOf(p).site?.grantId, undefined);
   assert.equal(paxOf(p).site?.grantedByInstaller, undefined);
   assert.equal(p.saves(), 1);
+});
+
+test("revokeSiteGrant: a recorded permission that isn't the app's stays, and comes off the record", async (t) => {
+  const p = paxCtx(t, { pax: { site: { ...GRANTED } } });
+  const other = p.sites.addPerm(OTHER_APP_ID, ['write'], 'perm-1');
+  await revokeSiteGrant(p.ctx);
+  assert.deepEqual(p.ui.asked, [TAKE_AWAY]);
+  assert.deepEqual(callArgs(p.sites, 'permission'), [[SITE_ID, 'perm-1']], 'it reads the permission before anything else');
+  assert.deepEqual(callArgs(p.sites, 'revoke'), []);
+  assert.deepEqual(p.sites.perms[SITE_ID], [other], "the other app's access stays");
+  const out = plain(p.ui);
+  has(out, `  ! The permission the install record names on ${SITE_URL} (perm-1) isn't the app's, so the installer left it alone and took it off the record. An admin can check the site's permissions.\n`);
+  assert.doesNotMatch(out, /Invoke-MgGraphRequest -Method DELETE/, 'no command to delete a permission that is not the app\'s');
+  assert.equal(paxOf(p).site?.grantId, undefined);
+  assert.equal(paxOf(p).site?.grantedByInstaller, undefined);
+  assert.equal(p.saves(), 1);
+
+  const noAppId = paxCtx(t, { pax: { site: { ...GRANTED } } });
+  noAppId.sites.addPerm(APP_ID, ['write'], 'perm-1');
+  delete noAppId.config.app.appId;
+  await revokeSiteGrant(noAppId.ctx);
+  assert.deepEqual(callArgs(noAppId.sites, 'revoke'), [], 'without an app ID on record, nothing can be matched, so nothing is taken away');
+  has(plain(noAppId.ui), `isn't the app's, so the installer left it alone`);
 });
 
 /** @type {[string, Error, string][]} */

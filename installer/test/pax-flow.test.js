@@ -100,6 +100,8 @@ function paxCtx(t, o = {}) {
     deleteApplication: async (id) => {
       calls.deletedApps.push(id);
     },
+    /** @param {string} appId */
+    findApplication: async (appId) => (o.applications ?? [{ id: 'object-1', appId: APP_ID, displayName: PAX_APP_NAME }]).find((/** @type {any} */ a) => a.appId === appId) ?? null,
     resolvePrincipal: async () => null,
   };
   const fabric = {
@@ -158,6 +160,8 @@ function paxCtx(t, o = {}) {
     runPwsh,
     env,
     sites: {
+      /** @param {string} id @param {string} grantId */
+      permission: async (id, grantId) => ({ id: grantId, roles: ['write'], grantedToIdentitiesV2: [{ application: { id: o.grantAppId ?? APP_ID } }] }),
       /** @param {string} id @param {string} grantId */
       revoke: async (id, grantId) => {
         calls.revoked.push([id, grantId]);
@@ -902,6 +906,24 @@ test('uninstall: saying yes takes away the site grant and deletes the app regist
   assert.ok(text.includes('Deleted workspace "Contoso PAX"'), text);
   assert.doesNotMatch(text, /stays\. To set this up again/);
   assert.ok(text.includes(`Left alone: the files in ${FOLDER_LABEL}.`), text);
+});
+
+test("uninstall: a recorded grant or app object that isn't the app's stays, and isn't asked about again", async (t) => {
+  const { ctx, config, calls, out, fake } = paxCtx(t, {
+    answers: [true, true],
+    pax: { ...REGISTERED, site: { ...GRANTED_SITE }, certificateKeyId: 'key-1', certificateThumbprint: THUMB },
+    config: { app: { ...emptyConfig().app, ...PAX_APP } },
+    grantAppId: '00000000-0000-0000-0000-000000000009',
+    applications: [{ id: 'object-9', appId: APP_ID, displayName: PAX_APP_NAME }],
+  });
+  assert.equal(await runPaxCommand(ctx, 'uninstall', { wait: false }), true);
+  assert.deepEqual(fake.asked, ['Uninstall AI in One?', REVOKE_PROMPT], 'the app registration is not offered');
+  assert.deepEqual(calls.revoked, []);
+  assert.equal(config.pax.site.grantId, undefined);
+  assert.deepEqual(calls.deletedApps, []);
+  const text = out();
+  assert.ok(text.includes(`The permission the install record names on ${SITE_ADDRESS} (grant-1) isn't the app's, so the installer left it alone`), text);
+  assert.ok(text.includes(`The app registration with app ID ${APP_ID} isn't the one the installer made`), text);
 });
 
 test('uninstall: a grant the installer did not give, and an app it did not make, are not asked about', async (t) => {
