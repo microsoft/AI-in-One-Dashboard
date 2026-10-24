@@ -378,6 +378,16 @@ rights to manage the site, and gives write access to this one site. **An admin**
 Microsoft Graph PowerShell commands to send a SharePoint admin. Signed in with
 `--use-az`, it always shows the commands. Then it checks the app can write to the folder.
 
+**A link to the folder** works in place of the site's address: the browser's address for the
+folder, or its **Copy link** link. If the library's or folder's name has a character the report
+can't read, such as `#` or `%`, the installer asks you to type them instead.
+
+**Changing the setup.** Run **Repair or change** again to change these settings. If you turn the
+Agent 365 file off, or move the files to this PC, the installer takes away what an app
+registration it created no longer needs: those Graph permissions, and its access to the site.
+Where you can't take them away yourself, it shows what an admin needs to do. For an app
+registration you brought, it says which permissions you can remove.
+
 ### What it sets up with PAX
 
 | What | Name |
@@ -394,18 +404,32 @@ Microsoft Graph PowerShell commands to send a SharePoint admin. Signed in with
 
 ### How the task runs
 
-- **The first (seed) run** loads the history you chose. It can take from under an hour to several
-  hours in a large tenant.
+- **The first (seed) run** loads the history you chose, 30 days at a time, oldest first, and saves
+  its progress after each window. It can take from under an hour to several hours in a large
+  tenant. A run that stops part way, at the task's 4-hour limit or when you sign out, loses only
+  the window it was loading: the next run carries on from the last window that finished, with a
+  smaller window. A run starts no new window that might not finish in time. **Check status**
+  (`status`) and **Check the files** (`check`) say when the last run stopped before it finished,
+  and how far the history got. If runs keep stopping on the same day, they name the day and where
+  PAX's logs are.
 - **Each daily run** loads the last 7 days and merges them into the files, with PAX's
   `-AppendFile`, `-AppendUserInfo` and `-AppendAgent365Info`. PAX matches each message, so the
   days that overlap earlier runs aren't counted twice, and audit records that arrived late are
   added.
+- **Days with no Copilot interactions aren't an error.** The first load moves on from an empty
+  window, and a daily run with no new interactions leaves the files as they were. If the whole
+  history has none, say in a tenant that has only just licensed Copilot, the first load finishes
+  with a warning, the daily runs carry on, and the first run that finds interactions writes the
+  files. Until then, **Check the files** (`check`) says there's no data yet.
 - **Then it uploads the files** to the SharePoint folder as the app registration. On a new PC, or
   if the files on this PC have gone, it first downloads the ones in SharePoint, so no history is
-  lost.
+  lost. Each download is checked against the file's size in SharePoint before it's used. On a new
+  PC, a first load leaves the files in the folder as they are until the whole history has loaded,
+  then replaces them.
 - **If PAX says the data is incomplete** (exit code 10), it runs once more with
-  `-AutoCompleteness`. If a run fails, nothing is uploaded and the files in the folder stay as
-  they were.
+  `-AutoCompleteness`; in the first load, only for the window it was loading. A run also fails
+  when PAX's rollup does, which PAX logs but doesn't put in its exit code. If a run fails, nothing
+  is uploaded and the files in the folder stay as they were.
 - **Its logs** are in `%LOCALAPPDATA%\AIInOne\pax-run\logs`: a log and PAX's metrics for each
   run, and PAX's own logs in `logs\pax`. **Check status** (`status`) shows the last run.
 - **PAX is pinned.** The task checks PAX's SHA-256 before each run, and never updates it. A new
@@ -431,7 +455,8 @@ out.
 With a SharePoint folder, the installer publishes the `AI in One` semantic model and report from
 the PBI-SharePoint Power BI template, with its parameters set to the files' addresses. If the
 workspace doesn't take the model from the installer, it shows the steps to publish it from Power BI
-Desktop instead, with the values to enter.
+Desktop instead, with the values to enter and a name that no model or report in the workspace has
+yet. It never takes over a model or report that was there before.
 
 The model reads the files with a person's sign-in, which Power BI takes only on the model's
 settings page. So the installer asks you to sign it in once: open the link it gives you, expand
@@ -439,6 +464,11 @@ settings page. So the installer asks you to sign it in once: open the link it gi
 **Organizational**, then **Sign in** as someone who can open the files, usually you. Power BI then
 refreshes the model each day, 4 and 10 hours after the task's time. **Run PAX now** (`run`)
 refreshes it as soon as the task finishes.
+
+Power BI turns that schedule off after four failed refreshes in a row, or when nobody opens the
+report for two months. **Check the files** (`check`), **Refresh** (`refresh`) and **Update**
+(`update`) read the schedule, turn it back on and say so. If someone has deleted the model, they
+publish it again, or show the Power BI Desktop steps again.
 
 With a folder on this PC, nothing is published. Open the Rollup Edition Power BI template
 (`AIO Dashboard - Rollup Edition`) in Power BI Desktop, and enter the files' paths, which the
@@ -474,9 +504,9 @@ environment or the one `--environment-id` names, and shares it with the viewer g
 | Command | With PAX |
 |---|---|
 | `run` (**Run PAX now**) | Starts the task now, waits for PAX to finish, then refreshes the model. `--no-wait` doesn't wait. `--backfill-days <n>` reloads n days of history, 1 to 180; fewer days than the files have now removes the older rows, so it asks first, and with `--yes` it doesn't start |
-| `check` (**Check the files**) | Checks the app registration can still write to the folder, looks for each file and when it last changed, then refreshes the model and tests it with a small query |
+| `check` (**Check the files**) | Checks the app registration can still write to the folder, looks for each file and when it last changed, then refreshes the model and tests it with a small query. Before the task has found any Copilot interactions, it says there's no data yet |
 | `refresh` (**Refresh**) | Refreshes the model now. If it isn't signed in to SharePoint yet, it shows you how first |
-| `status` (**Check status**) | The task and its last run, when its sign-in expires, and where the files, the model and the app are |
+| `status` (**Check status**) | The task and its last run, when its sign-in expires, and where the files, the model and the app are. If the last run stopped before it finished, it says so and what to do |
 | `update` (**Update**) | Brings PAX, the task's script, the model, the report and the app up to this version of the installer |
 | `rotate-secret` (**Renew the task's sign-in**) | A new certificate, or client secret, for the task. The old one comes off the app registration once the task has signed in with the new one. **Check status** warns when there are less than 30 days left |
 | `access` (**Manage access**) | As on Fabric, then shares the AI in One app with the viewer group, if it isn't yet |
@@ -488,12 +518,16 @@ environment or the one `--environment-id` names, and shares it with the viewer g
 ### Uninstall with PAX
 
 **Uninstall** (`uninstall`) removes the scheduled task, the AI in One app, the app registration's
-access to the site, and the task's certificate or secret. It asks before it deletes an app
-registration it created, and before it deletes the workspace (if it created it) or its own items in
-a workspace you had. Then it deletes PAX and the task's working files from `%LOCALAPPDATA%\AIInOne`.
-If the installer didn't give the site access itself, it shows the commands for an admin to take it
-away. It leaves alone, and lists: an app registration it didn't create, the viewer group and the
-files in the folder.
+access to the site, and the task's certificate or secret. It also finds an AI in One app that a
+setup made but stopped before it recorded. It asks before it deletes an app registration it
+created, and before it deletes the workspace (if it created it) or its own items in a workspace you
+had. A model or report that you published from Power BI Desktop, and that the installer then took
+on, gets its own question, which defaults to No; with `--yes` it keeps them. Before it deletes the
+site access or the app registration, it checks they're still the ones it recorded. Then it deletes
+PAX and the task's working files from `%LOCALAPPDATA%\AIInOne`. If the installer raised an admin's
+read access to the site to write, it puts it back. If the installer didn't give the site access
+itself, it shows the commands for an admin to take it away. It leaves alone, and lists: an app
+registration it didn't create, the viewer group and the files in the folder.
 
 ## Remove the installer
 
