@@ -158,12 +158,14 @@ export async function removeTheApp(ctx, deps = {}) {
     delete config.managedApp;
     ctx.save();
   };
-  if (!record?.appId) {
+  // An interrupted "ms app init" has made the app, but only the folder's ms.config.json names it.
+  const made = record?.appId ? { appId: record.appId, environmentId: record.environmentId } : readAppConfig(appDir);
+  if (!made?.appId) {
     forget();
     return { ok: true, removed: false };
   }
   const leave = (/** @type {string} */ why) => {
-    ui.warn(`The AI in One app (${record.appId}) is still there: ${why} Delete it at ${LINKS.portal}.`);
+    ui.warn(`The AI in One app (${made.appId}) is still there: ${why} Delete it at ${LINKS.portal}.`);
     return { ok: false, removed: false };
   };
   const blocked = whyNot({ distDir: undefined, cliDir, nodeVersion: deps.nodeVersion ?? process.version, needBuild: false });
@@ -172,7 +174,7 @@ export async function removeTheApp(ctx, deps = {}) {
   const run = deps.run ?? createCli({ cliDir }).run;
   const signedIn = await signIn(ctx, run);
   if (!signedIn.ok) return leave('skipped' in signedIn ? signedIn.skipped.why : signedIn.problem.what);
-  const gone = await deleteApp(run, { appId: record.appId, environmentId: record.environmentId, cwd: existsSync(appDir) ? appDir : undefined });
+  const gone = await deleteApp(run, { appId: made.appId, environmentId: made.environmentId, cwd: existsSync(appDir) ? appDir : undefined });
   if (!gone.ok) return leave(gone.problem.message ?? gone.problem.what);
   ui.ok(gone.existed ? `Deleted the AI in One app` : 'The AI in One app was already gone');
   forget();

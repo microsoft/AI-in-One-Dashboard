@@ -1788,6 +1788,32 @@ test('removeTheApp: with no app recorded it removes the folder and the record, r
   assert.equal(s.out(), '');
 });
 
+test('removeTheApp: after an interrupted init, it deletes the app that the folder on this PC names', async (t) => {
+  for (const record of [undefined, /** @type {ManagedAppConfig} */ ({ missing: [] })]) {
+    const s = appSetup(t);
+    await deployTheApp(s.ctx, s.deps);
+    s.config.managedApp = record;
+    const before = s.ms.calls.length;
+    const mark = s.out().length;
+    assert.deepEqual(await removeTheApp(s.ctx, s.deps), { ok: true, removed: true });
+    assert.deepEqual(s.ms.commands().slice(before), ['auth status', 'app delete']);
+    assert.deepEqual(s.ms.calls[before + 1].args, ['app', 'delete', '--force', '--app', appId(1), '--environment-id', DEV_ENV]);
+    assert.equal(s.ms.apps.size, 0);
+    assert.equal(existsSync(s.appDir), false);
+    assert.equal(s.config.managedApp, undefined);
+    assert.equal(s.out().slice(mark), outLines('  ✓ Deleted the AI in One app'));
+  }
+
+  const stuck = appSetup(t, { nodeVersion: `v${OLD_NODE}` });
+  put(join(stuck.appDir, APP_CONFIG), JSON.stringify({ appId: appId(1), environmentId: DEV_ENV }));
+  delete stuck.config.managedApp;
+  assert.deepEqual(await removeTheApp(stuck.ctx, stuck.deps), { ok: false, removed: false });
+  assert.deepEqual(stuck.ms.calls, []);
+  assert.equal(existsSync(join(stuck.appDir, APP_CONFIG)), true, 'the file that names the app stays');
+  const why = `The managed apps CLI needs Node.js ${MIN_NODE} or later, and this is ${OLD_NODE}.`;
+  assert.equal(stuck.out(), outLines(`  ! The AI in One app (${appId(1)}) is still there: ${why} Delete it at ${LINKS.portal}.`));
+});
+
 test("removeTheApp: an app it can't delete from here stays in the record, with where to delete it", async (t) => {
   const recorded = () => /** @type {ManagedAppConfig} */ ({ appId: appId(1), environmentId: DEV_ENV, url: playUri(appId(1)) });
   /** @param {string} why */
