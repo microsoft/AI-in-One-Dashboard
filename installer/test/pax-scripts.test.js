@@ -703,7 +703,7 @@ test('checkAccess: the script it runs is the written wrapper, which checks acces
     assert.equal(shape.requires, '7.0');
     const top = shape.commands.filter((c) => !c.fn);
     const check = top.find((c) => c.name === 'Test-SiteAccess');
-    const pax = top.find((c) => c.name === 'Invoke-Pax');
+    const pax = firstPaxRun(shape);
     assert.ok(check && pax);
     assert.deepEqual(check.guards, ['$CheckAccess']);
     assert.ok(check.offset < pax.offset);
@@ -786,7 +786,7 @@ test('wrapperSettings: writes every setting the script needs, in order, from the
     SecretFile: N.secretPath(WIN_ENV), SecretExpires: '', PaxScript: config.pax.script, PaxSha256: PAX.sha256.toUpperCase(), PaxVersion: PAX.version,
     PythonDir: 'C:\\Python313', InstallerVersion: '9.9.9', StateDir: N.runDir(WIN_ENV), Destination: 'sharepoint',
     SiteHost: 'contoso.sharepoint.com', SitePath: '/sites/AIinOne', Library: 'Documents', DriveId: DRIVE, Folder: N.SP_FOLDER,
-    LocalFolder: '', SeedDays: emptyConfig().history.days, WindowDays: N.WINDOW_DAYS, Agent365: false,
+    LocalFolder: '', SeedDays: emptyConfig().history.days, WindowDays: N.WINDOW_DAYS, SeedWindowDays: N.SEED_WINDOW_DAYS, Agent365: false,
   };
   const s = wrapperSettings(config, { env: WIN_ENV, version: '9.9.9' });
   assert.deepEqual(s, expected);
@@ -859,6 +859,11 @@ function wrapperShape(t) {
   return parseEach(t, [RENDERED], true)[0]?.shapes[0];
 }
 
+/** The first command in the script's main flow that runs PAX: loading the history, or the daily window. @param {Shape} shape */
+function firstPaxRun(shape) {
+  return shape.commands.find((c) => c.fn === '' && (c.name === 'Invoke-Seed' || c.name === 'Invoke-Window'));
+}
+
 /** The lines of the template's function with this name, as LF text. @param {string} name */
 function templateFunction(name) {
   const m = new RegExp(`\\nfunction ${name}\\b[^\\n]*\\{\\n([\\s\\S]*?)\\n\\}\\n`).exec(TPL);
@@ -866,7 +871,7 @@ function templateFunction(name) {
   return m[1];
 }
 
-test('wrapper template: runs PAX as the app with -Rollup and -SkipVersionCheck, keeping its metrics and log, over the seed days or the daily window', () => {
+test('wrapper template: runs PAX as the app with -Rollup and -SkipVersionCheck, keeping its metrics and log, a window of days at a time', () => {
   const block = /\n {4}\$paxArgs = @\{\n([\s\S]*?)\n {4}\}\n/.exec(TPL);
   assert.ok(block, 'the PAX arguments');
   const args = Object.fromEntries(block[1].split('\n').map((line) => {
@@ -878,8 +883,8 @@ test('wrapper template: runs PAX as the app with -Rollup and -SkipVersionCheck, 
     Auth: "'AppRegistration'",
     TenantId: '$Settings.TenantId',
     ClientId: '$Settings.ClientId',
-    StartDate: "$today.AddDays(-$days).ToString('yyyy-MM-dd')",
-    EndDate: "$today.ToString('yyyy-MM-dd')",
+    StartDate: '(Format-Day $Start)',
+    EndDate: '(Format-Day $End)',
     Rollup: '$true',
     SkipVersionCheck: '$true',
     EmitMetricsJson: '$true',
@@ -889,8 +894,11 @@ test('wrapper template: runs PAX as the app with -Rollup and -SkipVersionCheck, 
   const added = [...new Set([...TPL.matchAll(/\$paxArgs\.(\w+) = /g)].map((m) => m[1]))].sort();
   assert.deepEqual(added, ['AppendAgent365Info', 'AppendFile', 'AppendUserInfo', 'AutoCompleteness', 'ClientCertificateStoreLocation', 'ClientCertificateThumbprint', 'ClientSecret', 'IncludeAgent365Info', 'IncludeUserInfo', 'OutputPath', 'OutputPathAgent365Info', 'OutputPathUserInfo']);
   for (const line of [
-    "$days = if ($Mode -eq 'seed') { [int]$Settings.SeedDays } else { [int]$Settings.WindowDays }",
-    '$today = (Get-Date).ToUniversalTime().Date',
+    '$Today = $RunStarted.ToUniversalTime().Date',
+    '$start = $Today.AddDays(-[int]$Settings.WindowDays)',
+    '$from = $Today.AddDays(-[int]$Settings.SeedDays)',
+    "$progress = [ordered]@{ from = $from; next = $from; window = [int]$Settings.SeedWindowDays; loading = $false; done = $false; found = $false; rows = $null }",
+    "$Day.ToString('yyyy-MM-dd', [Globalization.CultureInfo]::InvariantCulture)",
     "$metrics = Join-Path $LogDir ('pax-metrics-{0}-{1}.json' -f $Stamp, $Result.attempts)",
     'if ($AutoCompleteness) { $paxArgs.AutoCompleteness = $true }',
     '$paxArgs.ClientSecret = Get-ClientSecretText',
@@ -905,48 +913,71 @@ test('wrapper template: runs PAX as the app with -Rollup and -SkipVersionCheck, 
   assert.match(TPL, /\n {4}metrics {5}= \$null\n/);
 });
 
-test('wrapper template: a daily run appends to a copy of the local Interactions file, and exit code 10 runs PAX once more with -AutoCompleteness', (t) => {
+test('wrapper template: each window appends to copies of the files PAX loaded so far, and exit code 10 runs PAX once more with -AutoCompleteness', (t) => {
   for (const line of [
     "$interactions = Join-Path $DataDir 'AIO_Interactions.csv'",
-    "$mode = if ($seedRequested -or -not (Test-Path -LiteralPath $interactions)) { 'seed' } else { 'daily' }",
+    "$mode = if ($seedRequested -or -not ((Test-Path -LiteralPath $interactions) -or (Test-Path -LiteralPath $NoDataFile))) { 'seed' } else { 'daily' }",
     '$seedRequested = $Seed -or (Test-Path -LiteralPath $SeedRequest)',
-    "if ($mode -eq 'seed') { Remove-Item -LiteralPath $SeedRequest -Force -ErrorAction SilentlyContinue }",
     '$copy = Join-Path $WorkDir $s.File',
-    "$append = $Mode -eq 'daily' -and (Test-Path -LiteralPath $copy)",
-    "'Interactions' { if ($append) { $paxArgs.AppendFile = $copy } else { $paxArgs.OutputPath = $WorkDir } }",
+    '$append = Test-Path -LiteralPath $copy',
+    "'Interactions' { if ($append) { $paxArgs.AppendFile = $copy; $appended = $true } else { $paxArgs.OutputPath = $WorkDir } }",
+    '$run = Invoke-Window $DataDir $start $Today',
+    '$run = Invoke-Window $SeedDir $progress.next $end',
   ]) assert.ok(TPL.includes(line), line);
   const init = templateFunction('Initialize-WorkDir');
-  assert.match(init, /if \(\$Mode -ne 'daily'\) \{ return \}/);
-  assert.match(init, /\$stable = Join-Path \$DataDir \$s\.File\n\s+if \(Test-Path -LiteralPath \$stable\) \{ Copy-Item -LiteralPath \$stable -Destination \(Join-Path \$WorkDir \$s\.File\) -Force \}/);
-  assert.equal(TPL.match(/\$code -eq 10\b/g)?.length, 1);
+  assert.match(init, /\$stable = Join-Path \$From \$s\.File\n\s+if \(Test-Path -LiteralPath \$stable\) \{ Copy-Item -LiteralPath \$stable -Destination \(Join-Path \$WorkDir \$s\.File\) -Force \}/);
+  assert.equal(TPL.match(/\$run\.Code -eq 10\b/g)?.length, 1);
+  assert.ok(templateFunction('Complete-Seed').includes('Remove-Item -LiteralPath $SeedRequest -Force -ErrorAction SilentlyContinue'), 'the request goes once the history has loaded');
+  assert.equal(TPL.match(/Remove-Item -LiteralPath \$SeedRequest\b/g)?.length, 1);
   const shape = wrapperShape(t);
   if (!shape) return;
   const pax = shape.commands.filter((c) => c.name === 'Invoke-Pax');
   assert.deepEqual(pax.map((c) => [c.text, c.fn, c.guards, c.loop]), [
-    ['Invoke-Pax $mode', '', [], false],
-    ['Invoke-Pax $mode -AutoCompleteness', '', ['$code -eq 10'], false],
+    ['Invoke-Pax $Start $End', 'Invoke-Window', [], false],
+    ['Invoke-Pax $Start $End -AutoCompleteness', 'Invoke-Window', ['$run.Code -eq 10'], false],
   ]);
-  const fresh = shape.commands.filter((c) => c.name === 'Initialize-WorkDir' && c.fn === '');
-  assert.deepEqual(fresh.map((c) => [c.text, c.guards, c.loop]), [['Initialize-WorkDir $mode', [], false], ['Initialize-WorkDir $mode', ['$code -eq 10'], false]]);
+  const fresh = shape.commands.filter((c) => c.name === 'Initialize-WorkDir');
+  assert.deepEqual(fresh.map((c) => [c.text, c.fn, c.guards, c.loop]), [
+    ['Initialize-WorkDir $Dir', 'Invoke-Window', [], false],
+    ['Initialize-WorkDir $Dir', 'Invoke-Window', ['$run.Code -eq 10'], false],
+  ]);
   assert.ok(fresh[0].offset < pax[0].offset && pax[0].offset < fresh[1].offset && fresh[1].offset < pax[1].offset, 'each PAX run starts from fresh copies');
   const runs = shape.commands.filter((c) => /^&\s*\$Settings\.PaxScript\b/.test(c.text));
   assert.deepEqual(runs.map((c) => [c.fn, c.loop]), [['Invoke-Pax', false]], 'PAX runs in one place');
+  const windows = shape.commands.filter((c) => c.name === 'Invoke-Window');
+  assert.deepEqual(windows.map((c) => [c.text, c.fn, c.guards, c.loop]), [
+    ['Invoke-Window $SeedDir $progress.next $end', 'Invoke-Seed', [], true],
+    ['Invoke-Window $DataDir $start $Today', '', ["-not $mode -eq 'seed'"], false],
+  ]);
+  assert.deepEqual(shape.commands.filter((c) => c.name === 'Invoke-Seed').map((c) => [c.fn, c.guards]), [['', ["$mode -eq 'seed'"]]]);
 });
 
-test('wrapper template: on a new PC it downloads the SharePoint copies before PAX appends to them', (t) => {
+test('wrapper template: on a new PC it downloads the SharePoint copies before PAX appends to them, and keeps a download only when all of it arrived', (t) => {
   assert.ok(TPL.includes('$local = Join-Path $DataDir $s.File'));
   assert.ok(TPL.includes('if (-not (Test-Path -LiteralPath $local) -and (Receive-RemoteFile $s.File $local)) {'));
   const receive = templateFunction('Receive-RemoteFile');
-  assert.ok(receive.includes("Invoke-WebRequest -Uri (Get-DriveItemUri $Name 'content') -Headers (Get-AuthHeader) -OutFile $Target"));
-  assert.ok(receive.includes('if ((Get-HttpStatus $_) -eq 404) { return $false }'), 'no SharePoint copy yet is not an error');
+  for (const line of [
+    "Invoke-RestMethod -Uri (Get-DriveItemUri $Name '') -Headers (Get-AuthHeader)",
+    'if ((Get-HttpStatus $_) -eq 404) { return $false }',
+    '$size = [long]$item.size',
+    'if ($size -le 0) {',
+    "$partial = $Target + '.download'",
+    "Invoke-WebRequest -Uri (Get-DriveItemUri $Name 'content') -Headers (Get-AuthHeader) -OutFile $partial",
+    '$got = (Get-Item -LiteralPath $partial).Length',
+    'if ($got -ne $size) { throw "The download of $Name stopped short: $got of $size bytes arrived." }',
+    'Move-Item -LiteralPath $partial -Destination $Target -Force',
+    'Remove-Item -LiteralPath $partial -Force -ErrorAction SilentlyContinue',
+  ]) assert.ok(receive.includes(line), line);
+  assert.doesNotMatch(receive, /-OutFile \$Target/, 'never straight into the file later runs append to');
+  assert.ok(receive.indexOf('} finally {') > receive.indexOf('Move-Item -LiteralPath $partial'), 'the partial file goes whatever happens');
   assert.ok(TPL.indexOf('Receive-RemoteFile $s.File $local') < TPL.indexOf('$mode = if ($seedRequested'), 'the mode is chosen after the download');
   const shape = wrapperShape(t);
   if (!shape) return;
   const get = shape.commands.filter((c) => c.name === 'Receive-RemoteFile');
   assert.deepEqual(get.map((c) => [c.fn, c.guards, c.loop]), [['', ['-not $seedRequested', SP], true]]);
-  const firstInit = shape.commands.find((c) => c.name === 'Initialize-WorkDir' && c.fn === '');
-  const firstPax = shape.commands.find((c) => c.name === 'Invoke-Pax');
-  assert.ok(firstInit && firstPax && get[0].offset < firstInit.offset && get[0].offset < firstPax.offset);
+  const firstInit = shape.commands.find((c) => c.name === 'Initialize-WorkDir');
+  const firstPax = firstPaxRun(shape);
+  assert.ok(firstInit && firstPax && get[0].offset < firstPax.offset);
 });
 
 test('wrapper template: reaches Graph only by path in the one library, with no search, nothing tenant-wide and no broad permission', (t) => {
@@ -956,7 +987,7 @@ test('wrapper template: reaches Graph only by path in the one library, with no s
   assert.deepEqual(uris, [
     '$children', '$session.uploadUrl', '$siteUri', '$uri',
     "('https://graph.microsoft.com/v1.0/sites/{0}/drives' -f $site.id)",
-    "(Get-DriveItemUri $Name 'content')", "(Get-DriveItemUri $Name 'createUploadSession')", "(Get-DriveItemUri $s.File '')",
+    "(Get-DriveItemUri $Name '')", "(Get-DriveItemUri $Name 'content')", "(Get-DriveItemUri $Name 'createUploadSession')", "(Get-DriveItemUri $s.File '')",
     "(Get-DriveItemUri 'aio-access-check.txt' '')", "(Get-DriveItemUri 'aio-access-check.txt' 'content')",
   ].sort());
   const address = templateFunction('Get-DriveItemUri');
@@ -1025,7 +1056,7 @@ test('wrapper template: loads Agent 365 only when chosen, and a local folder get
   assert.deepEqual(where('Send-RemoteFile'), [['Publish-Files', [SP]]]);
   assert.deepEqual(where('Receive-RemoteFile'), [['', ['-not $seedRequested', SP]]]);
   assert.deepEqual(where('Test-SiteAccess'), [['', ['$CheckAccess']]]);
-  assert.deepEqual(where('Get-GraphToken').filter(([fn]) => fn !== 'Test-SiteAccess'), [['', [SP]], ['', [SP]]]);
+  assert.deepEqual(where('Get-GraphToken').filter(([fn]) => fn !== 'Test-SiteAccess'), [['', [SP]], ['', [SP, '$publishFrom']]]);
   const copies = shape.commands.filter((c) => c.name === 'Copy-Item' && c.fn === 'Publish-Files');
   assert.deepEqual(copies.map((c) => [c.guards, c.text.includes('$Settings.LocalFolder')]), [[[`-not ${SP}`], true]]);
 });
@@ -1041,6 +1072,8 @@ test('wrapper template: checks the PAX hash before it runs PAX, prunes old logs 
   assert.ok(TPL.includes("$LogDir = Join-Path $Settings.StateDir 'logs'"));
   assert.ok(TPL.includes("$LastRunFile = Join-Path $LogDir 'last-run.json'"));
   assert.ok(TPL.includes("$SeedRequest = Join-Path $Settings.StateDir 'seed.request'"));
+  assert.ok(TPL.includes("$SeedDir = Join-Path $Settings.StateDir 'seed'"));
+  assert.ok(TPL.includes("$NoDataFile = Join-Path $Settings.StateDir 'no-interactions.json'"));
   assert.equal(SETTINGS.StateDir, N.runDir(WIN_ENV));
   assert.equal(relative(N.runDir(WIN_ENV), N.dataDir(WIN_ENV)), 'data');
   assert.equal(relative(N.runDir(WIN_ENV), N.lastRunPath(WIN_ENV)), join('logs', 'last-run.json'));
@@ -1048,7 +1081,7 @@ test('wrapper template: checks the PAX hash before it runs PAX, prunes old logs 
   const shape = wrapperShape(t);
   if (!shape) return;
   const hash = shape.commands.filter((c) => c.name === 'Get-FileHash');
-  const firstPax = shape.commands.find((c) => c.name === 'Invoke-Pax');
+  const firstPax = firstPaxRun(shape);
   assert.deepEqual(hash.map((c) => [c.fn, c.guards]), [['', []]]);
   assert.ok(firstPax && hash[0].offset < firstPax.offset);
   assert.ok(shape.commands.filter((c) => c.name === 'Save-Result' && c.fn === '').length >= 3, 'the result is saved as the run starts, picks its mode and ends');
@@ -1659,15 +1692,34 @@ test('startRun: starts the task and records the first run; with seed it leaves t
   assert.equal(c.sched.state.starts, 3);
 });
 
-test("startRun: doesn't start a run that's going already, though a seed request waits for the next; a missing task stops it", async (t) => {
+test("startRun: doesn't start a run that's going already, or change anything for it; a missing task stops it", async (t) => {
   const c = taskCtx(t, { task: (env) => matchingTask(env, { state: 'Running' }) });
+  let prepared = 0;
   assert.deepEqual(await startRun(c.ctx), { started: false, at: c.ctx.now() });
-  assert.deepEqual(await startRun(c.ctx, { seed: true }), { started: false, at: c.ctx.now() });
-  assert.deepEqual(c.said, ['note: A run is going already.', 'note: A run is going already. The next one loads the history again.']);
+  assert.deepEqual(await startRun(c.ctx, { seed: true, prepare: () => prepared++ }), { started: false, at: c.ctx.now() });
+  assert.deepEqual(c.said, ['note: A run is going already.', "note: A run is going already, so the history can't be loaded again until it finishes."]);
   assert.deepEqual(c.sched.ran(), ['info', 'info']);
-  assert.deepEqual(filesUnder(c.tmp), [relative(c.tmp, N.seedRequestPath(c.env))]);
+  // The run that's going keeps its progress loading the history in the request file.
+  assert.deepEqual(filesUnder(c.tmp), [], 'no seed request while a run is going');
+  assert.equal(prepared, 0);
   assert.equal(c.pax.firstRunStartedAt, undefined);
   assert.equal(c.saves(), 0);
+
+  // While a run is loading the history, its progress stays as it is.
+  const progress = `${JSON.stringify({ from: '2026-01-01', next: '2026-03-02', window: 30, loading: true })}\n`;
+  mkdirSync(dirname(N.seedRequestPath(c.env)), { recursive: true });
+  writeFileSync(N.seedRequestPath(c.env), progress, 'utf8');
+  await startRun(c.ctx, { seed: true });
+  assert.equal(readFileSync(N.seedRequestPath(c.env), 'utf8'), progress);
+
+  // Once the task can start, prepare runs before the request is written and the task started.
+  const p = taskCtx(t, { task: (env) => matchingTask(env) });
+  /** @type {string[]} */
+  const order = [];
+  const start = await startRun(p.ctx, { seed: true, prepare: () => order.push(`prepare ${existsSync(N.seedRequestPath(p.env))} ${p.sched.state.starts}`) });
+  assert.equal(start.started, true);
+  assert.deepEqual(order, ['prepare false 0']);
+  assert.equal(p.sched.state.starts, 1);
 
   const m = taskCtx(t);
   await assert.rejects(startRun(m.ctx, { seed: true }), { message: `The scheduled task ${TASK} isn't there. Run install again to repair it.` });

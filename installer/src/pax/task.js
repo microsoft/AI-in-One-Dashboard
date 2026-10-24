@@ -31,10 +31,24 @@ export const POLL_MS = 15_000;
  * @property {string} [paxVersion]
  * @property {string} [destination]
  * @property {string[]} [files]  The files it published.
- * @property {string | null} [metrics]  PAX's metrics JSON.
+ * @property {string | null} [metrics]  PAX's metrics JSON, from its last run.
+ * @property {number | null} [records]  The audit records PAX read, over all its runs.
+ * @property {number | null} [rows]  The rows it made of them.
+ * @property {SeedProgress | null} [seed]  How far loading the history has got.
+ * @property {boolean} [noData]  No Copilot interactions found yet, so there are no files.
  * @property {string} [log]
  * @property {string[]} [warnings]
  * @property {string | null} [message]
+ */
+
+/**
+ * How far loading the history has got. It loads in windows, oldest first.
+ * @typedef {object} SeedProgress
+ * @property {string} from  The first day, yyyy-MM-dd.
+ * @property {string | null} [loaded]  The last day loaded so far.
+ * @property {boolean} [done]
+ * @property {number} [window]  The days each run of PAX loads.
+ * @property {number | null} [rows]
  */
 
 /** @param {Ctx} ctx */
@@ -158,9 +172,11 @@ export async function ensureTask(ctx) {
 
 /**
  * Starts the task now. With seed, the run loads the whole history again: the script finds the
- * request file, and deletes it once that run has worked.
+ * request file, keeps its progress in it while the history loads, and deletes it once it has all
+ * loaded. While a run is going nothing changes, since that run keeps its own progress in the same
+ * file: `prepare`, the caller's changes for the new run, runs only once the task can start.
  * @param {Ctx} ctx
- * @param {{ seed?: boolean }} [o]
+ * @param {{ seed?: boolean, prepare?: () => void }} [o]
  * @returns {Promise<{ started: boolean, at: Date }>}  started: false when a run was going already.
  */
 export async function startRun(ctx, o = {}) {
@@ -168,15 +184,16 @@ export async function startRun(ctx, o = {}) {
   const runPwsh = runPwshOf(ctx);
   const info = await taskInfo(runPwsh);
   if (!info.exists) throw new Error(`The scheduled task "${TASK_NAME}" isn't there. Run install again to repair it.`);
+  const at = ctx.now();
+  if (info.state === 'Running') {
+    ui.note(o.seed ? "A run is going already, so the history can't be loaded again until it finishes." : 'A run is going already.');
+    return { started: false, at };
+  }
+  o.prepare?.();
   if (o.seed) {
     const file = seedRequestPath(ctx.env);
     mkdirSync(dirname(file), { recursive: true });
     writeFileSync(file, `${ctx.now().toISOString()}\n`, 'utf8');
-  }
-  const at = ctx.now();
-  if (info.state === 'Running') {
-    ui.note(`A run is going already.${o.seed ? ' The next one loads the history again.' : ''}`);
-    return { started: false, at };
   }
   await startTask(runPwsh);
   const pax = paxOf(ctx);
@@ -275,26 +292,86 @@ export async function waitForRun(ctx, since, waitMs) {
   }
 }
 
+/** An ISO time, to the minute. @param {string | null | undefined} iso */
+const when = (iso) => (iso ? `${iso.slice(0, 16).replace('T', ' ')} UTC` : 'unknown');
+/** @param {LastRun} run */
+const kindOf = (run) => (run.mode === 'seed' ? 'history (seed) run' : run.mode === 'daily' ? 'daily run' : 'run');
+
+/** What a run that stops while it loads the history leaves for the next one. */
+export const CARRIES_ON = 'The next run carries on loading the history from where it stopped.';
+
+/**
+ * What the task does until the audit log has some Copilot interactions.
+ * @param {string} [model]  The report's model, which check connects to the files once they're there.
+ */
+export const noDataYet = (model) =>
+  `There's no data yet: the task hasn't found any Copilot interactions in the audit log, so it hasn't written the files. They appear after the first run that finds some${
+    model ? `. Then run "${commandLine('check')}" to connect ${model} to them` : ''
+  }.`;
+
+/**
+ * Where loading the history had got to, when it hadn't finished. A run that finished says in its
+ * message what it loaded.
+ * @param {LastRun} run
+ * @returns {string[]}
+ */
+function seedLines(run) {
+  const seed = run.mode === 'seed' ? run.seed : undefined;
+  if (!seed || seed.done) return [];
+  const loaded = seed.loaded ? `the history from ${seed.from} to ${seed.loaded}` : '';
+  if (run.status === 'running') return loaded ? [`So far it has loaded ${loaded}.`] : [];
+  if (run.status === 'failed') return [loaded ? `It had loaded ${loaded}. The next run carries on from there.` : CARRIES_ON];
+  return [`To carry on now, run: ${commandLine('run')}`];
+}
+
 /**
  * How a run went, as lines for the user.
  * @param {LastRun} run
  */
 export function describeRun(run) {
-  const when = (/** @type {string | null | undefined} */ iso) => (iso ? `${iso.slice(0, 16).replace('T', ' ')} UTC` : 'unknown');
-  const kind = run.mode === 'seed' ? 'history (seed) run' : run.mode === 'daily' ? 'daily run' : 'run';
+  const kind = kindOf(run);
   /** @type {string[]} */
   const lines = [];
   if (run.status === 'running') {
-    lines.push(`A ${kind} is going: it started ${when(run.startedAt)}.`);
+    lines.push(`A ${kind} is going: it started ${when(run.startedAt)}.`, ...seedLines(run));
     return lines;
   }
   const how = run.status === 'ok' ? 'worked' : run.status === 'warning' ? 'worked, with warnings' : 'failed';
   lines.push(`The last ${kind} ${how}. It started ${when(run.startedAt)} and finished ${when(run.finishedAt)}.`);
   if (run.message) lines.push(run.message);
-  const m = readMetrics(run);
+  // The script adds up what each run of PAX read. Older scripts left only PAX's metrics file.
+  const m = typeof run.records === 'number' ? { records: run.records, rows: typeof run.rows === 'number' ? run.rows : undefined } : readMetrics(run);
   if (m?.records !== undefined) lines.push(`PAX read ${m.records.toLocaleString('en-GB')} audit records${m.rows !== undefined ? ` into ${m.rows.toLocaleString('en-GB')} rows` : ''}.`);
-  for (const w of run.warnings ?? []) lines.push(`Warning: ${w}`);
+  lines.push(...seedLines(run));
+  // The script's message can be a warning it also logged.
+  for (const w of run.warnings ?? []) if (w !== run.message) lines.push(`Warning: ${w}`);
   if (run.log) lines.push(`Its log: ${run.log}`);
+  return lines;
+}
+
+/**
+ * Whether the last run stopped before it could say how it went: last-run.json still says it's
+ * going, but the task isn't running. That happens at the task's 4-hour limit, when the user signs
+ * out while a task that runs only while they're signed in is going, or when it's ended in Task
+ * Scheduler.
+ * @param {LastRun | undefined} run
+ * @param {TaskInfo} info
+ */
+export const staleRun = (run, info) => run?.status === 'running' && info.exists && info.state !== 'Running' && info.state !== 'Queued';
+
+/**
+ * A run that stopped before it finished, and what to do, as lines for the user.
+ * @param {LastRun} run
+ */
+export function describeStopped(run) {
+  const lines = [
+    `The last ${kindOf(run)} stopped before it finished. It started ${when(run.startedAt)}, and probably reached the task's 4-hour limit, or stopped when you signed out or the PC shut down.`,
+  ];
+  if (run.mode === 'seed') {
+    const seed = run.seed;
+    lines.push(seed?.loaded ? `It had loaded the history from ${seed.from} to ${seed.loaded}. The next run carries on from there.` : CARRIES_ON);
+  } else lines.push('The next run loads those days again.');
+  lines.push(`To run it now: ${commandLine('run')}`);
   return lines;
 }
 

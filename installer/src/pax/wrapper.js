@@ -7,7 +7,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { DEFAULT_RUN_AT, SP_FOLDER, TASK_NAME, WINDOW_DAYS, runDir, secretPath, wrapperPath } from './names.js';
+import { DEFAULT_RUN_AT, SEED_WINDOW_DAYS, SP_FOLDER, TASK_NAME, WINDOW_DAYS, runDir, secretPath, wrapperPath } from './names.js';
 import { psHashtable, scriptText } from './ps.js';
 
 export const TEMPLATE_FILE = fileURLToPath(new URL('../../assets/pax/Run-AIO-PAX.ps1.template', import.meta.url));
@@ -72,6 +72,7 @@ export function wrapperSettings(config, { env = process.env, version = INSTALLER
     LocalFolder: sp ? '' : need(pax.localFolder, 'local folder'),
     SeedDays: config.history.days,
     WindowDays: pax.windowDays ?? WINDOW_DAYS,
+    SeedWindowDays: SEED_WINDOW_DAYS,
     Agent365: !!pax.agent365,
   };
 }

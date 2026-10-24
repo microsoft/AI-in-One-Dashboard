@@ -23,7 +23,7 @@ import {
 } from '../steps/plan.js';
 import { c } from '../ui.js';
 import { AGENT365_PERMISSIONS, OWN_APP, paxPermissions } from './identity.js';
-import { CERT_MONTHS, CERT_SUBJECT, defaultLocalFolder, PAX_APP_NAME, paxFiles, SP_FOLDER, TASK_NAME } from './names.js';
+import { CERT_MONTHS, CERT_SUBJECT, defaultLocalFolder, PAX_APP_NAME, paxFiles, SEED_WINDOW_DAYS, SP_FOLDER, TASK_NAME } from './names.js';
 import { checkPc, pcRows } from './pc.js';
 import { loadRelease } from './release.js';
 import { refreshTimes } from './report.js';
@@ -46,8 +46,11 @@ export const POWER_BI_PRICING = 'https://www.microsoft.com/power-platform/produc
 const THE_APP = 'the AI in One app';
 /** The library the files go to when the site's address doesn't name one. */
 const DEFAULT_LIBRARY = 'Documents';
-/** How long a load of history takes: no more precise than this, as it depends on the tenant. */
-const SEED_TIME = 'It can take from under an hour to several hours in a large tenant';
+/**
+ * How a load of history goes, and how long it takes: no more precise than this, as it depends on
+ * the tenant.
+ */
+const SEED_HOW = `PAX loads it ${SEED_WINDOW_DAYS} days at a time, oldest first. It can take from under an hour to several hours in a large tenant, where a run that reaches the task's 4-hour limit carries on at the next one`;
 
 /** What the task collects, in words. @param {{ agent365?: boolean }} pax */
 export const paxCollected = (pax) => ['Copilot interactions', 'users and their licences', ...(pax.agent365 ? ['Agent 365'] : [])];
@@ -533,8 +536,14 @@ export function paxPlanReview(ctx, pre) {
   ];
   if (sm.enabled) runsOn.push({ what: 'Semantic model and report', where: `Power BI workspace ${workspace}`, detail: `Refreshed at ${refreshTimes(pax.runAt).join(' and ')} each day.` });
   if (pax.deployApp) runsOn.push({ what: 'The AI in One app', where: 'Copilot managed apps, in your Power Platform developer environment' });
-  if (ctx.runFirstLoad) runsOn.push({ what: 'First load', where: `${config.history.days} days of audit history, on this PC straight after setup`, detail: `One PAX run. ${SEED_TIME}.` });
-  if (ctx.reloadHistoryDays) runsOn.push({ what: 'History reload', where: reloadLine(ctx.reloadHistoryDays), detail: `One PAX run, straight after setup. ${SEED_TIME}. Then the daily runs carry on.` });
+  if (ctx.runFirstLoad) runsOn.push({ what: 'First load', where: `${config.history.days} days of audit history, on this PC straight after setup`, detail: `${SEED_HOW}.` });
+  if (ctx.reloadHistoryDays) {
+    runsOn.push({
+      what: 'History reload',
+      where: reloadLine(ctx.reloadHistoryDays),
+      detail: `Straight after setup. ${SEED_HOW}. The files stay as they are until it has all loaded, then the daily runs carry on.`,
+    });
+  }
 
   /** @type {ReviewCost[]} */
   const costs = [];

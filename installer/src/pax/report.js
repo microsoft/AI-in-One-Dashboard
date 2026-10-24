@@ -21,6 +21,7 @@ import { DEFAULT_RUN_AT, FILES } from './names.js';
 import { runPwshOf } from './pc.js';
 import { checkAccess } from './scripts.js';
 import { describeCheck, fileUrl, folderLabel } from './site.js';
+import { noDataYet, readLastRun } from './task.js';
 
 /** @typedef {import('../install.js').Ctx} Ctx */
 /** @typedef {import('../config.js').InstallConfig} InstallConfig */
@@ -455,7 +456,8 @@ async function signInAndRefresh(ctx) {
  * BI refresh it each day, and asks it a test query.
  * @param {Ctx} ctx
  * @param {{ check?: AccessCheck }} [o]  check: the script's access check, when it has just run.
- * @returns {Promise<boolean>}  true when the model loaded the files and answers queries.
+ * @returns {Promise<boolean>}  true when the model loaded the files and answers queries, or when
+ *   there are no files because the task hasn't found any Copilot interactions yet.
  */
 export async function connectModel(ctx, o = {}) {
   const { ui, config } = ctx;
@@ -470,6 +472,10 @@ export async function connectModel(ctx, o = {}) {
   }
   const wanted = [FILES.interactions, FILES.users, ...(pax.agent365 ? [FILES.agent365] : [])];
   const missing = wanted.filter((name) => !check.files?.some((f) => f.exists && f.name.toLowerCase() === name.toLowerCase()));
+  if (missing.length === wanted.length && readLastRun(ctx.env)?.noData) {
+    ui.warn(noDataYet(sm.name));
+    return true;
+  }
   if (missing.length) {
     ui.warn(`${missing.join(' and ')} ${missing.length === 1 ? "isn't" : "aren't"} in ${folderLabel(site)} yet, so ${sm.name} has nothing to load.`);
     ui.info(`Once "${commandLine('status')}" shows the first run finished, run "${commandLine('check')}".`);

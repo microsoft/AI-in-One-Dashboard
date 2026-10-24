@@ -19,6 +19,12 @@ export const SECRET_FILE = 'client-secret.dpapi';
 export const DEFAULT_RUN_AT = '02:00';
 /** Days each daily run loads. They overlap the last run's, and PAX drops the rows the file already has. */
 export const WINDOW_DAYS = 7;
+/**
+ * Days the first load (the seed) loads with each run of PAX, oldest first. Each run of PAX reads
+ * the users from Entra again, so smaller windows cost more; a window that stops at the task's time
+ * limit is loaded again in halves.
+ */
+export const SEED_WINDOW_DAYS = 30;
 export const CERT_SUBJECT = `CN=${PAX_APP_NAME}`;
 /** How long a new certificate lasts. */
 export const CERT_MONTHS = 12;
@@ -52,7 +58,11 @@ export const wrapperPath = (env) => join(runDir(env), WRAPPER_FILE);
 export const secretPath = (env) => join(runDir(env), SECRET_FILE);
 /** @param {NodeJS.ProcessEnv} [env] */
 export const lastRunPath = (env) => join(runDir(env), 'logs', 'last-run.json');
-/** Left by "run --backfill-days": the task's next run loads the history again, and then deletes it. @param {NodeJS.ProcessEnv} [env] */
+/**
+ * Left by "run --backfill-days": the task's next run loads the history again, and then deletes it.
+ * While the history loads, the script keeps its progress here, so a run that stops carries on.
+ * @param {NodeJS.ProcessEnv} [env]
+ */
 export const seedRequestPath = (env) => join(runDir(env), 'seed.request');
 /** The local data the daily runs append to. @param {NodeJS.ProcessEnv} [env] */
 export const dataDir = (env) => join(runDir(env), 'data');

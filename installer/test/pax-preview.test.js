@@ -312,6 +312,7 @@ test('paxPreview: with no install record, the script has placeholder IDs and the
     LocalFolder: '',
     SeedDays: 180,
     WindowDays: 7,
+    SeedWindowDays: 30,
     Agent365: false,
   });
 });
@@ -377,6 +378,7 @@ test("paxPreview: the script's settings come from the install record where it ha
     LocalFolder: '',
     SeedDays: 30,
     WindowDays: 3,
+    SeedWindowDays: 30,
     Agent365: true,
   });
   assert.ok(r.text('Run-AIO-PAX.ps1').includes("    Folder = 'Copilot''s AI in One'\r\n"), 'A quote in a value is doubled, so the value stays a literal.');

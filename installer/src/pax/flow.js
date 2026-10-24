@@ -25,7 +25,7 @@ import { filesLabel, taskLogon } from './plan.js';
 import { connectModel, deployPaxModel, ensurePaxWorkspace, ensureRefreshSchedule, FIRST_REFRESH_MS, localGuidance, paxViewerAccess, refreshPaxModel } from './report.js';
 import { checkAccess, taskInfo } from './scripts.js';
 import { describeCheck, ensureSiteAccess, folderLabel, revokeSiteGrant, sizeOf } from './site.js';
-import { describeRun, ensureTask, logonOf, noPasswordWarning, readLastRun, removeTask, startRun, waitForRun } from './task.js';
+import { describeRun, describeStopped, ensureTask, logonOf, noDataYet, noPasswordWarning, readLastRun, removeTask, staleRun, startRun, waitForRun } from './task.js';
 import { writeWrapper } from './wrapper.js';
 
 /** @typedef {import('../install.js').Ctx} Ctx */
@@ -181,23 +181,27 @@ export async function paxInstall(ctx, opts) {
 
 /**
  * Has the task load `days` of history again, now, and with wait, waits for it and connects the
- * model to the files.
+ * model to the files. While a run is going nothing changes: that run may be loading the history
+ * itself, and keeps its progress in the file a new request would replace.
  * @param {Ctx} ctx
  * @param {{ days: number, wait: boolean }} o
- * @returns {Promise<boolean>}  false when the run it waited for failed or didn't leave a working model.
+ * @returns {Promise<boolean>}  false when the run it waited for didn't start, failed or didn't leave a working model.
  */
 async function loadHistory(ctx, o) {
   const { ui, config } = ctx;
-  if (config.history.days !== o.days) {
-    config.history.days = o.days;
-    ctx.save();
-    // The script reads how many days to load from its settings.
-    writeWrapper(config, { env: ctx.env });
-  }
-  const started = await startRun(ctx, { seed: true });
+  const started = await startRun(ctx, {
+    seed: true,
+    prepare: () => {
+      if (config.history.days === o.days) return;
+      config.history.days = o.days;
+      ctx.save();
+      // The script reads how many days to load from its settings.
+      writeWrapper(config, { env: ctx.env });
+    },
+  });
   if (!started.started) {
-    ui.info(`To start it as soon as this one finishes, run: ${commandLine('run')}`);
-    return true;
+    ui.info(`Once it has, run: ${commandLine(`run --backfill-days ${o.days}`)}`);
+    return !o.wait;
   }
   if (!o.wait) {
     ui.note(
@@ -211,21 +215,35 @@ async function loadHistory(ctx, o) {
 }
 
 /**
- * Prints how a run went.
- * @param {import('../ui.js').Ui} ui
+ * Prints how a run went, and when the task has found no Copilot interactions yet, says so.
+ * @param {Ctx} ctx
  * @param {LastRun} run
  */
-function showRun(ui, run) {
+function showRun(ctx, run) {
+  const { ui, config } = ctx;
   const [first, ...rest] = describeRun(run);
   if (run.status === 'failed') ui.fail(first);
   else if (run.status === 'warning') ui.warn(first);
   else if (run.status === 'running') ui.info(first);
   else ui.ok(first);
   for (const line of rest) ui.info(line);
+  if (run.noData && run.status !== 'failed' && run.status !== 'running') ui.info(noDataYet(withReport(config) ? config.semanticModel.name : undefined));
 }
 
 /**
- * Says how the run went and, when it worked and the files go to SharePoint, refreshes the model on them.
+ * Prints a run that stopped before it could say how it went, and what to do.
+ * @param {import('../ui.js').Ui} ui
+ * @param {LastRun} run
+ */
+function showStopped(ui, run) {
+  const [first, ...rest] = describeStopped(run);
+  ui.warn(first);
+  for (const line of rest) ui.info(line);
+}
+
+/**
+ * Says how the run went and, when it worked and the files go to SharePoint, refreshes the model on
+ * them. Until the task finds some Copilot interactions there are no files, which isn't a failure.
  * @param {Ctx} ctx
  * @param {LastRun | undefined} run  undefined when it was still going.
  * @returns {Promise<boolean>}
@@ -236,8 +254,9 @@ async function afterRun(ctx, run) {
     ui.warn(`The run hasn't finished yet. Run "${commandLine('status')}" later to see how it went.`);
     return false;
   }
-  showRun(ui, run);
+  showRun(ctx, run);
   if (run.status === 'failed') return false;
+  if (run.noData) return true;
   return withReport(config) ? connectModel(ctx) : true;
 }
 
@@ -400,13 +419,15 @@ async function paxStatus(ctx) {
   if (ws && withReport(config) && sm.id) ui.info(`Model:    ${sm.name}  ${c.dim(modelUrl(ws, sm.id))}`);
   if (config.managedApp?.url) ui.info(`App:      ${APP_NAME}  ${c.dim(config.managedApp.url)}`);
   const run = readLastRun(ctx.env);
-  if (run) showRun(ui, run);
+  if (run && staleRun(run, info)) showStopped(ui, run);
+  else if (run) showRun(ctx, run);
   else ui.info(`The task hasn't run yet.${info.exists && info.nextRunTime ? ` Its first run is at ${utc(info.nextRunTime)}, or start it now: ${commandLine('run')}` : ''}`);
 }
 
 /**
  * The check command: are the files where the report and the app read them, and, when they're in
- * SharePoint, does the model load them.
+ * SharePoint, does the model load them. Before the task has found any Copilot interactions there
+ * are no files, which it says, and isn't a failure.
  * @param {Ctx} ctx
  * @returns {Promise<boolean>}
  */
@@ -414,8 +435,13 @@ async function checkFiles(ctx) {
   const { ui, config } = ctx;
   const pax = paxOf(config);
   ui.heading('Checking the files');
+  const last = readLastRun(ctx.env);
+  // Only then does it need the task, which it looks at with PowerShell.
+  if (last?.status === 'running' && staleRun(last, await taskInfo(runPwshOf(ctx)))) showStopped(ui, last);
   /** @type {{ name: string, size?: number, changed?: string }[]} */
   let found = [];
+  /** @type {AccessCheck | undefined} */
+  let check;
   if (pax.destination === 'local') {
     const folder = pax.localFolder ?? defaultLocalFolder();
     for (const name of paxFiles(pax)) {
@@ -427,7 +453,7 @@ async function checkFiles(ctx) {
       }
     }
   } else {
-    const check = await checkAccess(runPwshOf(ctx), ctx.env);
+    check = await checkAccess(runPwshOf(ctx), ctx.env);
     if (!check.ok) {
       ui.warn(describeCheck(check));
       ui.info('Run the installer again to fix the app\'s access to the folder.');
@@ -435,10 +461,13 @@ async function checkFiles(ctx) {
     }
     ui.ok(`The app can write to ${filesLabel(pax)}`);
     found = (check.files ?? []).filter((f) => f.exists).map((f) => ({ name: f.name, size: f.size, changed: f.lastModified }));
-    if (listFiles(ctx, pax, found)) return false;
-    return withReport(config) ? connectModel(ctx, { check }) : true;
   }
-  return !listFiles(ctx, pax, found);
+  if (!found.length && last?.noData) {
+    ui.warn(noDataYet(withReport(config) ? config.semanticModel.name : undefined));
+    return true;
+  }
+  if (listFiles(ctx, pax, found)) return false;
+  return withReport(config) ? connectModel(ctx, { check }) : true;
 }
 
 /**

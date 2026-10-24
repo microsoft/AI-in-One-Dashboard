@@ -24,6 +24,7 @@ import {
   validateLocalFolder,
 } from '../src/pax/plan.js';
 import { PROBE, START_TASK_SCRIPT, TASK_INFO_SCRIPT, UNREGISTER_TASK_SCRIPT } from '../src/pax/scripts.js';
+import { noDataYet } from '../src/pax/task.js';
 import { reviewSetup, setupCategories, setupRecovery } from '../src/setup.js';
 import { APP_DIST, DEFAULT_SOURCE_DIR, findPaxModelTemplate, findRollupTemplate, loadSources, PIPELINE_TEMPLATE } from '../src/sources.js';
 import { nextSteps } from '../src/steps/next-steps.js';
@@ -437,13 +438,22 @@ test('run --backfill-days: with the report, the note says to run check once it h
   assert.ok(out().includes(`, then "${commandLine('check')}" once it has finished, to connect Contoso PAX model to the files.`), out());
 });
 
-test('run --backfill-days: while a run is going, the request waits for the next run', async (t) => {
-  const { ctx, calls, env, out } = paxCtx(t, { pax: REGISTERED, taskInfo: { exists: true, state: 'Running' } });
+test('run --backfill-days: while a run is going, nothing changes until it finishes', async (t) => {
+  const { ctx, calls, config, env, out } = paxCtx(t, { pax: REGISTERED, taskInfo: { exists: true, state: 'Running' }, config: { history: { ...emptyConfig().history, days: 90 } } });
   assert.equal(await runPaxCommand(ctx, 'run', { wait: false, backfillDays: 180 }), true);
   assert.equal(calls.started, 0);
-  assert.ok(existsSync(seedRequestPath(env)), 'the request is there for the next run');
-  assert.match(out(), /A run is going already\. The next one loads the history again\./);
-  assert.ok(out().includes(`To start it as soon as this one finishes, run: ${commandLine('run')}`), out());
+  assert.equal(existsSync(seedRequestPath(env)), false, 'the run may be loading the history, and keeps its progress in that file');
+  assert.equal(config.history.days, 90, 'the days stay as they are until the reload starts');
+  const text = out();
+  assert.ok(text.includes("A run is going already, so the history can't be loaded again until it finishes."), text);
+  assert.ok(text.includes(`Once it has, run: ${commandLine('run --backfill-days 180')}`), text);
+});
+
+test('run --backfill-days --wait: while a run is going, the reload it waited for never started', async (t) => {
+  const { ctx, calls, env } = paxCtx(t, { pax: REGISTERED, taskInfo: { exists: true, state: 'Running' } });
+  assert.equal(await runPaxCommand(ctx, 'run', { wait: true, backfillDays: 180 }), false);
+  assert.equal(calls.started, 0);
+  assert.equal(existsSync(seedRequestPath(env)), false);
 });
 
 test('run --wait: waits for the run and says how it went', async (t) => {
@@ -557,6 +567,99 @@ test('status: a missing task says to run the installer again', async (t) => {
   assert.match(text, /The task hasn't run yet\.$/m);
 });
 
+test('status: a history run that stopped before it finished says how far it got, and that the next run carries on', async (t) => {
+  const { ctx, env, out } = paxCtx(t, { pax: { ...REGISTERED, site: SITE }, taskInfo: { exists: true, state: 'Ready' } });
+  writeLastRun(env, { mode: 'seed', status: 'running', startedAt: '2026-06-01T02:00:00Z', seed: { from: '2025-12-03', loaded: '2026-02-01', done: false, window: 30 } });
+  assert.equal(await runPaxCommand(ctx, 'status', { wait: false }), true);
+  const text = out();
+  assert.ok(
+    text.includes(
+      "! The last history (seed) run stopped before it finished. It started 2026-06-01 02:00 UTC, and probably reached the task's 4-hour limit, or stopped when you signed out or the PC shut down.",
+    ),
+    text,
+  );
+  assert.ok(text.includes('It had loaded the history from 2025-12-03 to 2026-02-01. The next run carries on from there.'), text);
+  assert.ok(text.includes(`To run it now: ${commandLine('run')}`), text);
+  assert.doesNotMatch(text, /is going/);
+});
+
+test('status: a daily run that stopped, and one with nothing loaded yet', async (t) => {
+  const daily = paxCtx(t, { pax: { ...REGISTERED, site: SITE }, taskInfo: { exists: true, state: 'Ready' } });
+  writeLastRun(daily.env, { mode: 'daily', status: 'running', startedAt: '2026-06-01T02:00:00Z' });
+  await runPaxCommand(daily.ctx, 'status', { wait: false });
+  assert.match(daily.out(), /! The last daily run stopped before it finished\./);
+  assert.ok(daily.out().includes('The next run loads those days again.'), daily.out());
+  const seed = paxCtx(t, { pax: { ...REGISTERED, site: SITE }, taskInfo: { exists: true, state: 'Disabled' } });
+  writeLastRun(seed.env, { mode: 'seed', status: 'running', startedAt: '2026-06-01T02:00:00Z', seed: { from: '2025-12-03', loaded: null, done: false } });
+  await runPaxCommand(seed.ctx, 'status', { wait: false });
+  assert.ok(seed.out().includes('The next run carries on loading the history from where it stopped.'), seed.out());
+  const queued = paxCtx(t, { pax: { ...REGISTERED, site: SITE }, taskInfo: { exists: true, state: 'Queued' } });
+  writeLastRun(queued.env, { mode: 'daily', status: 'running', startedAt: '2026-06-01T02:00:00Z' });
+  await runPaxCommand(queued.ctx, 'status', { wait: false });
+  assert.match(queued.out(), /A daily run is going: it started 2026-06-01 02:00 UTC\./, 'a queued task is about to run, not stopped');
+});
+
+test('status: a history run that is going, or failed, says how far it has got', async (t) => {
+  const going = paxCtx(t, { pax: { ...REGISTERED, site: SITE }, taskInfo: { exists: true, state: 'Running' } });
+  writeLastRun(going.env, { mode: 'seed', status: 'running', startedAt: '2026-06-01T02:00:00Z', seed: { from: '2025-12-03', loaded: '2026-01-01', done: false } });
+  await runPaxCommand(going.ctx, 'status', { wait: false });
+  assert.ok(going.out().includes('So far it has loaded the history from 2025-12-03 to 2026-01-01.'), going.out());
+  const failed = paxCtx(t, { pax: { ...REGISTERED, site: SITE } });
+  writeLastRun(failed.env, {
+    mode: 'seed',
+    status: 'failed',
+    startedAt: '2026-06-01T02:00:00Z',
+    finishedAt: '2026-06-01T03:00:00Z',
+    message: 'PAX failed with exit code 40.',
+    seed: { from: '2025-12-03', loaded: '2026-01-01', done: false },
+  });
+  await runPaxCommand(failed.ctx, 'status', { wait: false });
+  assert.ok(failed.out().includes('It had loaded the history from 2025-12-03 to 2026-01-01. The next run carries on from there.'), failed.out());
+  const paused = paxCtx(t, { pax: { ...REGISTERED, site: SITE } });
+  writeLastRun(paused.env, {
+    mode: 'seed',
+    status: 'ok',
+    startedAt: '2026-06-01T02:00:00Z',
+    finishedAt: '2026-06-01T05:30:00Z',
+    message: 'Loaded the history to 2026-03-02. The next run carries on from there.',
+    seed: { from: '2025-12-03', loaded: '2026-03-02', done: false },
+  });
+  await runPaxCommand(paused.ctx, 'status', { wait: false });
+  assert.ok(paused.out().includes(`To carry on now, run: ${commandLine('run')}`), paused.out());
+  const done = paxCtx(t, { pax: { ...REGISTERED, site: SITE } });
+  writeLastRun(done.env, { mode: 'seed', status: 'ok', startedAt: '2026-06-01T02:00:00Z', finishedAt: '2026-06-01T05:30:00Z', seed: { from: '2025-12-03', loaded: '2026-05-31', done: true } });
+  await runPaxCommand(done.ctx, 'status', { wait: false });
+  assert.doesNotMatch(done.out(), /carry on|carries on|So far/);
+});
+
+test('status: a run that found no Copilot interactions says there is no data yet', async (t) => {
+  const { ctx, env, out } = paxCtx(t, { pax: { ...REGISTERED, site: SITE }, config: { semanticModel: { ...model(true), name: 'AI in One' } } });
+  writeLastRun(env, {
+    mode: 'seed',
+    status: 'warning',
+    startedAt: '2026-06-01T02:00:00Z',
+    finishedAt: '2026-06-01T02:40:00Z',
+    noData: true,
+    message: 'PAX found no Copilot interactions in the last 180 days.',
+    seed: { from: '2025-12-03', loaded: '2026-05-31', done: true },
+  });
+  assert.equal(await runPaxCommand(ctx, 'status', { wait: false }), true);
+  const text = out();
+  assert.match(text, /! The last history \(seed\) run worked, with warnings\./);
+  assert.ok(text.includes(noDataYet('AI in One')), text);
+  assert.ok(noDataYet('AI in One').endsWith(`Then run "${commandLine('check')}" to connect AI in One to them.`));
+  assert.ok(!noDataYet().includes('check'), 'without the report there is nothing to connect');
+});
+
+test('run --wait: a run that found no Copilot interactions is not a failure, and leaves the model alone', async (t) => {
+  noFetch(t);
+  const { ctx, env, out, calls } = paxCtx(t, { pax: { ...REGISTERED, site: SITE }, config: { semanticModel: { ...model(true), id: 'm1', name: 'AI in One' } } });
+  writeLastRun(env, { mode: 'daily', status: 'ok', startedAt: NOW.toISOString(), finishedAt: '2026-06-01T12:05:00.000Z', noData: true });
+  assert.equal(await runPaxCommand(ctx, 'run', { wait: true }), true);
+  assert.ok(out().includes(noDataYet('AI in One')), out());
+  assert.equal(calls.requests.filter((r) => r.args?.includes('-CheckAccess')).length, 0, 'no check of the folder, and no refresh');
+});
+
 /** @param {string} s */
 const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -618,6 +721,44 @@ test('check: SharePoint, with a file the task has not written yet', async (t) =>
   const text = out();
   assert.ok(text.includes(`${FILES.interactions}: 2 KB, changed 2026-06-01 02:30 UTC`), text);
   assert.ok(text.includes(`${FILES.users} isn't there yet`), text);
+});
+
+test('check: before the task has found any Copilot interactions, says there is no data yet, which is not a failure', async (t) => {
+  noFetch(t);
+  const local = paxCtx(t, { pax: { ...REGISTERED, destination: 'local' } });
+  local.config.pax.localFolder = join(local.dir, 'Not there');
+  writeLastRun(local.env, { mode: 'seed', status: 'warning', startedAt: '2026-06-01T02:00:00Z', finishedAt: '2026-06-01T02:40:00Z', noData: true });
+  assert.equal(await runPaxCommand(local.ctx, 'check', { wait: false }), true);
+  assert.ok(local.out().includes(noDataYet()), local.out());
+  assert.doesNotMatch(local.out(), /isn't there yet/);
+  assert.equal(local.calls.requests.length, 0);
+
+  const files = [{ name: FILES.interactions, exists: false }, { name: FILES.users, exists: false }];
+  const sp = paxCtx(t, { pax: { ...REGISTERED, site: SITE }, check: { ok: true, files }, config: { semanticModel: { ...model(true), id: 'm1', name: 'AI in One' } } });
+  writeLastRun(sp.env, { mode: 'daily', status: 'ok', startedAt: '2026-06-01T02:00:00Z', finishedAt: '2026-06-01T02:10:00Z', noData: true });
+  assert.equal(await runPaxCommand(sp.ctx, 'check', { wait: false }), true, 'no refresh of a model with nothing to load');
+  assert.ok(sp.out().includes(noDataYet('AI in One')), sp.out());
+
+  const some = paxCtx(t, { pax: { ...REGISTERED, site: SITE }, check: { ok: true, files: [{ name: FILES.interactions, exists: true, size: 10 }, { name: FILES.users, exists: false }] } });
+  writeLastRun(some.env, { mode: 'daily', status: 'ok', startedAt: '2026-06-01T02:00:00Z', finishedAt: '2026-06-01T02:10:00Z', noData: true });
+  assert.equal(await runPaxCommand(some.ctx, 'check', { wait: false }), false, 'a file that is there means some data');
+  assert.ok(some.out().includes(`${FILES.users} isn't there yet`), some.out());
+});
+
+test('check: a run that stopped before it finished says so before the files', async (t) => {
+  const { ctx, env, config, dir, out, calls } = paxCtx(t, { pax: { ...REGISTERED, destination: 'local' }, taskInfo: { exists: true, state: 'Ready' } });
+  config.pax.localFolder = join(dir, 'Not there');
+  writeLastRun(env, { mode: 'seed', status: 'running', startedAt: '2026-06-01T02:00:00Z', seed: { from: '2025-12-03', loaded: '2026-01-01', done: false } });
+  assert.equal(await runPaxCommand(ctx, 'check', { wait: false }), false);
+  const text = out();
+  assert.ok(text.indexOf('stopped before it finished') < text.indexOf(`${FILES.interactions} isn't there yet`), text);
+  assert.ok(text.includes('It had loaded the history from 2025-12-03 to 2026-01-01. The next run carries on from there.'), text);
+  assert.deepEqual(calls.requests.map((r) => r.script), [TASK_INFO_SCRIPT]);
+  const going = paxCtx(t, { pax: { ...REGISTERED, destination: 'local' }, taskInfo: { exists: true, state: 'Running' } });
+  going.config.pax.localFolder = join(going.dir, 'Not there');
+  writeLastRun(going.env, { mode: 'seed', status: 'running', startedAt: '2026-06-01T02:00:00Z' });
+  await runPaxCommand(going.ctx, 'check', { wait: false });
+  assert.doesNotMatch(going.out(), /stopped before/);
 });
 
 const GRANTED_SITE = { ...SITE, id: 'site-1', grantId: 'grant-1', grantedByInstaller: true };

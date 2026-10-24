@@ -1,12 +1,14 @@
 // @ts-check
 import assert from 'node:assert/strict';
-import { join } from 'node:path';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, join } from 'node:path';
 import { test } from 'node:test';
 import { semanticModelDefinition } from '../src/clients/fabric.js';
 import { emptyConfig, emptyPax, REPORT_NAME } from '../src/config.js';
 import { HttpError } from '../src/http.js';
 import { commandLine } from '../src/launch.js';
-import { FILES, SP_FOLDER } from '../src/pax/names.js';
+import { FILES, lastRunPath, SP_FOLDER } from '../src/pax/names.js';
 import {
   buildPaxModel,
   connectModel,
@@ -113,8 +115,11 @@ function setup(o = {}) {
   const fabric = fakeFabric();
   const powerBi = fakePowerBi();
   const made = fakeCtx({ ui: ui.ui, fabric: fabric.api, powerBi: powerBi.api, graph: o.graph, sources: o.sources, config: o.config ?? spConfig() });
+  // Never this PC's own PAX files: a test that needs a last run writes one here.
+  /** @type {any} */ (made.ctx).env = { LOCALAPPDATA: join(tmpdir(), `aio-pax-report-${process.pid}-${++setups}`) };
   return { ...made, ui, fabric, powerBi, text: () => plain(ui.text()) };
 }
+let setups = 0;
 
 /** Marks the model as deployed. @param {ReturnType<typeof setup>} s @param {string} [id] */
 function deployed(s, id = 'm1') {
@@ -831,6 +836,21 @@ test('connectModel: waits for the task\'s first run to put the files in the fold
     assert.deepEqual(s.ui.asked, []);
     assert.deepEqual(s.powerBi.calls, []);
   }
+});
+
+test('connectModel: before the task has found any Copilot interactions, says there is no data yet rather than fail', async (t) => {
+  const s = setup();
+  deployed(s);
+  const file = lastRunPath(/** @type {any} */ (s.ctx).env);
+  mkdirSync(dirname(file), { recursive: true });
+  t.after(() => rmSync(/** @type {any} */ (s.ctx).env.LOCALAPPDATA, { recursive: true, force: true }));
+  writeFileSync(file, `\uFEFF${JSON.stringify({ mode: 'seed', status: 'warning', startedAt: '2026-06-01T02:00:00Z', noData: true })}`, 'utf8');
+  assert.equal(await connectModel(s.ctx, { check: found([]) }), true);
+  assert.ok(s.text().includes(`! There's no data yet: the task hasn't found any Copilot interactions in the audit log`), s.text());
+  assert.ok(s.text().includes(`Then run "${commandLine('check')}" to connect AI in One to them.`), s.text());
+  assert.deepEqual(s.powerBi.calls, [], 'no refresh of a model with nothing to load');
+  assert.equal(await connectModel(s.ctx, { check: found([FILES.interactions]) }), false, 'once some files are there, the rest are waited for as before');
+  assert.match(s.text(), /isn't in .* yet, so AI in One has nothing to load\./);
 });
 
 test('connectModel: a model that isn\'t deployed needs an update first', async () => {
