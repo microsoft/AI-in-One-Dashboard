@@ -370,6 +370,21 @@ function refreshError(entry) {
 const CREDENTIALS = /credential|oauth|unauthori[sz]ed|forbidden/i;
 
 /**
+ * Power BI refusing a refresh because one is running: 409, or 400 with a message that says so
+ * ("Another refresh request is already executing").
+ * @param {HttpError} err
+ */
+const refreshConflict = (err) => err.status === 409 || (err.status === 400 && /already executing|another refresh|in progress/i.test(err.message));
+
+/**
+ * The newest refresh Power BI lists as running. It lists one as Unknown; older entries may be
+ * refreshes that finished.
+ * @param {any[]} history
+ */
+const newestRunning = (history) =>
+  history.filter((e) => e.status === 'Unknown').sort((a, b) => (Date.parse(b.startTime) || 0) - (Date.parse(a.startTime) || 0))[0];
+
+/**
  * Refreshes the model with a plain refresh, which works in a workspace without a capacity, unlike
  * the enhanced refresh the Fabric route uses, and follows it in the model's refresh history. Each
  * refresh counts towards Power BI Pro's 8 a day.
@@ -387,23 +402,32 @@ export async function refreshPaxModel(ctx, o) {
     return { ok: false };
   }
   const askedAt = ctx.now().getTime();
+  let since = askedAt - 60_000;
   let requestId = '';
-  try {
-    requestId = await api.powerBi.startRefresh(ws, id);
-    ui.info(`Refreshing ${sm.name}. The first load of a large history can take a while.`);
-  } catch (err) {
-    if (!(err instanceof HttpError)) throw err;
-    if (err.status === 400 && CREDENTIALS.test(err.message)) {
-      ui.fail(`Power BI won't refresh ${sm.name}: it isn't signed in to the files`);
-      sm.bound = false;
-      ctx.save();
-      return { ok: false, status: 'Failed', credentials: true, error: err.message };
+  for (let attempt = 1; ; attempt++) {
+    try {
+      requestId = await api.powerBi.startRefresh(ws, id);
+      ui.info(`Refreshing ${sm.name}. The first load of a large history can take a while.`);
+      break;
+    } catch (err) {
+      if (!(err instanceof HttpError)) throw err;
+      if (err.status === 400 && CREDENTIALS.test(err.message)) {
+        ui.fail(`Power BI won't refresh ${sm.name}: it isn't signed in to the files`);
+        sm.bound = false;
+        ctx.save();
+        return { ok: false, status: 'Failed', credentials: true, error: err.message };
+      }
+      if (!refreshConflict(err)) throw err;
+      const running = newestRunning(await api.powerBi.refreshes(ws, id, 5));
+      if (running) {
+        requestId = running.requestId ?? '';
+        since = Math.min(since, Date.parse(running.startTime) || since);
+        ui.info(`${sm.name} is refreshing already. Following that refresh.`);
+        break;
+      }
+      // The refresh Power BI ran into has finished since, or isn't listed yet.
+      if (attempt === 2) throw err;
     }
-    if (err.status !== 409 && !/in progress/i.test(err.message)) throw err;
-    // Power BI lists a running refresh as Unknown. The newest entry may be an old one that finished.
-    const running = (await api.powerBi.refreshes(ws, id, 5)).find((e) => e.status === 'Unknown');
-    requestId = running?.requestId ?? '';
-    ui.info(`${sm.name} is refreshing already. Following that refresh.`);
   }
   const progress = ui.progress('Refresh');
   const polls = Math.max(1, Math.ceil(o.timeoutMs / REFRESH_POLL_MS));
@@ -411,7 +435,7 @@ export async function refreshPaxModel(ctx, o) {
   let entry;
   for (let i = 0; i < polls; i++) {
     const history = await api.powerBi.refreshes(ws, id, 5);
-    entry = (requestId && history.find((e) => e.requestId === requestId)) || history.find((e) => Date.parse(e.startTime) >= askedAt - 60_000);
+    entry = (requestId && history.find((e) => e.requestId === requestId)) || history.find((e) => Date.parse(e.startTime) >= since);
     const state = entry?.status ?? 'NotStarted';
     if (REFRESH_FINAL.has(state)) break;
     progress.update(state === 'Unknown' ? 'in progress' : state);

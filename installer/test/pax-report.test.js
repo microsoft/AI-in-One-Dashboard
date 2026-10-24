@@ -879,32 +879,60 @@ test('refreshPaxModel: when a refresh is running already, follows that one to th
   }
 });
 
-test('refreshPaxModel: without the running refresh\'s ID, follows the first one started since it asked', async () => {
+test('refreshPaxModel: when Power BI lists no running refresh, starts the refresh once more and follows that one', async () => {
+  for (const err of [httpError(409, 'Conflict'), httpError(400, 'Invalid dataset refresh request. Another refresh request is already executing')]) {
+    const s = setup();
+    deployed(s);
+    s.powerBi.failures.startRefresh = [err];
+    s.powerBi.history.push({ requestId: 'yesterday', status: 'Completed', startTime: '2026-05-31T06:00:00Z', endTime: '2026-05-31T06:10:00Z' });
+    assert.deepEqual(await refreshPaxModel(s.ctx, { timeoutMs: FIRST_REFRESH_MS }), { ok: true, status: 'Completed' }, err.message);
+    assert.deepEqual(s.powerBi.calls, ['startRefresh m1', 'startRefresh m1'], err.message);
+    assert.deepEqual(s.sleeps, [], "it follows the refresh it started, and yesterday's isn't taken for it");
+    assert.ok(s.text().includes('Refreshing AI in One.'), s.text());
+    assert.ok(!s.text().includes('refreshing already'), s.text());
+  }
+
+  const listedLate = setup();
+  deployed(listedLate);
+  listedLate.powerBi.failures.startRefresh = [httpError(409, 'Conflict'), httpError(409, 'Conflict')];
+  const refreshes = listedLate.powerBi.api.refreshes;
+  let looks = 0;
+  /** @type {any} */ (listedLate.powerBi.api).refreshes = async () => {
+    if (++looks === 2) listedLate.powerBi.history.unshift({ requestId: 'scheduled-1', status: 'Unknown', startTime: '2026-06-01T11:58:00Z' });
+    if (looks === 3) Object.assign(listedLate.powerBi.history[0], { status: 'Completed', endTime: '2026-06-01T12:08:00Z' });
+    return refreshes();
+  };
+  assert.deepEqual(await refreshPaxModel(listedLate.ctx, { timeoutMs: FIRST_REFRESH_MS }), { ok: true, status: 'Completed' });
+  assert.deepEqual(listedLate.powerBi.calls, ['startRefresh m1', 'startRefresh m1']);
+  assert.ok(listedLate.text().includes('AI in One is refreshing already. Following that refresh.'), listedLate.text());
+  assert.ok(listedLate.text().includes(`${OK} Refreshed AI in One (10m 00s)`), listedLate.text());
+
+  const never = setup();
+  deployed(never);
+  const refused = httpError(400, 'Another refresh request is already executing');
+  never.powerBi.failures.startRefresh = [refused, refused];
+  await assert.rejects(refreshPaxModel(never.ctx, { timeoutMs: FIRST_REFRESH_MS }), (e) => e === refused);
+  assert.deepEqual(never.powerBi.calls, ['startRefresh m1', 'startRefresh m1'], 'it asks once more, not again and again');
+  assert.deepEqual(never.sleeps, []);
+});
+
+test('refreshPaxModel: follows the newest refresh Power BI lists as running', async () => {
   const s = setup();
   deployed(s);
-  s.powerBi.failures.startRefresh = [httpError(409, 'Conflict')];
-  const { history } = s.powerBi;
+  s.powerBi.failures.startRefresh = [httpError(400, 'Another refresh is in progress.')];
+  s.powerBi.history.push(
+    { requestId: 'stuck', status: 'Unknown', startTime: '2026-05-30T06:00:00Z' },
+    { requestId: 'scheduled-1', status: 'Unknown', startTime: '2026-06-01T10:00:00Z' },
+  );
   const refreshes = s.powerBi.api.refreshes;
   let looks = 0;
   /** @type {any} */ (s.powerBi.api).refreshes = async () => {
-    looks++;
-    if (looks === 2) history.push({ requestId: 'yesterday', status: 'Completed', startTime: '2026-05-31T06:00:00Z', endTime: '2026-05-31T06:10:00Z' });
-    if (looks === 3) history.unshift({ requestId: 'today', status: 'Completed', startTime: '2026-06-01T11:59:30Z', endTime: '2026-06-01T12:01:00Z' });
+    if (++looks === 2) Object.assign(s.powerBi.history[1], { status: 'Completed', endTime: '2026-06-01T10:20:00Z' });
     return refreshes();
   };
   assert.deepEqual(await refreshPaxModel(s.ctx, { timeoutMs: FIRST_REFRESH_MS }), { ok: true, status: 'Completed' });
-  assert.deepEqual(s.sleeps, [REFRESH_POLL_MS], "yesterday's refresh isn't taken for it");
-  assert.ok(s.text().includes(`${OK} Refreshed AI in One (1m 30s)`), s.text());
-});
-
-test("refreshPaxModel: when a refresh is running already, an older one that finished isn't taken for it", async () => {
-  const s = setup();
-  deployed(s);
-  s.powerBi.failures.startRefresh = [httpError(409, 'Conflict')];
-  s.powerBi.history.push({ requestId: 'yesterday', status: 'Completed', startTime: '2026-05-31T06:00:00Z', endTime: '2026-05-31T06:10:00Z' });
-  assert.deepEqual(await refreshPaxModel(s.ctx, { timeoutMs: REFRESH_POLL_MS }), { ok: false, status: 'NotStarted', running: true });
-  assert.ok(!s.text().includes('Refreshed'), s.text());
-  assert.ok(s.text().includes(`! AI in One is still refreshing. Check later with "${commandLine('status')}".`), s.text());
+  assert.deepEqual(s.powerBi.calls, ['startRefresh m1']);
+  assert.ok(s.text().includes(`${OK} Refreshed AI in One (20m 00s)`), s.text());
 });
 
 test('refreshPaxModel: stops waiting at the timeout and says the refresh is still going', async () => {
@@ -918,7 +946,8 @@ test('refreshPaxModel: stops waiting at the timeout and says the refresh is stil
   const quiet = setup();
   deployed(quiet);
   quiet.powerBi.failures.startRefresh = [httpError(409, 'Conflict')];
-  assert.deepEqual(await refreshPaxModel(quiet.ctx, { timeoutMs: REFRESH_POLL_MS }), { ok: false, status: 'NotStarted', running: true });
+  quiet.powerBi.history.push({ requestId: 'scheduled-1', status: 'Unknown', startTime: '2026-06-01T11:00:00Z' });
+  assert.deepEqual(await refreshPaxModel(quiet.ctx, { timeoutMs: REFRESH_POLL_MS }), { ok: false, status: 'Unknown', running: true });
   assert.deepEqual(quiet.sleeps, []);
 });
 
