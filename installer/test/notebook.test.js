@@ -238,3 +238,17 @@ test('the Classic notebooks are only ever changed through the installer\'s copy'
   assert.match(all, /^MODE {10}= 'incremental'/m, 'the template default the pipeline overrides');
   assert.match(all, /^BACKFILL_DAYS = 180 /m);
 });
+
+test('the audit ingester\'s backfill keeps older rows: once the table has rows, it replaces them from its first day on', () => {
+  const code = source('auditIngester').cells.filter((/** @type {any} */ c) => c.cell_type === 'code').map(cellText).join('\n');
+  const hw = code.search(/^[ \t]*_hw\s*=\s*spark\.table\(\s*OUTPUT_TABLE\s*\)/m);
+  assert.ok(hw >= 0, 'it reads the high-water mark');
+  assert.ok(code.search(/^if\s+MODE\s*(?:==|in\b)/m) > hw, 'before the modes split, so a backfill reads it too, never one left by an earlier run');
+  const assigned = [...code.matchAll(/^[ \t]*REPLACE_FROM\s*=(?!=)(.*)$/gm)].map((m) => m[1].replace(/\s+/g, ''));
+  assert.equal(assigned.length, 1, 'REPLACE_FROM is set in one place');
+  assert.match(assigned[0], /^windows\[0\]\[0\]if\(/, 'from midnight UTC on the first day loaded');
+  assert.match(assigned[0], /_hwandwindows\)elseNone$/, 'whenever the table has rows');
+  assert.doesNotMatch(assigned[0], /backfill|incremental/, 'in either mode');
+  const flat = code.replace(/\s+/g, '');
+  assert.match(flat, /ifREPLACE_FROM:.*?\.mode\(['"]overwrite['"]\)\.option\(['"]replaceWhere['"],_since\)/, 'the write replaces rows from REPLACE_FROM on');
+});

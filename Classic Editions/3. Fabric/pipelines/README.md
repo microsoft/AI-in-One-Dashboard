@@ -62,7 +62,7 @@ Microsoft Graph's audit log API caps each query at 7 days back. Recommended sche
 | Cadence | When | Trade-off |
 |---|---|---|
 | **Weekly** (recommended) | Sundays 02:00 UTC | Matches Graph's 7-day window cleanly; no overlap, no gaps |
-| Daily | 02:00 UTC | More frequent updates; needs careful date-window management to avoid duplicate rows (the audit log Message_Id dedup mostly handles this) |
+| Daily | 02:00 UTC | More frequent updates. Each run replaces the rows from the start of the latest day already loaded, so runs that overlap don't add duplicate rows |
 | Monthly | Last day of month | Misses any 8th+ day of data — only use if you accept this |
 
 The 3 activities can share the same schedule, or you can give users + org a different (slower) cadence since they snapshot quickly-changing data less often.

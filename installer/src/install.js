@@ -381,7 +381,8 @@ export async function install(ctx, opts) {
       const result = await runPipeline(ctx, { backfillDays: days, wait: opts.wait });
       load = loadState(result);
       if (result.started) {
-        config.history.days = days;
+        // The reload keeps rows older than its first day, so the deepest load counts.
+        config.history.days = Math.max(config.history.days, days);
         ctx.save();
       }
       if (result.status === 'Completed') {
@@ -554,8 +555,8 @@ function notFinished(ctx, what) {
 
 /**
  * Starts the pipeline: the first load until one has loaded the history, then the usual run.
- * A backfill rebuilds the audit table with just the days it loads, so one with fewer days than
- * are loaded asks first; under --yes it doesn't start.
+ * A backfill replaces the audit rows from its first day on and keeps older rows, so a reload of
+ * fewer days than are loaded starts without asking, and the history recorded is the deepest load.
  * @param {Ctx} ctx
  * @param {{ backfillDays?: number, wait: boolean }} opts
  * @returns {Promise<import('./steps/run.js').RunResult>}
@@ -565,18 +566,11 @@ export async function run(ctx, opts) {
   const load = await chooseLoad(ctx, opts);
   const days = opts.backfillDays;
   const current = config.history.days;
-  if (!load.first && days && days < current) {
-    ui.warn(`This rebuilds the audit table with ${days} days of history, so the ${current} days loaded now drop to ${days}.`);
-    if (!(await ui.confirm(`Reload only ${days} days?`, false))) {
-      ui.note(`Nothing started. To keep the history you have, run "${commandLine(`run --backfill-days ${current}`)}" or more.`);
-      // Under --yes nobody was asked, so the run it was told to start counts as not done.
-      return { started: false, ok: false, declined: !ui.yes };
-    }
-  }
+  if (!load.first && days && days < current) ui.note(`This loads the last ${days} days of audit history again and keeps the older days.`);
   const result = await runPipeline(ctx, load);
-  // The table now holds the days this run loads, fewer or more than before.
+  // A first load sets the history. A reload keeps the rows older than its first day, so the deepest load counts.
   if (result.started && days) {
-    config.history.days = days;
+    config.history.days = load.first ? days : Math.max(current, days);
     ctx.save();
   }
   if (result.status === 'Completed') await runDataCheck(ctx);
@@ -624,7 +618,7 @@ export async function runCommand(ctx, command, opts) {
       return (await update(ctx, opts)) !== false;
     case 'run': {
       const result = await run(ctx, opts);
-      return !opts.wait || !!result.ok || !!result.declined;
+      return !opts.wait || !!result.ok;
     }
     case 'rerun-failed':
       return !(await rerunFailed(ctx)).failed.length;

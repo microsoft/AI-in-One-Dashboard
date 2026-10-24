@@ -206,19 +206,20 @@ test('run page: a failed load leaves the install partly set up, with Rerun faile
   assert.doesNotMatch(loaded.outcome, /Some loads failed|Rerun failed/);
 });
 
-test('run page: Run now asks before it drops loaded history, and the question is answered on the page', async () => {
+test('run page: with PAX, Run now asks before it drops loaded history, and the question is answered on the page', async () => {
   const context = page({ live: true });
   const item = runInContext(`
     app.replay = true;
+    app.target = 'pax';
     app.run = createRun({ type: 'command', command: 'run', state: 'running', at: 0, seq: 1 });
     onSignin({ type: 'signin', state: 'reused', user: { upn: 'admin@contoso.com' }, at: 1 });
     [
-      { type: 'line', kind: 'warn', text: 'This rebuilds the audit table with 30 days of history, so the 180 days loaded now drop to 30.', at: 2 },
+      { type: 'line', kind: 'warn', text: 'This loads the audit history again with 30 days, so the 180 days in the files now drop to 30.', at: 2 },
       { type: 'prompt', id: 7, kind: 'confirm', message: 'Reload only 30 days?', default: false, at: 3 },
     ].forEach(apply);
     app.run.prompts.get(7);
   `, context);
-  assert.equal(item.stage.title, 'Pipeline run', 'it shows in the run, not under sign-in');
+  assert.equal(item.stage.title, 'PAX run', 'it shows in the run, not under sign-in');
   assert.match(item.stage.body.text, /drop to 30\..*Reload only 30 days\?/);
   const no = all(item.el).find((el) => el.tag === 'button' && el.text === 'No');
   assert.equal(no?.className, 'btn primary', 'keeping the history is the default');
@@ -228,4 +229,26 @@ test('run page: Run now asks before it drops loaded history, and the question is
   runInContext("apply({ type: 'answered', id: 7, display: 'No', at: 4 });", context);
   assert.equal(item.t, 'qa');
   assert.match(item.el.text, /Reload only 30 days\?No/);
+});
+
+test('Run now\'s history picker: on Fabric a reload keeps the older days, and only PAX warns about fewer days', () => {
+  const context = page();
+  const hint = (/** @type {string} */ target, /** @type {string} */ days) => {
+    const root = runInContext(`app.backfill = '${days}'; historyPicker(false, { target: '${target}', firstRun: 'Completed', historyDays: 180 });`, context);
+    const el = all(root).find((e) => e.attributes.id === 'backfill-hint');
+    assert.ok(el, 'the hint is there');
+    return { text: el.text, hidden: /** @type {any} */ (el).hidden };
+  };
+
+  const fabric = hint('fabric', '30');
+  assert.equal(fabric.text, 'Loads these days of audit history again and keeps older days, then runs the data check.');
+  assert.doesNotMatch(fabric.text, /fewer than|drops|Rebuilds/);
+  assert.match(hint('fabric', '180').text, /keeps older days.*several hours/);
+
+  const pax = hint('pax', '30');
+  assert.match(pax.text, /^PAX loads these days of audit history again/);
+  assert.match(pax.text, /That's fewer than the 180 days loaded now\. The installer asks before it drops the older days\.$/);
+  assert.doesNotMatch(hint('pax', '180').text, /fewer than/);
+
+  assert.equal(hint('fabric', '').hidden, true, 'the usual run needs no hint');
 });

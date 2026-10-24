@@ -120,7 +120,7 @@ test('the audit load takes its mode and days from pipeline parameters, which def
   for (const name of [LICENSED_ACTIVITY, ORG_ACTIVITY]) assert.deepEqual(findActivity(doc.properties.activities, name).typeProperties.parameters ?? {}, {}, `${name} takes none`);
 });
 
-test('the first run backfills, which rebuilds the audit table', () => {
+test('the first run, and a reload, backfills: it replaces the audit rows from its first day on and keeps older rows', () => {
   assert.deepEqual(firstRunParameters(180), { AuditMode: 'backfill', BackfillDays: 180 });
   assert.deepEqual(firstRunParameters(30), { AuditMode: 'backfill', BackfillDays: 30 });
 });

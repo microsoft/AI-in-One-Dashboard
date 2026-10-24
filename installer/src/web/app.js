@@ -1541,8 +1541,9 @@ const BACKFILL = [
 ];
 
 /**
- * Run now can reload audit history, like run --backfill-days. Fewer days than are loaded drops the rest,
- * so the installer asks first (install.js run(), or with PAX, pax/flow.js runNow()) and the question shows on the run page.
+ * Run now can reload audit history, like run --backfill-days. On Fabric a reload keeps the older rows,
+ * so it starts straight away. With PAX, fewer days than are loaded drops the rest, so pax/flow.js
+ * runNow() asks first and the question shows on the run page.
  */
 function historyPicker(busy, rec) {
   const hint = h('span', { class: 'row-desc', id: 'backfill-hint' });
@@ -1552,9 +1553,9 @@ function historyPicker(busy, rec) {
     hint.textContent = n ? [
       rec.target === 'pax'
         ? 'PAX loads these days of audit history again, then the model refreshes on the new files.'
-        : 'Rebuilds the audit table with just these days, then runs the data check.',
+        : 'Loads these days of audit history again and keeps older days, then runs the data check.',
       n >= 90 ? 'In a large tenant, this can take several hours. The usual schedule carries on afterwards.' : '',
-      loaded && n < loaded ? `That's fewer than the ${loaded} days loaded now. The installer asks before it drops the older days.` : '',
+      rec.target === 'pax' && loaded && n < loaded ? `That's fewer than the ${loaded} days loaded now. The installer asks before it drops the older days.` : '',
     ].filter(Boolean).join(' ') : '';
     hint.hidden = !n;
   };
