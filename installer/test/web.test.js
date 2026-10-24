@@ -1,13 +1,17 @@
 // @ts-check
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { readdir, readFile } from 'node:fs/promises';
 import { request } from 'node:http';
+import { tmpdir } from 'node:os';
+import { dirname, join } from 'node:path';
 import { PassThrough } from 'node:stream';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { emptyConfig } from '../src/config.js';
+import { emptyConfig, emptyPax } from '../src/config.js';
 import { memoApi, rewindable } from '../src/install.js';
+import { lastRunPath } from '../src/pax/names.js';
 import { mirror, reopenOnEnter, startServer } from '../src/server.js';
 import { createWebUi, plainText, SECRET_MASK, toSegments } from '../src/web-ui.js';
 import { describeRecord, prereqsSnapshot, WEB_COMMANDS } from '../src/web-session.js';
@@ -680,9 +684,15 @@ test('page: the stages and the finish it waits for are headings the installer pr
   assert.deepEqual(done.filter((s) => !printed.has(s)), []);
   assert.deepEqual([...printed].filter((s) => /^AI in One is /.test(s) && !done.includes(s)), []);
 
-  // Done is last, so nothing ahead of it is skipped. There's one target, so every install has the same stages.
+  // Done is last, so nothing ahead of it is skipped. Some stages are on one route only, and the rail leaves them out on the other.
   assert.equal(stages.at(-1), 'Done');
-  assert.doesNotMatch(app, /TARGET_STAGES/);
+  const fabric = list('FABRIC_STAGES');
+  const pax = list('PAX_STAGES');
+  assert.ok(fabric.length && pax.length);
+  assert.deepEqual(fabric.filter((s) => pax.includes(s)), [], 'a stage is on one route, or on both');
+  assert.deepEqual([...fabric, ...pax].filter((s) => !stages.includes(s)), [], 'each is an install stage');
+  assert.deepEqual([...fabric, ...pax].filter((s) => ['Sign in', 'Checking your tenant', 'Ready to set up', 'Setting up', 'Done'].includes(s)), [],
+    'both routes sign in, check the tenant, review the plan, set up and finish');
 });
 
 test('page: every command has a row, or for prerequisites its own panel, and the record says which rows can run', async () => {
@@ -713,6 +723,50 @@ test('page: every command has a row, or for prerequisites its own panel, and the
   assert.match(app, /backfillDays/, 'the Run row can load more history');
 });
 
+test('page: with PAX, the rows read for the scheduled task, and the record says which can run', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'aio-web-'));
+  try {
+    const app = readFileSync(new URL('web/app.js', SRC), 'utf8');
+    const table = /^const PAX_COMMANDS = \{\r?\n([\s\S]*?)\r?\n\};/m.exec(app)?.[1] ?? '';
+    const keys = [...table.matchAll(/^ {2}'?([a-z-]+)'?: \{/gm)].map((m) => m[1]);
+    assert.ok(keys.length >= 5);
+    assert.deepEqual(keys.filter((k) => !WEB_COMMANDS.includes(/** @type {any} */ (k))), [], 'PAX text is only for commands the session takes');
+    assert.match(table, /'rerun-failed': \{ hide: true \}/, 'there are no pipeline steps to rerun');
+    const rows = [...(/const ROW_ORDER = \[([^\]]*)\]/.exec(app)?.[1] ?? '').matchAll(/'([^']+)'/g)].map((m) => m[1]);
+
+    const env = { LOCALAPPDATA: dir };
+    const config = emptyConfig();
+    config.target = 'pax';
+    config.pax = emptyPax();
+    const before = describeRecord(config, env);
+    assert.equal(before.target, 'pax');
+    assert.equal(before.installed, false, 'installed once the scheduled task is registered');
+    assert.deepEqual(Object.keys(before.can).sort(), rows.filter((c) => c !== 'install').sort());
+    assert.equal(before.can.uninstall, false, 'nothing to remove yet');
+
+    config.pax.taskRegisteredAt = '2026-10-01T09:00:00Z';
+    config.app.appId = 'app-1';
+    const rec = describeRecord(config, env);
+    assert.equal(rec.installed, true);
+    assert.match(String(rec.task), /^AI in One - PAX refresh, daily at 02:00$/);
+    assert.deepEqual([rec.can.run, rec.can.check, rec.can.status, rec.can.update, rec.can['rotate-secret'], rec.can.uninstall], [true, true, true, true, true, true]);
+    assert.deepEqual([rec.can['rerun-failed'], rec.can.refresh, rec.can.access], [false, false, false], 'no failed steps to rerun, and no model or app yet');
+    assert.equal(rec.firstRun, undefined, 'not run yet');
+    assert.equal(rec.credential, 'certificate');
+
+    mkdirSync(dirname(lastRunPath(env)), { recursive: true });
+    writeFileSync(lastRunPath(env), JSON.stringify({ startedAt: '2026-10-01T09:05:00Z', finishedAt: '2026-10-01T10:00:00Z', status: 'warning', mode: 'seed' }));
+    const ran = describeRecord(config, env);
+    assert.equal(ran.firstRun, 'Completed', 'a run with warnings still loaded the files');
+    assert.deepEqual(ran.lastRun, { status: 'warning', mode: 'seed', at: '2026-10-01T10:00:00Z' });
+    assert.match(app, /PAX_RUN\[rec\.lastRun\.status\]/, 'the installed view shows the last run');
+    const named = [...(/const PAX_RUN = \{([^}]*)\}/.exec(app)?.[1] ?? '').matchAll(/(\w+): '/g)].map((m) => m[1]);
+    assert.deepEqual(named.sort(), ['failed', 'ok', 'running', 'warning'], 'every status a run can end in has words');
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test('page: names no other product', async () => {
   // Bracketed, so this file doesn't match it either.
   const other = /Analytic[s] ?Hub|analytic[s][-_]hub|Valu[e]Lens|vlen[s]|Cowor[k]|Viv[a]|Workda[y]|Defende[r]|Datavers[e]|Resourc[e] Graph|Rayfi[n]|Agen[t] Evaluator|consumptio[n]|deplo[y]-app/i;
@@ -727,6 +781,8 @@ test('prereqsSnapshot: says whether the signer can assign directory roles, from 
   const yes = prereqsSnapshot('admin@contoso.com', [row('met')]);
   assert.equal(yes.canAssignDirectoryRoles, true);
   assert.equal(yes.upn, 'admin@contoso.com');
+  assert.equal(yes.target, 'fabric', 'a check is for one route');
+  assert.equal(prereqsSnapshot('admin@contoso.com', [], 'pax').target, 'pax');
   assert.equal(prereqsSnapshot('admin@contoso.com', [row('eligible')]).canAssignDirectoryRoles, false, 'eligible is not active');
   assert.equal(prereqsSnapshot('admin@contoso.com', [row('missing')]).canAssignDirectoryRoles, false);
   assert.equal(prereqsSnapshot('admin@contoso.com', []).canAssignDirectoryRoles, false);

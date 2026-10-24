@@ -117,9 +117,12 @@ export function fabricApi(http) {
     listWorkspaces: () => http.list('/workspaces'),
     /** @param {string} id */
     getWorkspace: (id) => http.get(`/workspaces/${id}`),
-    /** @param {string} displayName @param {string} capacityId */
+    /**
+     * @param {string} displayName
+     * @param {string} [capacityId]  Without one, the workspace is a Power BI Pro one, which the PAX route's model needs no more than.
+     */
     createWorkspace: (displayName, capacityId) =>
-      http.post('/workspaces', { displayName, capacityId, description: 'AI in One: Copilot adoption data.' }),
+      http.post('/workspaces', { displayName, ...(capacityId ? { capacityId } : {}), description: 'AI in One: Copilot adoption data.' }),
     /**
      * Fabric answers 202 without an operation to follow, so poll the workspace until the assignment finishes.
      * @param {string} workspaceId @param {string} capacityId

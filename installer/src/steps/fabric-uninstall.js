@@ -28,7 +28,7 @@ const reason = (err) => /** @type {Error} */ (err).message;
  * "a", "a and b", "a, b and c".
  * @param {string[]} items
  */
-const listOf = (items) => (items.length < 2 ? items.join('') : `${items.slice(0, -1).join(', ')} and ${items.at(-1)}`);
+export const listOf = (items) => (items.length < 2 ? items.join('') : `${items.slice(0, -1).join(', ')} and ${items.at(-1)}`);
 
 /**
  * Deletes the workspace's managed private endpoints and waits until Fabric has removed them.
@@ -68,7 +68,7 @@ export async function deletePrivateEndpoints(ctx, workspaceId) {
 /**
  * What the installer created in the workspace, in the order to delete them: the report before the
  * model it reads, the pipeline before the notebooks it runs, and the Lakehouse last. A Lakehouse
- * the user already had isn't on the list.
+ * the user already had isn't on the list, nor is a model or report it took on (see adoptedItems).
  * @param {import('../config.js').InstallConfig} config
  * @returns {CreatedItem[]}
  */
@@ -77,8 +77,8 @@ export function createdItems(config) {
   const sm = config.semanticModel;
   /** @type {CreatedItem[]} */
   const items = [];
-  if (sm?.report?.id) items.push({ kind: 'report', name: sm.report.name, id: sm.report.id });
-  if (sm?.id) items.push({ kind: 'semantic model', name: sm.name, id: sm.id });
+  if (sm?.report?.id && !sm.report.adopted) items.push({ kind: 'report', name: sm.report.name, id: sm.report.id });
+  if (sm?.id && !sm.adopted) items.push({ kind: 'semantic model', name: sm.name, id: sm.id });
   if (f.pipelineId) items.push({ kind: 'pipeline', name: f.pipelineName ?? PIPELINE_NAME, id: f.pipelineId });
   for (const nb of NOTEBOOKS) {
     const id = f.notebooks?.[nb.key];
@@ -89,12 +89,27 @@ export function createdItems(config) {
 }
 
 /**
+ * The model and report the installer took on after they were published from Power BI Desktop,
+ * report first. It didn't make them, so uninstall asks about them on their own.
+ * @param {import('../config.js').InstallConfig} config
+ * @returns {CreatedItem[]}
+ */
+export function adoptedItems(config) {
+  const sm = config.semanticModel;
+  /** @type {CreatedItem[]} */
+  const items = [];
+  if (sm?.report?.id && sm.report.adopted) items.push({ kind: 'report', name: sm.report.name, id: sm.report.id });
+  if (sm?.id && sm.adopted) items.push({ kind: 'semantic model', name: sm.name, id: sm.id });
+  return items;
+}
+
+/**
  * Deletes each item in turn. One that fails only warns, so the rest still go.
  * @param {Ctx} ctx
  * @param {string} workspaceId
  * @param {CreatedItem[]} items
  */
-async function deleteItems(ctx, workspaceId, items) {
+export async function deleteItems(ctx, workspaceId, items) {
   const { ui, api } = ctx;
   for (const item of items) {
     const label = `${item.kind} "${item.name}"`;
@@ -164,16 +179,38 @@ async function deleteModelConnection(ctx) {
 }
 
 /**
- * Offers to delete the app registration, only when the installer created it. No by default, so
- * --yes keeps it.
+ * Offers to delete the app registration, only when the installer created it and the app with the
+ * recorded app ID is still the object it recorded. No by default, so --yes keeps it.
  * @param {Ctx} ctx
  * @returns {Promise<boolean>}  Whether it's gone.
  */
-async function deleteAppRegistration(ctx) {
+export async function deleteAppRegistration(ctx) {
   const { ui, config, api } = ctx;
   const app = config.app;
   if (!app.objectId || app.existing || app.adminPack) return false;
-  const name = app.displayName ?? app.appId ?? app.objectId;
+  let name = app.displayName ?? app.appId ?? app.objectId;
+  const keep = `Delete it in the Microsoft Entra admin center, under App registrations, if nothing else uses it.`;
+  if (!app.appId) {
+    ui.note(`The install record doesn't give the app ID of the app registration "${name}", so the installer can't check it's the one it made. It stays. ${keep}`);
+    return false;
+  }
+  /** @type {{ id: string, displayName?: string } | null} */
+  let live;
+  try {
+    live = await api.graph.findApplication(app.appId);
+  } catch (err) {
+    ui.warn(`Couldn't look up the app registration "${name}": ${reason(err)}. It stays. ${keep}`);
+    return false;
+  }
+  if (!live) {
+    ui.ok(`The app registration "${name}" was already gone`);
+    return true;
+  }
+  if (live.id !== app.objectId) {
+    ui.warn(`The app registration with app ID ${app.appId} isn't the one the installer made (its object ID doesn't match the install record), so it stays.`);
+    return false;
+  }
+  name = live.displayName ?? name;
   const sure = await ui.confirm(
     `Delete the app registration "${name}" too? Only do this if nothing else uses it. Entra keeps it under Deleted applications for 30 days.`,
     false,

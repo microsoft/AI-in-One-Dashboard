@@ -35,7 +35,7 @@ The **PBI-SharePoint** edition gives up that flexibility on purpose: every input
 - You want the report to refresh itself on a schedule in the Service and your files are on SharePoint → **PBI-SharePoint edition.**
 - Your files are on OneLake/Fabric **and** you need scheduled refresh → use the dedicated Fabric edition in [`Classic Editions/3. Fabric/`](../Classic%20Editions/3.%20Fabric/), a Fabric-native thin client.
 
-**Want the Fabric edition set up for you?** The [AI in One installer](../installer/README.md) creates the app registration, the workspace, Lakehouse, notebooks, pipeline, model and report, then runs the first load.
+**Want the Fabric edition set up for you?** The [AI in One installer](../installer/README.md) creates the app registration, the workspace, Lakehouse, notebooks, pipeline, model and report, then runs the first load. Its [PAX path](../installer/README.md#with-pax-instead-of-fabric) sets up the **PBI-SharePoint edition** instead: a scheduled task on a Windows PC runs PAX each day and uploads the files to a SharePoint folder, and the installer publishes the report with a daily refresh after the task.
 
 ---
 

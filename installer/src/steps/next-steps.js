@@ -5,6 +5,8 @@
  * One list, in the order it should be done, so new steps only need adding here.
  */
 import { myGroupsUrl, reportLink, shareReportPending, shareReportSteps, VIEWER_GROUP_NAME } from './access.js';
+import { targetOf } from '../config.js';
+import { ADMIN_STEPS, deployAgain, LINKS } from '../managed-app/errors.js';
 
 /**
  * @typedef {object} NextStep
@@ -26,21 +28,23 @@ export const M365_ADMIN_URL = 'https://admin.microsoft.com/';
  * @param {string[]} body
  * @param {string | undefined} from
  */
-const letter = (body, from) => ['Hi,', '', ...body, '', 'Thanks', ...(from ? [from] : [])].join('\n');
+export const letter = (body, from) => ['Hi,', '', ...body, '', 'Thanks', ...(from ? [from] : [])].join('\n');
 
 /** @param {string[]} steps */
 const numbered = (steps) => steps.map((s, i) => `${i + 1}. ${s}`);
 
 /**
- * The cards, in the order to do them: share the report with the viewer group, then ask for user
- * names in Microsoft 365 reports. Empty when nothing is left.
+ * The cards, in the order to do them: share the report with the viewer group, ask for user names in
+ * Microsoft 365 reports, then what the AI in One app still needs. Empty when nothing is left.
  * @param {import('../config.js').InstallConfig} config
  * @param {{ tenantId?: string, upn?: string }} [user]
  * @param {{ concealedNames?: boolean }} [opts]  concealedNames: the tenant check found that Microsoft 365 reports conceal user names.
  * @returns {NextStep[]}
  */
 export function nextSteps(config, user = {}, opts = {}) {
-  return [shareStep(config, user), concealedNamesStep(user, opts.concealedNames)].filter(/** @returns {s is NextStep} */ (s) => !!s);
+  return [shareStep(config, user), concealedNamesStep(user, opts.concealedNames), appSettingsStep(config, user), appSkippedStep(config)].filter(
+    /** @returns {s is NextStep} */ (s) => !!s,
+  );
 }
 
 /**
@@ -107,5 +111,60 @@ function concealedNamesStep(user, concealed) {
       ],
       user.upn,
     ),
+  };
+}
+
+/**
+ * Whether the record has the AI in One app on: the PAX path's app step, unless it was turned off.
+ * @param {import('../config.js').InstallConfig} config
+ */
+const appWanted = (config) => targetOf(config) === 'pax' && config.pax?.deployApp !== false;
+
+/**
+ * The tenant settings for managed apps that the app step found turned off. The report works without
+ * them; the app waits for a Power Platform admin.
+ * @param {import('../config.js').InstallConfig} config
+ * @param {{ upn?: string }} user
+ * @returns {NextStep | null}
+ */
+function appSettingsStep(config, user) {
+  const missing = appWanted(config) ? (config.managedApp?.missing ?? []) : [];
+  if (!missing.length) return null;
+  const steps = missing.map((key) => ADMIN_STEPS[key].what);
+  return {
+    id: 'app-settings',
+    title: 'Ask for managed apps to be turned on',
+    why: `The AI in One app can't be deployed until these settings are on. The report works without it. Once they're on, run ${deployAgain()}.`,
+    who: 'A Power Platform admin',
+    link: LINKS.cliSetting,
+    linkText: 'Managed apps settings',
+    steps,
+    message: letter(
+      [
+        'Could you turn on managed apps for me in the Power Platform admin center? I\'m deploying the AI in One app, a Copilot managed app that shows our Copilot usage, and the environment doesn\'t allow it yet.',
+        '',
+        ...numbered(steps),
+        '',
+        `How: ${LINKS.cliSetting}`,
+      ],
+      user.upn,
+    ),
+  };
+}
+
+/**
+ * The app step, when it was skipped or failed: why, and what to do.
+ * @param {import('../config.js').InstallConfig} config
+ * @returns {NextStep | null}
+ */
+function appSkippedStep(config) {
+  const skipped = appWanted(config) ? config.managedApp?.skipped : undefined;
+  if (!skipped) return null;
+  return {
+    id: 'app-skipped',
+    title: 'Finish the AI in One app',
+    why: skipped.why,
+    who: 'You',
+    steps: skipped.steps,
   };
 }

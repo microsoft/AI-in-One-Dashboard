@@ -15,8 +15,9 @@
  *   --keep        Keep the working folder, to look at what went into the payload
  *   --release     Fail rather than warn when something a published download needs is missing
  *
- * Needs Windows, the installer's dependencies (npm ci), and the .NET Framework C# compiler that
- * ships with Windows.
+ * Needs Windows, the installer's dependencies (npm ci), a build of the AI in One app (npm ci, then
+ * npm run build, in app) and the .NET Framework C# compiler that ships with Windows. Without the
+ * app's build it warns, or fails with --release.
  */
 import { execFileSync, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -33,6 +34,7 @@ import {
 } from './payload.js';
 import { SCRIPT_NAME, ZIP_NAME, installScript } from './script.js';
 import { sha256File, sha256Line } from './signing.js';
+import { APP_DIST } from '../src/sources.js';
 import { REPO as GITHUB_REPO } from '../src/update-check.js';
 
 const INSTALLER = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -139,7 +141,13 @@ try {
   for (const f of tracked(INSTALLER)) if (installerFile(f.rel)) put(join(stagedInstaller, f.rel), f.read());
   run('npm ci --omit=dev --no-audit --no-fund', [], { cwd: stagedInstaller, shell: true });
 
-  step('Staging the notebooks, pipeline and Power BI template');
+  step('Installing the managed apps CLI, which deploys the AI in One app');
+  const stagedCli = join(stagedInstaller, 'managed-cli');
+  if (!existsSync(join(stagedCli, 'package-lock.json'))) throw new Error('The staged installer has no managed-cli/package-lock.json. Does git track it?');
+  // Its native packages ship built, so nothing from npm runs here.
+  run('npm ci --ignore-scripts --omit=dev --no-audit --no-fund', [], { cwd: stagedCli, shell: true });
+
+  step('Staging the notebooks, pipeline and Power BI templates');
   for (const rel of sourceFiles()) {
     const to = join(stage, SOURCE_ROOT, rel);
     // The installer's own notebooks came with it.
@@ -151,12 +159,30 @@ try {
     if (!existsSync(from)) throw new Error(`Missing ${from}.`);
     put(to, readFileSync(from));
   }
+
+  step('Staging the AI in One app');
+  const appBuild = join(SOURCE, APP_DIST);
+  const haveApp = existsSync(join(appBuild, 'index.html'));
+  if (haveApp) {
+    const built = walk(appBuild);
+    for (const rel of built) put(join(stage, SOURCE_ROOT, APP_DIST, rel), readFileSync(join(appBuild, rel)));
+    process.stdout.write(`  ${built.length} files\n`);
+  } else {
+    warn(`There's no build of the app in ${appBuild}, so this exe can't deploy it. In ${join(SOURCE, 'app')}, run npm ci, then npm run build.`);
+  }
+
   const { loadSources } = await import(pathToFileURL(join(stagedInstaller, 'src', 'sources.js')).href);
   const sources = loadSources();
   if (resolve(sources.dir) !== resolve(stage, SOURCE_ROOT)) throw new Error(`The staged installer reads its templates from ${sources.dir}.`);
-  for (const key of ['notebooks', 'pipeline', 'modelFile']) {
+  for (const key of ['notebooks', 'pipeline', 'modelFile', 'paxModelFile', ...(haveApp ? ['appDist'] : [])]) {
     if (!sources[key]) throw new Error(`The staged installer can't find its ${key}.`);
   }
+  // The same check the installer makes before it deploys the app.
+  const { whyNot } = await import(pathToFileURL(join(stagedInstaller, 'src', 'managed-app', 'flow.js')).href);
+  const { cliBin } = await import(pathToFileURL(join(stagedInstaller, 'src', 'managed-app', 'cli.js')).href);
+  if (!existsSync(cliBin(stagedCli))) throw new Error(`The managed apps CLI installed without ${cliBin(stagedCli)}.`);
+  const blocked = whyNot({ distDir: sources.appDist, cliDir: stagedCli, nodeVersion: process.version, needBuild: false });
+  if (blocked) warn(`This exe can't deploy the AI in One app: ${blocked.why}`);
 
   step('Adding Node.js and the licences');
   put(join(stage, 'node', 'node.exe'), readFileSync(process.execPath));
@@ -168,7 +194,7 @@ try {
   }
   copyFileSync(join(SOURCE, 'LICENSE.md'), join(stage, 'LICENSE.txt'));
 
-  step('Leaving out source maps');
+  step("Leaving out source maps and other systems' native builds");
   let pruned = 0;
   for (const rel of walk(stage)) {
     if (!prunable(rel)) continue;
@@ -202,7 +228,7 @@ try {
   writeFileSync(join(work, 'AssemblyInfo.cs'), [
     'using System.Reflection;',
     '[assembly: AssemblyTitle("AI in One installer")]',
-    '[assembly: AssemblyDescription("Sets up the AI in One Dashboard in Microsoft Fabric.")]',
+    '[assembly: AssemblyDescription("Sets up the AI in One Dashboard in Microsoft Fabric, or with PAX and the AI in One app.")]',
     '[assembly: AssemblyProduct("AI in One")]',
     '[assembly: AssemblyCompany("Microsoft Corporation")]',
     '[assembly: AssemblyCopyright("Copyright (c) Microsoft Corporation. MIT License.")]',

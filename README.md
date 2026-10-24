@@ -215,6 +215,7 @@ Everything here still works, if the app doesn't suit you.
 | The app on your PC, with nothing to host | Download [`app/download/AI-in-One-App.html`](app/download/AI-in-One-App.html) and open it in Edge or Chrome. It works offline. |
 | The app in a Fabric workspace (the **Fabric App**) | Run `irm https://raw.githubusercontent.com/microsoft/AI-in-One-Dashboard/main/app/Deploy-FabricApp.ps1 \| iex` in PowerShell. Check [what you need first](app/README.md#put-it-in-a-fabric-workspace). |
 | The report on Fabric, loaded from Microsoft Graph on a schedule, without PAX | The [Fabric edition](Classic%20Editions/3.%20Fabric/README.md). The [AI in One installer](installer/README.md) can set it up for you. |
+| PAX to run on a schedule on a Windows PC, writing to SharePoint | The [AI in One installer](installer/README.md#with-pax-instead-of-fabric)'s PAX path. It sets up the scheduled task, publishes the report and can deploy the app. |
 | PAX to run on a schedule in Azure, writing to OneLake | The [Azure Container Apps job](docs/get-your-data.md#aca-job). |
 | An earlier edition | [`Classic Editions/`](Classic%20Editions/): the Manual, SharePoint and Fabric editions, and archived templates. |
 

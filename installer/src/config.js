@@ -16,13 +16,15 @@ export const DEFAULT_CONFIG_FILE = 'aio-install.json';
 /**
  * @typedef {object} InstallConfig
  * @property {number} version
- * @property {'fabric'} [target]  Where AI in One runs. Fabric is the only target for now.
+ * @property {Target} [target]  Where AI in One gets its data. Fabric when absent.
+ * @property {PaxConfig} [pax]  The PAX setup. Only on the PAX target.
+ * @property {ManagedAppConfig} [managedApp]  The AI in One app. Only on the PAX target.
  * @property {string} [tenantId]
  * @property {import('./catalog.js').ModuleChoice} modules  What the notebooks collect. Org data is always on.
  * @property {{ days: number }} history
  * @property {import('./transform/pipeline.js').TenantScale} [scale]  How the loads are sized. Standard when absent.
  * @property {{ frequency: 'daily' | 'weekly', time: string, weekday: string, timeZone: string }} schedule
- * @property {{ appId?: string, objectId?: string, servicePrincipalId?: string, displayName?: string, secretExpires?: string, secretKeyId?: string, retiredSecretKeyIds?: string[], pendingSecretKeyIds?: string[], secretAttempts?: { ref: string, at: string }[], existing?: boolean, adminPack?: string, secretDays?: number }} app  The Entra app registration the notebooks sign in as. pendingSecretKeyIds: notebook secrets created by a run that hadn't finished writing them. secretAttempts: notebook secrets asked of Entra whose key ID isn't saved yet; the ref is in the secret's name. secretDays: how long a secret kept in the notebooks lasts (--secret-days). 90 when absent.
+ * @property {{ appId?: string, objectId?: string, servicePrincipalId?: string, displayName?: string, secretExpires?: string, secretKeyId?: string, retiredSecretKeyIds?: string[], pendingSecretKeyIds?: string[], secretAttempts?: { ref: string, at: string }[], existing?: boolean, adminPack?: string, secretDays?: number, permissions?: string[] }} app  The Entra app registration the notebooks, or on the PAX target the scheduled task, sign in as. pendingSecretKeyIds: notebook secrets created by a run that hadn't finished writing them. secretAttempts: notebook secrets asked of Entra whose key ID isn't saved yet; the ref is in the secret's name. secretDays: how long a secret kept in the notebooks lasts (--secret-days). 90 when absent. permissions: on the PAX target, the Graph application permissions the last setup asked for, so a setup that needs fewer knows which to take away. When absent, the installer looks at the app.
  * @property {{ subscriptionId?: string, resourceGroup?: string, name?: string, id?: string, uri?: string, location?: string, secretName: string, existing?: boolean, rbac?: boolean, private?: boolean, secretSetAt?: string, mode?: SecretMode, handoff?: SecretHandoff } & import('./steps/secrets.js').SecretSlot} keyVault  The secret* fields track the app secrets made for the vault (see steps/secrets.js); previousSecretKeyIds are replaced ones left on the app until they expire.
  * @property {{ capacityId?: string, workspaceId?: string, workspaceName?: string, lakehouseId?: string, lakehouseName?: string, existingLakehouse?: boolean, notebooks: Partial<Record<import('./catalog.js').NotebookKey, string>>, notebookNames?: Partial<Record<import('./catalog.js').NotebookKey, string>>, notebookHashes?: Partial<Record<import('./catalog.js').NotebookKey, string>>, pipelineId?: string, pipelineName?: string, pipelineModules?: string, pipelineVersion?: number, scheduleId?: string, vaultEndpointId?: string, secretInNotebooks?: boolean, createdWorkspace?: boolean, appRole?: { workspaceId: string, principalId: string, role: WorkspaceRole, previous?: WorkspaceRole }, pendingItems?: Record<string, { name: string, ref: string, at?: string, operation?: string }> }} fabric  existingLakehouse: the user chose a schema-enabled Lakehouse they already had, so uninstall leaves it. appRole: the workspace role the installer gave the app's service principal, in which workspace, and the role it had before when the installer raised one, so uninstall takes away only that. pendingItems: the name and description ref of each item being created, and when, so a run stopped mid-create finds that item again and nothing else. operation: Fabric's URL for the create once it accepted it, to ask how it went.
  * @property {{ jobId?: string, status?: string, startedAt?: string, finishedAt?: string }} [firstRun]
@@ -30,6 +32,87 @@ export const DEFAULT_CONFIG_FILE = 'aio-install.json';
  * @property {AccessConfig} [access]  Who can view AI in One. Absent until the installer has set it up.
  * @property {{ completed: string[], runFirstLoad?: boolean, reloadHistoryDays?: number, baseRevision?: string, approved?: boolean }} [setup] Browser setup draft progress; never contains secrets. runFirstLoad and reloadHistoryDays are kept only in the draft, never in the install record.
  */
+
+/**
+ * Where AI in One gets its data.
+ * - `fabric`: notebooks in a Fabric workspace load it into a Lakehouse.
+ * - `pax`: PAX, run each day by a scheduled task on a Windows PC, writes CSV files to a SharePoint
+ *   folder (or a local folder) that the report and the AI in One app read.
+ * @typedef {'fabric' | 'pax'} Target
+ */
+export const TARGETS = /** @type {const} */ (['fabric', 'pax']);
+
+/**
+ * The PAX setup.
+ * @typedef {object} PaxConfig
+ * @property {'sharepoint' | 'local'} destination  Where the files go.
+ * @property {PaxSite} [site]  The SharePoint site, library and folder.
+ * @property {string} [localFolder]  The folder the files are copied to, when they stay on this PC.
+ * @property {number} windowDays  Days each daily run loads.
+ * @property {string} runAt  When the task runs each day, HH:mm local time.
+ * @property {boolean} [signedOut]  The user chose to have the task run while they're signed out. Windows holds their password, never the installer.
+ * @property {'Interactive' | 'Password' | 'S4U'} [logonType]  How the registered task signs in: Interactive while the user is signed in, Password or S4U once it runs while they're signed out.
+ * @property {boolean} agent365  Also load the Agent 365 file.
+ * @property {boolean} deployApp  Deploy the AI in One app.
+ * @property {'certificate' | 'secret'} credentialType  How the task signs in as the app.
+ * @property {string} [certificateThumbprint]  In the user's personal certificate store.
+ * @property {string} [certificateExpires]
+ * @property {string} [certificateKeyId]  The certificate's key on the app registration.
+ * @property {string} [secretKeyId]  When the task signs in with a secret, kept protected for the user on this PC.
+ * @property {string} [secretExpires]
+ * @property {string[]} [retiredKeyIds]  Replaced certificates or secrets still to take off the app.
+ * @property {string[]} [retiredThumbprints]  Replaced certificates still to delete from the user's certificate store.
+ * @property {string} [version]  The PAX release the task runs.
+ * @property {string} [script]  Where it is.
+ * @property {string} [sha256]
+ * @property {string} [pythonDir]  The folder of the Python the installer checked.
+ * @property {string} [pwsh]  PowerShell 7's full path.
+ * @property {string} [userSid]  The account the task runs as.
+ * @property {string} [userName]
+ * @property {string} [timeZone]  Windows' name for the PC's time zone.
+ * @property {string} [taskRegisteredAt]
+ * @property {string} [firstRunStartedAt]  When the installer started the first (seed) run.
+ */
+
+/**
+ * @typedef {object} PaxSite
+ * @property {string} url  The site's own address.
+ * @property {string} [host]  Such as contoso.sharepoint.com.
+ * @property {string} [path]  Such as /sites/AIinOne. Empty for the root site.
+ * @property {string} [id]
+ * @property {string} [name]
+ * @property {string} [webUrl]
+ * @property {string} library  The document library's name.
+ * @property {string} [driveId]
+ * @property {string} [driveWebUrl]
+ * @property {string} folder  The folder in the library.
+ * @property {string} [grantId]  The app's write permission on the site, so uninstall can take it away.
+ * @property {boolean} [grantedByInstaller]  The installer gave that permission, rather than an admin.
+ * @property {string[]} [previousRoles]  The roles an admin's permission gave the app before the installer raised it to write, so uninstall can put them back.
+ * @property {boolean} [left]  The files moved to the PC and the installer has said what happens to the app's access here, which stays, so later runs don't say it again. Cleared when the files go back to SharePoint.
+ * @property {string} [checkedAt]  When the app last showed it can write to the folder.
+ */
+
+/**
+ * The AI in One app, deployed as a Copilot managed app.
+ * @typedef {object} ManagedAppConfig
+ * @property {string} [appId]
+ * @property {string} [url]  Where people open it.
+ * @property {string} [environmentId]
+ * @property {string} [deployedAt]
+ * @property {string} [buildHash]  A hash of the build that was deployed.
+ * @property {string[]} [sharedWith]  The groups it's shared with.
+ * @property {('createApps' | 'externalArtifacts')[]} [missing]  The tenant settings the last attempt found turned off.
+ * @property {{ why: string, steps: string[] }} [skipped]  Why the last attempt didn't deploy it, and what to do.
+ */
+
+/** @returns {PaxConfig} */
+export function emptyPax() {
+  return { destination: 'sharepoint', windowDays: 7, runAt: '02:00', agent365: false, deployApp: true, credentialType: 'certificate' };
+}
+
+/** @param {InstallConfig} config @returns {Target} */
+export const targetOf = (config) => config.target ?? 'fabric';
 
 /**
  * The one Entra group whose members can view AI in One.
@@ -71,7 +154,7 @@ export const secretMode = (config) => config.keyVault?.mode ?? 'keyvault';
  * @property {string} [id]
  * @property {string} name
  * @property {string} [signature]  What the deployed definition was built from.
- * @property {boolean} [bound]  Reads the Lakehouse through the installer's connection.
+ * @property {boolean} [bound]  Reads the Lakehouse through the installer's connection. On the PAX target: its owner signed it in to its SharePoint files.
  * @property {ModelReload} [reload]  Owed a reload: its definition was, or may have been, replaced and no refresh has finished since.
  * @property {ReportConfig} [report]  The report published on the model.
  */
@@ -93,11 +176,13 @@ export const secretMode = (config) => config.keyVault?.mode ?? 'keyvault';
  * @property {string} name
  * @property {string} [signature]  A hash of the template's report files when it was published.
  * @property {string} [modelId]  The model it reads.
+ * @property {boolean} [adopted]  PAX target: published from Power BI Desktop and found in the workspace, not made by the installer. Uninstall asks about it separately.
  */
 
 /**
  * The semantic model and report built from the Fabric edition's Power BI template, and the
- * connection the model reads the Lakehouse through.
+ * connection the model reads the Lakehouse through. On the PAX target they're built from the
+ * SharePoint edition's template instead, and read the files in the SharePoint folder.
  * @typedef {object} SemanticModelConfig
  * @property {boolean} [enabled]
  * @property {string} [id]
@@ -112,9 +197,13 @@ export const secretMode = (config) => config.keyVault?.mode ?? 'keyvault';
  * @property {{ ref: string, at: string }[]} [secretAttempts]  Connection secrets asked of Entra, key ID not saved yet (see steps/secrets.js).
  * @property {string[]} [pendingSecretKeyIds]  Connection secrets made but not yet confirmed in use.
  * @property {string[]} [retiredSecretKeyIds]  Replaced connection secrets still to remove from the app.
- * @property {boolean} [bound]
+ * @property {boolean} [bound]  Reads the Lakehouse through the connection. On the PAX target: its owner signed it in to its SharePoint files.
  * @property {ModelReload} [reload]  Owed a reload: its definition was, or may have been, replaced and no refresh has finished since.
  * @property {ReportConfig} [report]  The AI in One report.
+ * @property {boolean} [desktop]  PAX target: the workspace didn't take the model from the installer, so it was published from Power BI Desktop. The installer leaves its definition as it is.
+ * @property {string[]} [preexisting]  PAX target: the models and reports already in the workspace when the model went to Power BI Desktop. The installer never takes these on.
+ * @property {boolean} [adopted]  PAX target: published from Power BI Desktop and found in the workspace, not made by the installer. Uninstall asks about it separately.
+ * @property {string[]} [refreshTimes]  PAX target: the times, HH:mm, the installer set Power BI to refresh it each day.
  */
 
 // Names for items a new install creates. An existing install keeps the names saved in its record.
@@ -170,15 +259,15 @@ export function loadConfig(file) {
  */
 function normaliseConfig(raw, file) {
   if (raw.version !== CONFIG_VERSION) throw new Error(`${file} has version ${raw.version}; this installer reads version ${CONFIG_VERSION}.`);
-  if (raw.target !== undefined && raw.target !== 'fabric') {
-    throw new Error(`${file} is for an install on ${raw.target}; this installer sets up AI in One on Fabric.`);
+  if (raw.target !== undefined && !TARGETS.includes(raw.target)) {
+    throw new Error(`${file} is for an install on ${raw.target}; this installer sets up AI in One on Fabric or with PAX.`);
   }
   const base = emptyConfig();
   /** @type {InstallConfig} */
   const config = {
     ...base,
     ...raw,
-    target: 'fabric',
+    target: raw.target ?? 'fabric',
     modules: normaliseModules(raw.modules),
     history: { ...base.history, ...(raw.history ?? {}) },
     schedule: { ...base.schedule, ...(raw.schedule ?? {}) },
@@ -187,6 +276,8 @@ function normaliseConfig(raw, file) {
     fabric: { ...base.fabric, ...(raw.fabric ?? {}), notebooks: { ...(raw.fabric?.notebooks ?? {}) } },
     semanticModel: { ...base.semanticModel, ...(raw.semanticModel ?? {}) },
     ...(raw.access ? { access: { ...raw.access, grantedModels: [...(raw.access.grantedModels ?? [])] } } : {}),
+    ...(raw.pax ? { pax: { ...emptyPax(), ...raw.pax, ...(raw.pax.site ? { site: { ...raw.pax.site } } : {}) } } : {}),
+    ...(raw.managedApp ? { managedApp: { ...raw.managedApp } } : {}),
   };
   assertNoSecrets(config);
   return config;

@@ -23,7 +23,8 @@ Options:
                      22.x, or 24.x. The zip is still downloaded: it holds the installer and the
                      files it deploys.
   -Uninstall         Remove the unpacked installer and its command. Your install record in
-                     Documents\AI in One stays.
+                     Documents\AI in One stays, and so do the PAX route's folders, which its
+                     scheduled task runs from. The installer's uninstall command removes those.
 Anything else goes to the installer, for example: status, or install --device-code.
 With irm | iex, set $env:AI_IN_ONE_ZIP, $env:AI_IN_ONE_PROXY or
 $env:AI_IN_ONE_USE_INSTALLED_NODE = '1' instead.
@@ -226,6 +227,9 @@ by installer/packaging/build-exe.js from installer/packaging/launcher/install.ps
   $Root = Join-Path $AioHome $Id
   $Shim = Join-Path $AioHome 'aio-install.cmd'
   $Marker = '.unpacked'
+  # The PAX route's state, which its scheduled task runs from: not a version of the installer.
+  # installer/src/pax/names.js (KEPT_DIRS) and Launcher.cs list the same folders.
+  $Kept = @('pax', 'pax-run', 'managed-app')
   $Tar = Join-Path $env:SystemRoot 'System32\tar.exe'
 
   # Removes a folder whose paths may run past 260 characters, with Node.js when it's there.
@@ -266,21 +270,32 @@ by installer/packaging/build-exe.js from installer/packaging/launcher/install.ps
 
   if ($Uninstall) {
     if (-not (Test-Path -LiteralPath $AioHome)) { Write-Host 'Nothing to remove.'; return }
-    $node = $null
-    if (-not $Installed) { $node = Find-Node }
-    if ($Installed) {
-      Remove-Tree $AioHome $Installed
-    } elseif ($node) {
-      # Node.js can't remove the folder it runs from, so run a copy.
-      $copy = Join-Path $env:TEMP "ai-in-one-node-$PID.exe"
-      Copy-Item -LiteralPath $node -Destination $copy -Force
-      Remove-Tree $AioHome $copy
-      Remove-Item -LiteralPath $copy -Force -ErrorAction SilentlyContinue
-    } else {
-      Remove-Tree $AioHome $null
+    $tool = $Installed
+    $copy = $null
+    if (-not $tool) {
+      $node = Find-Node
+      if ($node) {
+        # Node.js can't remove the folder it runs from, so run a copy.
+        $copy = Join-Path $env:TEMP "ai-in-one-node-$PID.exe"
+        Copy-Item -LiteralPath $node -Destination $copy -Force
+        $tool = $copy
+      }
     }
-    if (Test-Path -LiteralPath $AioHome) { throw "Couldn't remove all of $AioHome. Close the installer and try again." }
-    Write-Host "Removed $AioHome. Your install record in Documents\AI in One is still there."
+    $stayed = @()
+    foreach ($item in @(Get-ChildItem -LiteralPath $AioHome -Force -ErrorAction SilentlyContinue)) {
+      if ($item.PSIsContainer -and $Kept -contains $item.Name) { $stayed += $item.Name }
+      elseif ($item.PSIsContainer) { Remove-Tree $item.FullName $tool }
+      else { Remove-Item -LiteralPath $item.FullName -Force -ErrorAction SilentlyContinue }
+    }
+    if ($copy) { Remove-Item -LiteralPath $copy -Force -ErrorAction SilentlyContinue }
+    if (-not $stayed.Count) { Remove-Tree $AioHome $null }
+    $left = @(Get-ChildItem -LiteralPath $AioHome -Force -ErrorAction SilentlyContinue | Where-Object { -not ($_.PSIsContainer -and $Kept -contains $_.Name) })
+    if ($left.Count -or (-not $stayed.Count -and (Test-Path -LiteralPath $AioHome))) { throw "Couldn't remove all of $AioHome. Close the installer and try again." }
+    if ($stayed.Count) {
+      Write-Host "Removed the installer from $AioHome. Your install record in Documents\AI in One is still there, and so are $($stayed -join ', ') in $AioHome`: the scheduled task 'AI in One - PAX refresh' runs from them. To remove the task and them, run the installer again with the command: uninstall."
+    } else {
+      Write-Host "Removed $AioHome. Your install record in Documents\AI in One is still there."
+    }
     return
   }
 
@@ -392,9 +407,9 @@ by installer/packaging/build-exe.js from installer/packaging/launcher/install.ps
     throw "Your organisation's policy blocks the Node.js that comes with the installer ($node). Don't work around it. If your IT team offers Node.js, for example in Company Portal, install the x64 LTS version, then run: `$env:AI_IN_ONE_USE_INSTALLED_NODE = '1'; $Again ($docs#it-approved-nodejs). Otherwise run the installer in Azure Cloud Shell ($docs#locked-down-tenant--azure-cloud-shell), or ask your IT team."
   }
 
-  # Remove what other versions unpacked, unless they're still running.
+  # Remove what other versions unpacked, unless they're still running. The PAX route's folders stay.
   foreach ($dir in @(Get-ChildItem -LiteralPath $AioHome -Directory -ErrorAction SilentlyContinue)) {
-    if ($dir.Name -eq $Id) { continue }
+    if ($dir.Name -eq $Id -or $Kept -contains $dir.Name) { continue }
     if ($dir.Name -like '*.partial-*' -and $dir.LastWriteTimeUtc -gt (Get-Date).ToUniversalTime().AddHours(-1)) { continue }
     $doomed = $dir.FullName
     if (-not $dir.Name.StartsWith('~')) {

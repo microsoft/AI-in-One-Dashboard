@@ -5,10 +5,10 @@
  */
 import { writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { GRAPH_APP_ID, permissionsFor } from '../catalog.js';
+import { AGENT365_PERMISSIONS, GRAPH_APP_ID, paxPermissions, permissionsFor } from '../catalog.js';
 import { allowsAction, isPrivateVault, networkBlocked, ROLES } from '../clients/azure.js';
 import { adminConsentUrl, apiPermissionsUrl, resolveAppRoles } from '../clients/graph.js';
-import { secretMode } from '../config.js';
+import { secretMode, targetOf } from '../config.js';
 import { HttpError } from '../http.js';
 import { commandLine } from '../launch.js';
 import { c } from '../ui.js';
@@ -74,14 +74,27 @@ export function addDays(from, days) {
 }
 
 /**
- * Graph's service principal and the app roles AI in One needs, looked up once per run.
+ * The Graph application permissions the app registration needs: the notebooks' on Fabric, PAX's
+ * on the PAX route.
+ * @param {import('../config.js').InstallConfig} config
+ */
+export const graphPermissions = (config) => (targetOf(config) === 'pax' ? paxPermissions(config.pax) : permissionsFor(config.modules));
+
+/**
+ * Graph's service principal and the app roles AI in One needs, looked up again only when the
+ * permissions it needs change, as when Agent 365 is turned on.
  * @param {Ctx} ctx
  */
 export async function graphRoles(ctx) {
-  if (!ctx.graphRoles) {
+  const wanted = graphPermissions(ctx.config);
+  const key = wanted.join(' ');
+  if (ctx.graphRoles?.key !== key) {
     const sp = await ctx.api.graph.graphServicePrincipal();
-    const { roles } = resolveAppRoles(sp, permissionsFor(ctx.config.modules));
-    ctx.graphRoles = { sp, roles };
+    const { roles, missing } = resolveAppRoles(sp, wanted, targetOf(ctx.config) === 'pax' ? AGENT365_PERMISSIONS : []);
+    if (missing.length) {
+      ctx.ui.warn(`Microsoft Graph in this tenant has no application permission named ${missing.join(' or ')} yet, so the Agent 365 file may stay empty.`);
+    }
+    ctx.graphRoles = { sp, roles, key };
   }
   return ctx.graphRoles;
 }

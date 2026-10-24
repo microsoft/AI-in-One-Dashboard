@@ -11,9 +11,12 @@ import { fabricApi, scheduleBody } from './clients/fabric.js';
 import { CONSENT_ROLES, graphApi } from './clients/graph.js';
 import { ONELAKE_URL, oneLakeApi } from './clients/onelake.js';
 import { powerBiApi } from './clients/powerbi.js';
-import { DEFAULT_CONFIG_FILE, saveConfig, secretMode } from './config.js';
+import { DEFAULT_CONFIG_FILE, saveConfig, secretMode, targetOf } from './config.js';
 import { createClient, defaultSleep } from './http.js';
 import { commandLine } from './launch.js';
+import { paxInstall, runPaxCommand } from './pax/flow.js';
+import { confirmPaxPlan, paxPlan, paxPreflight } from './pax/plan.js';
+import { paxPreview } from './pax/preview.js';
 import { checkPrereqs } from './prereqs.js';
 import { reviewSetup } from './setup.js';
 import { accessCommand, accessSummaryLines, ensureViewerGroup, grantModelAccess, shareReport } from './steps/access.js';
@@ -46,6 +49,9 @@ import { buildPipeline } from './transform/pipeline.js';
 import { loadTemplateReport, reportDefinition } from './transform/report.js';
 import { c } from './ui.js';
 
+/** Why deploy-app and --environment-id don't go with the Fabric route. */
+export const APP_NEEDS_PAX = 'The AI in One app reads the files PAX writes, so it comes with the PAX route only. To set that up, run the installer with --target pax and a new install record.';
+
 /**
  * @typedef {object} Apis
  * @property {import('./clients/fabric.js').FabricApi} fabric
@@ -75,9 +81,14 @@ import { c } from './ui.js';
  * @property {boolean} [runFirstLoad]
  * @property {boolean} [advanced]  The plan's "Change the advanced settings?" answer. With false, those settings keep their saved value or default.
  * @property {number} [reloadHistoryDays]  Repair or change: reload this many days of audit history after setup.
- * @property {{ sp: any, roles: { id: string, value: string }[] }} [graphRoles]
+ * @property {{ sp: any, roles: { id: string, value: string }[], key: string }} [graphRoles]  Graph's service principal and the app roles for the permissions in key.
  * @property {string} [configFile]  The install record's path.
  * @property {(resource: import('./auth.js').Resource) => Promise<string>} [getToken]  The signed-in user's tokens, for tools the installer runs.
+ * @property {'browser' | 'device-code' | 'azure-cli'} [method]  How the user signed in, for a second sign-in that asks for other permissions.
+ * @property {string} [environmentId]  --environment-id: the Power Platform environment for the AI in One app.
+ * @property {import('./pax/ps.js').RunPwsh} [runPwsh]  Runs PowerShell 7 on this PC, for the PAX route. Tests pass a fake.
+ * @property {NodeJS.ProcessEnv} [env]  Where the PAX route's local state lives (LOCALAPPDATA). process.env when absent.
+ * @property {import('./clients/graph.js').SitesApi} [sites]  SharePoint, signed in again with Sites.FullControl.All to give the PAX app access to its site. Made when first needed; tests pass a fake.
  * @property {string} [setupSection] Open this settings category directly after a failure.
  * @property {boolean} [setupRetry] Revalidate saved choices without reopening every question.
  */
@@ -112,7 +123,7 @@ export async function connect(opts) {
 }
 
 /**
- * @param {{ ui: import('./ui.js').Ui, config: import('./config.js').InstallConfig, file: string, api: Apis, user: User, sources: import('./sources.js').Sources, sleep?: (ms: number) => Promise<void>, now?: () => Date, getToken?: (resource: import('./auth.js').Resource) => Promise<string> }} o
+ * @param {{ ui: import('./ui.js').Ui, config: import('./config.js').InstallConfig, file: string, api: Apis, user: User, sources: import('./sources.js').Sources, sleep?: (ms: number) => Promise<void>, now?: () => Date, getToken?: (resource: import('./auth.js').Resource) => Promise<string>, method?: 'browser' | 'device-code' | 'azure-cli', runPwsh?: import('./pax/ps.js').RunPwsh, env?: NodeJS.ProcessEnv }} o
  * @returns {Ctx}
  */
 export function createCtx(o) {
@@ -132,11 +143,14 @@ export function createCtx(o) {
     now: o.now ?? (() => new Date()),
     configFile: o.file,
     ...(o.getToken ? { getToken: o.getToken } : {}),
+    ...(o.method ? { method: o.method } : {}),
+    ...(o.runPwsh ? { runPwsh: o.runPwsh } : {}),
+    ...(o.env ? { env: o.env } : {}),
   };
 }
 
-/** @param {Ctx} ctx */
-async function canConsent(ctx) {
+/** Whether the signed-in user can grant admin consent for Graph application permissions. @param {Ctx} ctx */
+export async function canConsent(ctx) {
   const roles = await ctx.api.graph.myDirectoryRoles().catch(() => []);
   return roles.some((r) => r.roleTemplateId in CONSENT_ROLES);
 }
@@ -244,12 +258,21 @@ export async function rewindable(ctx, fn) {
  */
 export async function install(ctx, opts) {
   const { ui, config } = ctx;
+  const pax = targetOf(config) === 'pax';
   let go;
   /** @type {import('./steps/plan.js').Preflight | undefined} */
   let pre;
   if (ui.web) {
     go = await reviewSetup(ctx);
-    if (go) pre = await preflight(ctx);
+    if (go) pre = pax ? await paxPreflight(ctx) : await preflight(ctx);
+  } else if (pax) {
+    const checked = await paxPreflight(ctx);
+    pre = checked;
+    go = await rewindable(ctx, async () => {
+      await paxPlan(ctx, checked);
+      ctx.save();
+      return confirmPaxPlan(ctx, checked);
+    });
   } else {
     pre = await preflight(ctx);
     const checked = pre;
@@ -263,6 +286,7 @@ export async function install(ctx, opts) {
     ui.warn('Stopped before changing anything. Your answers are saved for next time.');
     return true;
   }
+  if (pax) return paxInstall(ctx, { ...opts, pre });
 
   const sm = config.semanticModel;
   const withModel = !!sm.enabled;
@@ -591,6 +615,8 @@ export async function showPrereqs(ctx) {
  * @returns {Promise<boolean>} false when a step failed, or a run or refresh it waited for didn't succeed.
  */
 export async function runCommand(ctx, command, opts) {
+  // prereqs works before anything is installed, and its checklist covers both routes.
+  if (command !== 'install' && command !== 'prereqs' && targetOf(ctx.config) === 'pax') return runPaxCommand(ctx, command, opts);
   switch (command) {
     case 'install':
       return install(ctx, opts);
@@ -626,6 +652,8 @@ export async function runCommand(ctx, command, opts) {
     case 'access':
       await accessCommand(ctx, fabricViewerModels(ctx.config));
       return true;
+    case 'deploy-app':
+      throw new Error(APP_NEEDS_PAX);
     default:
       throw new Error(`Unknown command "${command}".`);
   }
@@ -754,6 +782,10 @@ export async function summary(ctx, opts = {}) {
  * @param {{ ui: import('./ui.js').Ui, config: import('./config.js').InstallConfig, sources: import('./sources.js').Sources, outDir: string, now?: Date }} o
  */
 export function preview(o) {
+  if (targetOf(o.config) === 'pax') {
+    paxPreview(o);
+    return;
+  }
   const { ui, config, sources } = o;
   const out = resolve(o.outDir);
   const fake = (/** @type {number} */ n) => `00000000-0000-0000-0000-${String(n).padStart(12, '0')}`;

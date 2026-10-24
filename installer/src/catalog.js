@@ -195,3 +195,31 @@ export function permissionsFor(modules) {
   for (const id of enabledModules(modules)) for (const p of MODULES[id].permissions) set.add(p);
   return [...set].sort();
 }
+
+/**
+ * The PAX route's Graph application permissions: what PAX reads with app-only sign-in for -Rollup
+ * and the Users file, and Sites.Selected for the task's own upload to the one site the app is given.
+ */
+export const PAX_PERMISSIONS = ['AuditLogsQuery.Read.All', 'User.Read.All', 'Organization.Read.All', 'Sites.Selected'];
+/** The Agent 365 catalogue, read app-only. It's in preview, so a tenant may not have them yet. */
+export const AGENT365_PERMISSIONS = ['CopilotPackages.Read.All', 'Application.Read.All'];
+
+/**
+ * The Graph application permissions for a PAX setup. Files kept in a folder on the PC go to no
+ * site, so that setup has no Sites.Selected.
+ * @param {{ agent365?: boolean, destination?: string } | undefined} pax
+ */
+export const paxPermissions = (pax) => [
+  ...(pax?.destination === 'local' ? PAX_PERMISSIONS.filter((p) => p !== 'Sites.Selected') : PAX_PERMISSIONS),
+  ...(pax?.agent365 ? AGENT365_PERMISSIONS : []),
+];
+
+/**
+ * The PAX route's Graph application permissions that another PAX setup asks for and this one
+ * doesn't: the Agent 365 pair when it's off, and Sites.Selected when the files stay on the PC.
+ * @param {{ agent365?: boolean, destination?: string } | undefined} pax
+ */
+export const paxUnneeded = (pax) => {
+  const wanted = paxPermissions(pax);
+  return [...PAX_PERMISSIONS, ...AGENT365_PERMISSIONS].filter((p) => !wanted.includes(p));
+};

@@ -313,7 +313,17 @@ export function fakeFabric() {
     },
     listCapacities: async () => [{ id: 'cap-f', displayName: 'Trial', sku: 'FTL64', region: 'West US 3', state: 'Active' }, { id: 'cap-ppu', displayName: 'PPU', sku: 'PP3', region: 'West US 3', state: 'Active' }],
     /** @param {string} id */
-    getWorkspace: async (id) => ({ id, capacityId: workspaceCapacities[id] }),
+    getWorkspace: async (id) => {
+      fail('getWorkspace');
+      return { id, capacityId: workspaceCapacities[id] };
+    },
+    /** @param {string} name @param {string} [capacityId] */
+    createWorkspace: async (name, capacityId) => {
+      calls.push(`createWorkspace ${name}${capacityId ? ` ${capacityId}` : ''}`);
+      fail('createWorkspace');
+      if (capacityId) workspaceCapacities['ws-new'] = capacityId;
+      return { id: 'ws-new', displayName: name };
+    },
     /** @param {string} id @param {string} capacityId */
     assignToCapacity: async (id, capacityId) => {
       calls.push(`assignToCapacity ${id} ${capacityId}`);
@@ -641,12 +651,18 @@ export function fakeAzureGraph() {
   return { api, calls, applications, servicePrincipals, roleAssignments, passwords, directoryRoles, reportSettings, failures };
 }
 
-/** Power BI: the semantic model's data sources, users and refreshes. `states` scripts what each poll of a refresh returns. */
+/**
+ * Power BI: the semantic model's data sources, users and refreshes. `states` scripts what each poll of
+ * an enhanced refresh returns; `plainStates` what each look at the history shows of a plain refresh
+ * still in progress (it completes when they run out).
+ */
 export function fakePowerBi() {
   /** @type {string[]} */
   const calls = [];
   /** @type {any[]} */
   const states = [];
+  /** @type {any[]} */
+  const plainStates = [];
   /** @type {any[]} */
   const history = [];
   /** @type {any[]} What each executeQueries call returns, in order. */
@@ -655,6 +671,8 @@ export function fakePowerBi() {
   const failures = {};
   /** Who has access to the semantic model, as datasetUsers lists them. @type {any[]} */
   const users = [];
+  /** The model's refresh schedule in Power BI. @type {any} */
+  const refreshSchedule = { enabled: false, days: [], times: [] };
   /** @type {any[]} */
   let datasources = [{ datasourceType: 'Sql', connectionDetails: { server: 'abc.datawarehouse.fabric.microsoft.com', database: DEFAULT_LAKEHOUSE_NAME } }];
   let n = 0;
@@ -686,7 +704,31 @@ export function fakePowerBi() {
       calls.push(`getRefresh ${requestId}`);
       return states.length ? states.shift() : { status: 'Completed', extendedStatus: 'Completed' };
     },
-    refreshes: async () => structuredClone(history),
+    /** A plain refresh. It's added to `history`, newest first, as in progress. @param {string} _ws @param {string} id */
+    startRefresh: async (_ws, id) => {
+      calls.push(`startRefresh ${id}`);
+      fail('startRefresh');
+      const requestId = `plain-${++n}`;
+      history.unshift({ requestId, refreshType: 'ViaApi', status: 'Unknown', startTime: new Date().toISOString() });
+      return requestId;
+    },
+    /** @param {string} _ws @param {string} id @param {any} schedule */
+    setRefreshSchedule: async (_ws, id, schedule) => {
+      calls.push(`setRefreshSchedule ${id} ${schedule.enabled ? (schedule.times ?? []).join(',') : 'off'}`);
+      fail('setRefreshSchedule');
+      Object.assign(refreshSchedule, structuredClone(schedule));
+      return null;
+    },
+    refreshSchedule: async () => {
+      fail('refreshSchedule');
+      return structuredClone(refreshSchedule);
+    },
+    refreshes: async () => {
+      fail('refreshes');
+      const latest = history[0];
+      if (latest?.status === 'Unknown' && String(latest.requestId).startsWith('plain-')) Object.assign(latest, plainStates.shift() ?? { status: 'Completed' });
+      return structuredClone(history);
+    },
     /** @param {string} _ws @param {string} id @param {string} _query */
     executeQueries: async (_ws, id, _query) => {
       calls.push(`executeQueries ${id}`);
@@ -698,10 +740,12 @@ export function fakePowerBi() {
     api,
     calls,
     states,
+    plainStates,
     history,
     failures,
     answers,
     users,
+    refreshSchedule,
     /** @param {any[]} d */
     setDatasources: (d) => {
       datasources = d;

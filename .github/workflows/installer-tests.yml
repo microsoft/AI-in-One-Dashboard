@@ -10,6 +10,9 @@ on:
       # The Classic Fabric files the installer deploys. Nothing from the archive.
       - 'Classic Editions/3. Fabric/**'
       - '!Classic Editions/3. Fabric/archive/**'
+      # The PAX path's Power BI template, at the repo root, and the app the installer deploys.
+      - '*PBI-SharePoint*.pbit'
+      - 'app/**'
       - '.github/workflows/installer-tests.yml'
       - '.github/workflows/installer-exe.yml'
   # Every base, so stacked pull requests are tested too.
@@ -18,6 +21,8 @@ on:
       - 'installer/**'
       - 'Classic Editions/3. Fabric/**'
       - '!Classic Editions/3. Fabric/archive/**'
+      - '*PBI-SharePoint*.pbit'
+      - 'app/**'
       - '.github/workflows/installer-tests.yml'
       - '.github/workflows/installer-exe.yml'
 

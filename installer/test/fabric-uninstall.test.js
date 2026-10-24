@@ -36,6 +36,7 @@ function setup(o) {
     report: { id: 'rp-1', name: 'AI in One' },
   });
   config.app.displayName = 'AI in One';
+  graph.applications.push({ id: 'obj-1', appId: 'app-1', displayName: 'AI in One' });
   config.keyVault.name = 'kv-ai-in-one-test';
   Object.assign(config.access ??= {}, { groupId: 'g-1', groupName: 'AI in One Viewers' });
   fabric.items.push(
@@ -98,6 +99,50 @@ test('uninstall, created workspace: the app registration goes only when the inst
   assert.equal(await fabricUninstall(auto.ctx), true);
   assert.ok(auto.fabric.calls.includes('deleteWorkspace ws-1'), '--yes takes the yes default for the workspace');
   assert.deepEqual(auto.graph.calls.filter((c) => c.startsWith('deleteApplication')), [], '--yes keeps the app registration');
+});
+
+test('uninstall: the app registration goes only when the app with the recorded app ID is the object the installer recorded', async () => {
+  const WORKSPACE_QUESTION = 'Delete workspace "AI in One" and everything in it, including the Lakehouse data?';
+  /** @param {ReturnType<typeof setup>} s */
+  const deleted = (s) => s.graph.calls.filter((c) => c.startsWith('deleteApplication'));
+
+  const other = setup({ created: true, answers: [true, true] });
+  other.graph.applications[0].id = 'obj-9';
+  assert.equal(await fabricUninstall(other.ctx), true);
+  assert.deepEqual(other.ui.asked, [WORKSPACE_QUESTION], 'not offered');
+  assert.deepEqual(deleted(other), []);
+  assert.match(other.ui.text(), /The app registration with app ID app-1 isn't the one the installer made \(its object ID doesn't match the install record\), so it stays\./);
+  assert.match(other.ui.text(), /Left alone: the app registration "AI in One"/);
+
+  const gone = setup({ created: true, answers: [true, true] });
+  gone.graph.applications.length = 0;
+  assert.equal(await fabricUninstall(gone.ctx), true);
+  assert.deepEqual(gone.ui.asked, [WORKSPACE_QUESTION], 'not offered');
+  assert.deepEqual(deleted(gone), []);
+  assert.match(gone.ui.text(), /The app registration "AI in One" was already gone/);
+  assert.doesNotMatch(gone.ui.text(), /Left alone: the app registration/);
+
+  const renamed = setup({ created: true, answers: [true, true] });
+  renamed.graph.applications[0].displayName = 'AI in One (old)';
+  assert.equal(await fabricUninstall(renamed.ctx), true);
+  assert.deepEqual(renamed.ui.asked, [WORKSPACE_QUESTION, APP_QUESTION.replace('"AI in One"', '"AI in One (old)"')], 'the prompt names the app as Entra has it now');
+  assert.deepEqual(deleted(renamed), ['deleteApplication obj-1']);
+
+  const noAppId = setup({ created: true, answers: [true, true] });
+  delete noAppId.config.app.appId;
+  assert.equal(await fabricUninstall(noAppId.ctx), true);
+  assert.deepEqual(noAppId.ui.asked, [WORKSPACE_QUESTION], 'not offered');
+  assert.deepEqual(deleted(noAppId), []);
+  assert.match(noAppId.ui.text(), /The install record doesn't give the app ID of the app registration "AI in One", so the installer can't check it's the one it made\. It stays\./);
+
+  const failing = setup({ created: true, answers: [true, true] });
+  failing.graph.api.findApplication = async () => {
+    throw new Error('Network unreachable');
+  };
+  assert.equal(await fabricUninstall(failing.ctx), true);
+  assert.deepEqual(failing.ui.asked, [WORKSPACE_QUESTION], 'not offered');
+  assert.deepEqual(deleted(failing), []);
+  assert.match(failing.ui.text(), /Couldn't look up the app registration "AI in One": Network unreachable\. It stays\./);
 });
 
 test('uninstall, created workspace: no means nothing is deleted', async () => {

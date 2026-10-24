@@ -1,0 +1,868 @@
+#Requires -Version 7.0
+<#
+.SYNOPSIS
+    Refreshes the AI in One data with PAX, then puts the files where the report reads them.
+
+.DESCRIPTION
+    Written by the AI in One installer from your install record. Don't edit it: running the
+    installer again writes it afresh. The scheduled task "AI in One - PAX refresh" runs it daily.
+
+    The first run (the seed) loads the history in windows of a few weeks, oldest first, and saves
+    its progress after each one. A run that stops part way, at the task's 4-hour limit or when you
+    sign out, carries on from the last window that finished, and a run starts no new window that
+    might not finish in time. On a PC with no local files, the first run fetches the published
+    ones first, and they stay published as they are until the whole history has loaded; on a
+    first install there are none, so the files are published as the history loads. Each later run loads
+    the last few days and appends them to the local Interactions file. PAX drops the rows the file
+    already has, so days that overlap aren't counted twice. Days with no Copilot interactions
+    aren't an error: the files stay as they were. When PAX finishes, the files are uploaded to the
+    SharePoint folder (or copied to the local folder) under fixed names, so the report always
+    finds them.
+
+.PARAMETER Seed
+    Load the history again. The new files replace the local ones once the whole history has
+    loaded; until then the published files stay as they were. The installer's "run
+    --backfill-days" command asks the scheduled task for this by leaving a seed.request file in
+    the state folder.
+
+.PARAMETER CheckAccess
+    Don't run PAX. Check that the app can reach the SharePoint library and write to the folder,
+    and print what it found as one line that starts with AIO-RESULT.
+#>
+[CmdletBinding()]
+param(
+    [switch]$Seed,
+    [switch]$CheckAccess
+)
+
+Set-StrictMode -Version 3.0
+$ErrorActionPreference = 'Stop'
+$ProgressPreference = 'SilentlyContinue'
+
+# {{SETTINGS}}
+
+$DataDir = Join-Path $Settings.StateDir 'data'
+$LogDir = Join-Path $Settings.StateDir 'logs'
+$PaxLogDir = Join-Path $LogDir 'pax'
+$WorkDir = Join-Path $Settings.StateDir 'work'
+$SeedDir = Join-Path $Settings.StateDir 'seed'
+foreach ($dir in @($DataDir, $LogDir, $PaxLogDir, $WorkDir, $SeedDir)) { $null = New-Item -ItemType Directory -Force -Path $dir }
+
+$RunStarted = Get-Date
+# PAX's days are UTC days. Its end date is the first day it doesn't load.
+$Today = $RunStarted.ToUniversalTime().Date
+$Stamp = (Get-Date).ToString('yyyyMMdd-HHmmss')
+$RunLog = Join-Path $LogDir "run-$Stamp.log"
+$LastRunFile = Join-Path $LogDir 'last-run.json'
+$SeedRequest = Join-Path $Settings.StateDir 'seed.request'
+# Left when the whole history had no Copilot interactions, so later runs load only the last few days.
+$NoDataFile = Join-Path $Settings.StateDir 'no-interactions.json'
+$KeepLogs = 30
+$SimpleUploadLimit = 250MB
+$ChunkSize = 320KB * 16
+# The task stops a run after 4 hours. Loading the history, a run starts no new window once the
+# longest window so far would take it past this, which leaves time to publish the files.
+$SeedBudget = [timespan]::FromMinutes(210)
+# What PAX logs when its rollup fails. It still exits 0, so these fail the run.
+$RollupFailures = @(
+    'Rollup: post-processor returned non-zero'
+    'Rollup: post-processor failed'
+    'expected Fact CSV not produced'
+    'expected Users dim CSV not produced'
+    'expected Fact CSV not found'
+    'Rollup stage [processor] failed'
+)
+$Streams = @(
+    [pscustomobject]@{ Name = 'Interactions'; File = 'AIO_Interactions.csv'; Pattern = '*_Interactions.csv'; Wanted = $true }
+    [pscustomobject]@{ Name = 'Users'; File = 'AIO_Users.csv'; Pattern = '*_Users.csv'; Wanted = $true }
+    [pscustomobject]@{ Name = 'Agent365'; File = 'AIO_Agent365.csv'; Pattern = 'Agent365_*.csv'; Wanted = [bool]$Settings.Agent365 }
+)
+# Neither the data folder nor the seed folder has an Interactions file yet. Set from the start, so a
+# run that's going, or one that was stopped, still tells "check" there's no data yet.
+$TestNoData = { -not ((Test-Path -LiteralPath (Join-Path $DataDir 'AIO_Interactions.csv')) -or (Test-Path -LiteralPath (Join-Path $SeedDir 'AIO_Interactions.csv'))) }
+
+$Result = [ordered]@{
+    startedAt   = (Get-Date).ToUniversalTime().ToString('o')
+    finishedAt  = $null
+    status      = 'running'
+    mode        = $null
+    exitCode    = $null
+    attempts    = 0
+    paxVersion  = $Settings.PaxVersion
+    destination = $Settings.Destination
+    files       = @()
+    metrics     = $null
+    records     = $null
+    rows        = $null
+    seed        = $null
+    noData      = & $TestNoData
+    log         = $RunLog
+    warnings    = @()
+    message     = $null
+}
+
+function Write-RunLog {
+    param([string]$Message, [ValidateSet('INFO', 'WARN', 'ERROR')][string]$Level = 'INFO')
+    $line = '{0} [{1}] {2}' -f (Get-Date).ToString('s'), $Level, $Message
+    Add-Content -LiteralPath $RunLog -Value $line -Encoding utf8
+    Write-Information $line -InformationAction Continue
+    if ($Level -eq 'WARN') { $Result.warnings += $Message }
+}
+
+# Written when a run starts, so the installer can tell one is under way, and again when it ends.
+function Save-Result {
+    if ($Result.status -ne 'running') { $Result.finishedAt = (Get-Date).ToUniversalTime().ToString('o') }
+    $Result | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $LastRunFile -Encoding utf8
+}
+
+function Clear-Folder([string]$Dir) {
+    Get-ChildItem -LiteralPath $Dir -Force -ErrorAction SilentlyContinue |
+        Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+}
+
+function Clear-WorkDir {
+    Clear-Folder $WorkDir
+}
+
+# PAX appends to copies of the files in the folder From, so a run that fails leaves them as they
+# were. PAX also keeps its scratch files beside the file it appends to, which is the work folder.
+function Initialize-WorkDir([string]$From) {
+    Clear-WorkDir
+    foreach ($s in @($Streams | Where-Object Wanted)) {
+        $stable = Join-Path $From $s.File
+        if (Test-Path -LiteralPath $stable) { Copy-Item -LiteralPath $stable -Destination (Join-Path $WorkDir $s.File) -Force }
+    }
+}
+
+# In the invariant culture, so a PC set to another calendar still gives PAX Gregorian dates.
+function Format-Day([datetime]$Day) {
+    $Day.ToString('yyyy-MM-dd', [Globalization.CultureInfo]::InvariantCulture)
+}
+
+function ConvertTo-Day($Value) {
+    if ($Value -is [datetime]) { return $Value.Date }
+    if ($Value -is [datetimeoffset]) { return $Value.UtcDateTime.Date }
+    [datetime]::ParseExact([string]$Value, 'yyyy-MM-dd', [Globalization.CultureInfo]::InvariantCulture)
+}
+
+# What the run log gained after Offset bytes: what one run of PAX logged, and nothing earlier.
+function Get-LogSince([long]$Offset) {
+    if (-not (Test-Path -LiteralPath $RunLog)) { return '' }
+    $stream = [IO.File]::Open($RunLog, [IO.FileMode]::Open, [IO.FileAccess]::Read, [IO.FileShare]::ReadWrite)
+    try {
+        if ($Offset -ge $stream.Length) { return '' }
+        $null = $stream.Seek($Offset, [IO.SeekOrigin]::Begin)
+        [IO.StreamReader]::new($stream, [Text.UTF8Encoding]::new($false)).ReadToEnd()
+    } finally {
+        $stream.Dispose()
+    }
+}
+
+# A count from PAX's metrics JSON, or -1 when it isn't there.
+function Get-Count($Metrics, [string]$Name) {
+    if ($null -eq $Metrics) { return [long]-1 }
+    $property = $Metrics.PSObject.Properties[$Name]
+    if (-not $property -or $null -eq $property.Value) { return [long]-1 }
+    try { [long]$property.Value } catch { [long]-1 }
+}
+
+# The history's progress, kept in seed.request while it loads: the days from and next (the first
+# day still to load), the days each run of PAX loads (window), whether a window was loading when
+# the run stopped, whether every window has loaded (done), whether they found any Copilot
+# interactions (found), and how many runs in a row stopped while they loaded a one-day window
+# (stops). Anything else in the file, such as the installer's request to load the
+# history again, gives nothing, so the history starts afresh.
+function Read-SeedProgress {
+    try {
+        $p = Get-Content -LiteralPath $SeedRequest -Raw -ErrorAction Stop | ConvertFrom-Json
+        if ($null -eq $p) { return $null }
+        $progress = [ordered]@{
+            from    = ConvertTo-Day $p.from
+            next    = ConvertTo-Day $p.next
+            window  = [int]$p.window
+            loading = [bool]$p.loading
+            done    = [bool]$p.done
+            found   = [bool]$p.found
+            rows    = if ($null -ne $p.rows) { [long]$p.rows } else { $null }
+            stops   = if ($p.PSObject.Properties['stops']) { [int]$p.stops } else { 0 }
+        }
+        if ($progress.window -lt 1 -or $progress.next -lt $progress.from) { return $null }
+        $progress
+    } catch {
+        $null
+    }
+}
+
+# Written to a new file that then replaces seed.request, so a run that stops never leaves half of it.
+function Save-SeedProgress($Progress) {
+    $saved = [ordered]@{
+        from    = Format-Day $Progress.from
+        next    = Format-Day $Progress.next
+        window  = $Progress.window
+        loading = $Progress.loading
+        done    = $Progress.done
+        found   = $Progress.found
+        rows    = $Progress.rows
+        stops   = $Progress.stops
+    }
+    $new = $SeedRequest + '.new'
+    $saved | ConvertTo-Json | Set-Content -LiteralPath $new -Encoding utf8
+    Move-Item -LiteralPath $new -Destination $SeedRequest -Force
+}
+
+function Set-SeedResult($Progress) {
+    $Result.seed = [ordered]@{
+        from   = Format-Day $Progress.from
+        loaded = if ($Progress.next -gt $Progress.from) { Format-Day ($Progress.next.AddDays(-1)) } else { $null }
+        done   = $Progress.done
+        window = $Progress.window
+        rows   = $Progress.rows
+        next   = Format-Day $Progress.next
+        stops  = $Progress.stops
+    }
+}
+
+function Remove-OldFiles([string]$Dir, [string]$Filter) {
+    Get-ChildItem -LiteralPath $Dir -Filter $Filter -File -ErrorAction SilentlyContinue |
+        Sort-Object LastWriteTime -Descending | Select-Object -Skip $KeepLogs |
+        Remove-Item -Force -ErrorAction SilentlyContinue
+}
+
+function Get-HttpStatus($ErrorRecord) {
+    $ex = $ErrorRecord.Exception
+    if ($ex.PSObject.Properties['Response'] -and $ex.Response) { return [int]$ex.Response.StatusCode }
+    return 0
+}
+
+# Retries throttling and server errors, waiting longer each time.
+function Invoke-Graph([string]$What, [scriptblock]$Call) {
+    for ($attempt = 1; ; $attempt++) {
+        try {
+            return & $Call
+        } catch {
+            $status = Get-HttpStatus $_
+            if ($attempt -ge 4 -or ($status -ne 429 -and $status -lt 500)) { throw }
+            $wait = [int][math]::Min(120, 15 * $attempt)
+            Write-RunLog "$What got HTTP $status. Trying again in $wait seconds."
+            Start-Sleep -Seconds $wait
+        }
+    }
+}
+
+function ConvertTo-Base64Url([byte[]]$Bytes) {
+    [Convert]::ToBase64String($Bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_')
+}
+
+# PowerShell 7 reads ISO times in JSON as dates, so they go back out in one fixed form.
+function ConvertTo-IsoTime($Value) {
+    if ($Value -is [datetime]) { return $Value.ToUniversalTime().ToString('o') }
+    if ($Value -is [datetimeoffset]) { return $Value.UtcDateTime.ToString('o') }
+    if ($null -eq $Value) { return $null }
+    [string]$Value
+}
+
+function Get-RunCertificate {
+    $path = 'Cert:\CurrentUser\My\' + $Settings.CertificateThumbprint
+    if (-not (Test-Path -LiteralPath $path)) {
+        throw "The certificate $($Settings.CertificateThumbprint) isn't in your personal certificate store. Run the installer again to make a new one."
+    }
+    Get-Item -LiteralPath $path
+}
+
+function Get-ClientSecretText {
+    if (-not (Test-Path -LiteralPath $Settings.SecretFile)) {
+        throw "The protected client secret is missing. Run the installer again to repair it."
+    }
+    $protected = (Get-Content -LiteralPath $Settings.SecretFile -Raw).Trim()
+    [System.Net.NetworkCredential]::new('', (ConvertTo-SecureString -String $protected)).Password
+}
+
+# An app-only token for Microsoft Graph: a signed client assertion with the certificate, or the secret.
+function Get-GraphToken {
+    $uri = 'https://login.microsoftonline.com/{0}/oauth2/v2.0/token' -f $Settings.TenantId
+    $body = @{
+        client_id  = $Settings.ClientId
+        scope      = 'https://graph.microsoft.com/.default'
+        grant_type = 'client_credentials'
+    }
+    if ($Settings.CredentialType -eq 'secret') {
+        $body.client_secret = Get-ClientSecretText
+    } else {
+        $cert = Get-RunCertificate
+        $rsa = [System.Security.Cryptography.X509Certificates.RSACertificateExtensions]::GetRSAPrivateKey($cert)
+        if (-not $rsa) { throw "Can't use the private key of certificate $($Settings.CertificateThumbprint)." }
+        $now = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
+        $header = [ordered]@{ alg = 'RS256'; typ = 'JWT'; x5t = (ConvertTo-Base64Url $cert.GetCertHash()) } | ConvertTo-Json -Compress
+        $claims = [ordered]@{
+            aud = $uri
+            iss = $Settings.ClientId
+            sub = $Settings.ClientId
+            jti = [guid]::NewGuid().ToString()
+            nbf = $now - 60
+            exp = $now + 600
+        } | ConvertTo-Json -Compress
+        $unsigned = (ConvertTo-Base64Url ([Text.Encoding]::UTF8.GetBytes($header))) + '.' + (ConvertTo-Base64Url ([Text.Encoding]::UTF8.GetBytes($claims)))
+        $signature = $rsa.SignData([Text.Encoding]::UTF8.GetBytes($unsigned), [Security.Cryptography.HashAlgorithmName]::SHA256, [Security.Cryptography.RSASignaturePadding]::Pkcs1)
+        $body.client_assertion_type = 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer'
+        $body.client_assertion = $unsigned + '.' + (ConvertTo-Base64Url $signature)
+    }
+    $response = Invoke-Graph 'Signing in' { Invoke-RestMethod -Method Post -Uri $uri -Body $body -ContentType 'application/x-www-form-urlencoded' }
+    $response.access_token
+}
+
+function Get-AuthHeader {
+    @{ Authorization = 'Bearer ' + $script:Token }
+}
+
+# Path-based addressing in the one library the app can write to: no search, nothing tenant-wide.
+function Get-DriveItemUri([string]$Name, [string]$Action) {
+    $segments = @(($Settings.Folder -split '/') | Where-Object { $_ }) + @($Name)
+    $path = ($segments | ForEach-Object { [uri]::EscapeDataString($_) }) -join '/'
+    if (-not $Action) { return 'https://graph.microsoft.com/v1.0/drives/{0}/root:/{1}' -f $Settings.DriveId, $path }
+    'https://graph.microsoft.com/v1.0/drives/{0}/root:/{1}:/{2}' -f $Settings.DriveId, $path, $Action
+}
+
+# What -CheckAccess does, with the app's own access to the one site: finds the site by its path
+# and the library by its name, makes the folder, writes and deletes a small file, then lists the
+# data files that are there.
+function Test-SiteAccess {
+    $step = 'Signing in as the app'
+    if ($Settings.Destination -ne 'sharepoint') {
+        $out = [ordered]@{ ok = $false; step = 'Checking the settings'; status = 0; error = 'The files go to a local folder, so there is no SharePoint access to check.' }
+        return 'AIO-RESULT ' + ($out | ConvertTo-Json -Compress -EscapeHandling EscapeNonAscii)
+    }
+    try {
+        $script:Token = Get-GraphToken
+        $step = 'Finding the site'
+        $sitePath = @(($Settings.SitePath -split '/') | Where-Object { $_ } | ForEach-Object { [uri]::EscapeDataString($_) }) -join '/'
+        $siteUri = if ($sitePath) { 'https://graph.microsoft.com/v1.0/sites/{0}:/{1}' -f $Settings.SiteHost, $sitePath } else { 'https://graph.microsoft.com/v1.0/sites/{0}' -f $Settings.SiteHost }
+        $site = Invoke-Graph $step { Invoke-RestMethod -Uri $siteUri -Headers (Get-AuthHeader) }
+        $step = 'Finding the library'
+        $drives = Invoke-Graph $step { Invoke-RestMethod -Uri ('https://graph.microsoft.com/v1.0/sites/{0}/drives' -f $site.id) -Headers (Get-AuthHeader) }
+        $drive = @($drives.value | Where-Object {
+                $_.name -eq $Settings.Library -or [uri]::UnescapeDataString(($_.webUrl -split '/')[-1]) -eq $Settings.Library
+            }) | Select-Object -First 1
+        if (-not $drive) {
+            $names = (@($drives.value) | ForEach-Object { $_.name }) -join ', '
+            throw "The site has no library called $($Settings.Library). Its libraries: $names."
+        }
+        $Settings.DriveId = $drive.id
+        $step = 'Making the folder'
+        $parent = ''
+        foreach ($segment in @(($Settings.Folder -split '/') | Where-Object { $_ })) {
+            $children = if ($parent) { 'https://graph.microsoft.com/v1.0/drives/{0}/root:/{1}:/children' -f $drive.id, $parent } else { 'https://graph.microsoft.com/v1.0/drives/{0}/root/children' -f $drive.id }
+            $body = @{ name = $segment; folder = @{}; '@microsoft.graph.conflictBehavior' = 'fail' } | ConvertTo-Json -Compress
+            try {
+                $null = Invoke-Graph $step { Invoke-RestMethod -Method Post -Uri $children -Headers (Get-AuthHeader) -ContentType 'application/json' -Body $body }
+            } catch {
+                if ((Get-HttpStatus $_) -ne 409) { throw }
+            }
+            $escaped = [uri]::EscapeDataString($segment)
+            $parent = if ($parent) { $parent + '/' + $escaped } else { $escaped }
+        }
+        $step = 'Writing a test file'
+        $probe = Join-Path $WorkDir 'aio-access-check.txt'
+        Set-Content -LiteralPath $probe -Value ('AI in One checked its access at {0}.' -f (Get-Date).ToUniversalTime().ToString('o')) -Encoding utf8
+        $null = Invoke-Graph $step { Invoke-RestMethod -Method Put -Uri (Get-DriveItemUri 'aio-access-check.txt' 'content') -Headers (Get-AuthHeader) -InFile $probe -ContentType 'text/plain' }
+        $step = 'Deleting the test file'
+        $null = Invoke-Graph $step { Invoke-RestMethod -Method Delete -Uri (Get-DriveItemUri 'aio-access-check.txt' '') -Headers (Get-AuthHeader) }
+        Remove-Item -LiteralPath $probe -Force -ErrorAction SilentlyContinue
+        $step = 'Listing the files'
+        $files = @(foreach ($s in @($Streams | Where-Object Wanted)) {
+                try {
+                    $item = Invoke-Graph $step { Invoke-RestMethod -Uri (Get-DriveItemUri $s.File '') -Headers (Get-AuthHeader) }
+                    [ordered]@{ name = $s.File; exists = $true; size = [long]$item.size; lastModified = (ConvertTo-IsoTime $item.lastModifiedDateTime); webUrl = $item.webUrl }
+                } catch {
+                    if ((Get-HttpStatus $_) -ne 404) { throw }
+                    [ordered]@{ name = $s.File; exists = $false }
+                }
+            })
+        $out = [ordered]@{
+            ok          = $true
+            siteId      = $site.id
+            siteName    = $site.displayName
+            siteWebUrl  = $site.webUrl
+            driveId     = $drive.id
+            driveName   = $drive.name
+            driveWebUrl = $drive.webUrl
+            folder      = $Settings.Folder
+            files       = $files
+        }
+    } catch {
+        $out = [ordered]@{ ok = $false; step = $step; status = (Get-HttpStatus $_); error = $_.Exception.Message }
+    }
+    # In the console's code page, so a site or library name that isn't ASCII is escaped.
+    'AIO-RESULT ' + ($out | ConvertTo-Json -Compress -EscapeHandling EscapeNonAscii)
+}
+
+# Downloads to a temporary name, and keeps the file only when all of it arrived, so a download that
+# stops part way can't become the file that later runs append to.
+function Receive-RemoteFile([string]$Name, [string]$Target) {
+    try {
+        $item = Invoke-Graph "Reading $Name" {
+            Invoke-RestMethod -Uri (Get-DriveItemUri $Name '') -Headers (Get-AuthHeader)
+        }
+    } catch {
+        if ((Get-HttpStatus $_) -eq 404) { return $false }
+        throw
+    }
+    $size = [long]$item.size
+    if ($size -le 0) {
+        Write-RunLog "$Name in the SharePoint folder is empty, so it wasn't downloaded." 'WARN'
+        return $false
+    }
+    $partial = $Target + '.download'
+    try {
+        $null = Invoke-Graph "Downloading $Name" {
+            Invoke-WebRequest -Uri (Get-DriveItemUri $Name 'content') -Headers (Get-AuthHeader) -OutFile $partial
+        }
+        $got = (Get-Item -LiteralPath $partial).Length
+        if ($got -ne $size) { throw "The download of $Name stopped short: $got of $size bytes arrived." }
+        Move-Item -LiteralPath $partial -Destination $Target -Force
+    } finally {
+        Remove-Item -LiteralPath $partial -Force -ErrorAction SilentlyContinue
+    }
+    $true
+}
+
+function Send-RemoteFile([string]$Path, [string]$Name) {
+    $size = (Get-Item -LiteralPath $Path).Length
+    if ($size -le $SimpleUploadLimit) {
+        # A simple upload first: some tenants refuse upload sessions.
+        $null = Invoke-Graph "Uploading $Name" {
+            Invoke-RestMethod -Method Put -Uri (Get-DriveItemUri $Name 'content') -Headers (Get-AuthHeader) -InFile $Path -ContentType 'text/csv'
+        }
+        return
+    }
+    $session = Invoke-Graph "Starting the upload of $Name" {
+        Invoke-RestMethod -Method Post -Uri (Get-DriveItemUri $Name 'createUploadSession') -Headers (Get-AuthHeader) -ContentType 'application/json' -Body '{"item":{"@microsoft.graph.conflictBehavior":"replace"}}'
+    }
+    $stream = [System.IO.File]::OpenRead($Path)
+    try {
+        $buffer = [byte[]]::new($ChunkSize)
+        $offset = [long]0
+        while ($offset -lt $size) {
+            $read = $stream.Read($buffer, 0, $buffer.Length)
+            if ($read -le 0) { throw "Couldn't read $Path." }
+            $chunk = [byte[]]::new($read)
+            [Array]::Copy($buffer, $chunk, $read)
+            $range = 'bytes {0}-{1}/{2}' -f $offset, ($offset + $read - 1), $size
+            # The upload URL carries its own authorisation, so it gets no token.
+            $null = Invoke-Graph "Uploading $Name" {
+                Invoke-RestMethod -Method Put -Uri $session.uploadUrl -Headers @{ 'Content-Range' = $range } -Body $chunk -ContentType 'application/octet-stream'
+            }
+            $offset += $read
+        }
+    } finally {
+        $stream.Dispose()
+    }
+}
+
+# Runs PAX once, for the days from Start up to End (PAX doesn't load End itself), and says how it went.
+function Invoke-Pax([datetime]$Start, [datetime]$End, [switch]$AutoCompleteness) {
+    $Result.attempts++
+    $metrics = Join-Path $LogDir ('pax-metrics-{0}-{1}.json' -f $Stamp, $Result.attempts)
+    $paxArgs = @{
+        Auth             = 'AppRegistration'
+        TenantId         = $Settings.TenantId
+        ClientId         = $Settings.ClientId
+        StartDate        = (Format-Day $Start)
+        EndDate          = (Format-Day $End)
+        Rollup           = $true
+        SkipVersionCheck = $true
+        EmitMetricsJson  = $true
+        MetricsPath      = $metrics
+        OutputPathLog    = $PaxLogDir
+    }
+    if ($Settings.CredentialType -eq 'secret') {
+        $paxArgs.ClientSecret = Get-ClientSecretText
+    } else {
+        $paxArgs.ClientCertificateThumbprint = $Settings.CertificateThumbprint
+        $paxArgs.ClientCertificateStoreLocation = 'CurrentUser'
+    }
+    if ($AutoCompleteness) { $paxArgs.AutoCompleteness = $true }
+    # Each stream appends to its copy in the work folder when there is one, or else is written
+    # fresh to the work folder. -AppendFile takes the file's full path. The Users and Agent 365
+    # files take one destination each, their -Append... switch or their -OutputPath... switch.
+    $appended = $false
+    foreach ($s in @($Streams | Where-Object Wanted)) {
+        $copy = Join-Path $WorkDir $s.File
+        $append = Test-Path -LiteralPath $copy
+        switch ($s.Name) {
+            'Interactions' { if ($append) { $paxArgs.AppendFile = $copy; $appended = $true } else { $paxArgs.OutputPath = $WorkDir } }
+            'Users' { if ($append) { $paxArgs.AppendUserInfo = $copy } else { $paxArgs.IncludeUserInfo = $true; $paxArgs.OutputPathUserInfo = $WorkDir } }
+            'Agent365' { if ($append) { $paxArgs.AppendAgent365Info = $copy } else { $paxArgs.IncludeAgent365Info = $true; $paxArgs.OutputPathAgent365Info = $WorkDir } }
+        }
+    }
+    $extra = if ($AutoCompleteness) { ', with -AutoCompleteness' } else { '' }
+    Write-RunLog ('Running PAX {0}: {1} to {2}{3}.' -f $Settings.PaxVersion, $paxArgs.StartDate, (Format-Day ($End.AddDays(-1))), $extra)
+    # Where this run's part of the log starts.
+    $before = (Get-Item -LiteralPath $RunLog).Length
+    $code = 0
+    # Nobody is at the keyboard, even when the task runs while you're signed in, so PAX mustn't prompt.
+    $env:PAX_NONINTERACTIVE = '1'
+    Push-Location -LiteralPath $WorkDir
+    try {
+        # PAX runs as it does on its own: without this script's strict mode, and errors that
+        # don't stop it are logged rather than thrown.
+        $code = & {
+            Set-StrictMode -Off
+            $ErrorActionPreference = 'Continue'
+            $global:LASTEXITCODE = 0
+            & $Settings.PaxScript @paxArgs *>> $RunLog
+            [int]$global:LASTEXITCODE
+        }
+    } catch {
+        Write-RunLog "PAX stopped: $($_.Exception.Message)" 'ERROR'
+        $code = if ($LASTEXITCODE) { [int]$LASTEXITCODE } else { 1 }
+    } finally {
+        Pop-Location
+    }
+    $output = Get-LogSince $before
+    if (Test-Path -LiteralPath $metrics) { $Result.metrics = $metrics }
+    $records = [long]-1
+    $rows = [long]-1
+    if (Test-Path -LiteralPath $metrics) {
+        try {
+            $counts = (Get-Content -LiteralPath $metrics -Raw | ConvertFrom-Json).PSObject.Properties['metrics']
+            if ($counts) {
+                $records = Get-Count $counts.Value 'TotalRecordsFetched'
+                $rows = Get-Count $counts.Value 'TotalStructuredRows'
+            }
+        } catch {
+            Write-RunLog "Couldn't read PAX's counts from ${metrics}: $($_.Exception.Message)"
+        }
+    }
+    Write-RunLog "PAX finished with exit code $code."
+    # With no audit records in the window, PAX writes no files, leaves the files it would append to
+    # as they were, and exits 0.
+    [pscustomobject]@{
+        Code     = $code
+        Records  = $records
+        Rows     = $rows
+        Empty    = $output.Contains('No audit logs found in the specified date range') -or ($rows -eq 0 -and $records -le 0)
+        Appended = $appended
+        Output   = $output
+    }
+}
+
+# PAX exits 0 even when its rollup fails or it doesn't add the new days to the file, so its log
+# decides. Only this run of PAX's part of the log counts.
+function Assert-PaxRun($Run) {
+    foreach ($text in $RollupFailures) {
+        if ($Run.Output.Contains($text)) {
+            throw "PAX's rollup failed (""$text""), so nothing was published. See $RunLog and the PAX log in $PaxLogDir."
+        }
+    }
+    if ($Run.Empty) { return }
+    if ($Run.Appended) {
+        # PAX doesn't append to a file an older PAX made. It writes the new rows to a file of their own.
+        if ($Run.Output.Contains('append SKIPPED')) {
+            throw "PAX didn't add the new days to AIO_Interactions.csv, because an older PAX made the file, so nothing was published. To load the history again, run the installer's run command with --backfill-days $([int]$Settings.SeedDays)."
+        }
+        if ($Run.Output.Contains('Rollup: -AppendFile merge:')) { return }
+        throw "PAX didn't say it added the new days to AIO_Interactions.csv, so nothing was published. See $RunLog and the PAX log in $PaxLogDir."
+    }
+    $new = @(Get-ChildItem -LiteralPath $WorkDir -Filter '*_Interactions.csv' -File -ErrorAction SilentlyContinue | Where-Object Name -ne 'AIO_Interactions.csv')
+    if (-not $new.Count) { throw "PAX didn't write an Interactions file, so nothing was published. See $RunLog and the PAX log in $PaxLogDir." }
+}
+
+# Loads the days from Start up to End into the files in the folder Dir. PAX appends to copies of
+# them, which replace them only when PAX worked. Exit code 10 means some days hit the audit search
+# limit: PAX then runs once more with -AutoCompleteness, which splits those days up.
+function Invoke-Window([string]$Dir, [datetime]$Start, [datetime]$End) {
+    Initialize-WorkDir $Dir
+    $run = Invoke-Pax $Start $End
+    if ($run.Code -eq 10) {
+        Write-RunLog 'PAX reported an incomplete load (exit code 10). Running it once more with -AutoCompleteness.' 'WARN'
+        Initialize-WorkDir $Dir
+        $run = Invoke-Pax $Start $End -AutoCompleteness
+    }
+    $Result.exitCode = $run.Code
+    if ($run.Code -ne 0) {
+        $meaning = switch ($run.Code) {
+            10 { 'some days hit the audit search limit, so the load is incomplete' }
+            20 { 'Microsoft Graph kept refusing requests, so PAX stopped early' }
+            30 { "PAX couldn't read the users from Microsoft Entra" }
+            40 { 'parts of the load failed, so PAX left the files as they were' }
+            default { 'PAX stopped with an error' }
+        }
+        throw "PAX exited with code $($run.Code) ($meaning), so nothing was published. See $RunLog and the PAX log in $PaxLogDir."
+    }
+    Assert-PaxRun $run
+    if ($run.Records -ge 0) { $Result.records = [long]$Result.records + $run.Records }
+    if ($run.Rows -ge 0) { $Result.rows = [long]$Result.rows + $run.Rows }
+    if ($run.Empty) { Write-RunLog ('No Copilot interactions from {0} to {1}.' -f (Format-Day $Start), (Format-Day ($End.AddDays(-1)))) }
+    Save-NewOutput $Dir
+    $run
+}
+
+# Gives the files this run of PAX wrote their fixed names in the folder To.
+function Save-NewOutput([string]$To) {
+    foreach ($s in @($Streams | Where-Object Wanted)) {
+        $copy = Join-Path $WorkDir $s.File
+        $new = if (Test-Path -LiteralPath $copy) {
+            Get-Item -LiteralPath $copy
+        } else {
+            Get-ChildItem -LiteralPath $WorkDir -Filter $s.Pattern -File -ErrorAction SilentlyContinue |
+                Where-Object Name -ne $s.File | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+        }
+        if (-not $new) { continue }
+        Move-Item -LiteralPath $new.FullName -Destination (Join-Path $To $s.File) -Force
+        if ($To -eq $DataDir) {
+            Write-RunLog "Saved $($s.File)."
+            if ($s.Name -eq 'Interactions') { Remove-Item -LiteralPath $NoDataFile -Force -ErrorAction SilentlyContinue }
+        }
+    }
+}
+
+function Publish-Files([string]$From) {
+    $hasData = Test-Path -LiteralPath (Join-Path $From 'AIO_Interactions.csv')
+    foreach ($s in @($Streams | Where-Object Wanted)) {
+        $path = Join-Path $From $s.File
+        if (-not (Test-Path -LiteralPath $path)) {
+            # Before any Copilot interactions, PAX writes none of the files.
+            if ($hasData) { Write-RunLog "PAX didn't write $($s.File) this time." 'WARN' }
+            continue
+        }
+        # A file with a header and no rows would replace the history the report reads.
+        if ($s.Name -eq 'Interactions' -and @(Get-Content -LiteralPath $path | Where-Object { $_.Trim() } | Select-Object -First 2).Count -lt 2) {
+            Write-RunLog "$($s.File) has no rows, so it wasn't published." 'WARN'
+            continue
+        }
+        if ($Settings.Destination -eq 'sharepoint') {
+            Send-RemoteFile $path $s.File
+            Write-RunLog "Uploaded $($s.File) to the SharePoint folder $($Settings.Folder)."
+        } else {
+            $null = New-Item -ItemType Directory -Force -Path $Settings.LocalFolder
+            Copy-Item -LiteralPath $path -Destination (Join-Path $Settings.LocalFolder $s.File) -Force
+            Write-RunLog "Copied $($s.File) to $($Settings.LocalFolder)."
+        }
+        $Result.files += $s.File
+    }
+}
+
+# Once every window has loaded, the new files replace the local ones, which are kept as
+# .previous.csv files. It's safe to run again after a run that stopped part way through it.
+function Complete-Seed($Progress) {
+    if (-not $Progress.done) {
+        $Progress.done = $true
+        $Progress.found = Test-Path -LiteralPath (Join-Path $SeedDir 'AIO_Interactions.csv')
+        Save-SeedProgress $Progress
+    }
+    $from = Format-Day $Progress.from
+    $to = Format-Day ($Progress.next.AddDays(-1))
+    if ($Progress.found) {
+        foreach ($s in @($Streams | Where-Object Wanted)) {
+            $new = Join-Path $SeedDir $s.File
+            if (-not (Test-Path -LiteralPath $new)) { continue }
+            $stable = Join-Path $DataDir $s.File
+            if (Test-Path -LiteralPath $stable) {
+                $previous = Join-Path $DataDir ([IO.Path]::GetFileNameWithoutExtension($s.File) + '.previous.csv')
+                Move-Item -LiteralPath $stable -Destination $previous -Force
+            }
+            Move-Item -LiteralPath $new -Destination $stable -Force
+            Write-RunLog "Saved $($s.File)."
+        }
+        Remove-Item -LiteralPath $NoDataFile -Force -ErrorAction SilentlyContinue
+        $message = "Loaded the history from $from to $to."
+    } elseif (Test-Path -LiteralPath (Join-Path $DataDir 'AIO_Interactions.csv')) {
+        $message = "No Copilot interactions were found from $from to $to, so the files stay as they were."
+        Write-RunLog $message 'WARN'
+    } else {
+        # So later runs load only the last few days, until one finds some.
+        [ordered]@{ from = $from; to = $to } | ConvertTo-Json | Set-Content -LiteralPath $NoDataFile -Encoding utf8
+        $message = "No Copilot interactions were found from $from to $to, so there's nothing to publish yet."
+        Write-RunLog $message 'WARN'
+    }
+    Remove-Item -LiteralPath $SeedRequest -Force -ErrorAction SilentlyContinue
+    Clear-Folder $SeedDir
+    $message
+}
+
+# A first load on a PC with no local files fetches the published ones first. Then the windows that
+# load don't replace a published history: they're published once the whole history has loaded,
+# and the files fetched here are kept as .previous.csv. A first install finds none.
+function Get-PublishedFiles {
+    $null = New-Item -ItemType Directory -Force -Path $DataDir
+    foreach ($s in @($Streams | Where-Object Wanted)) {
+        $local = Join-Path $DataDir $s.File
+        if (Test-Path -LiteralPath $local) { continue }
+        if ($Settings.Destination -eq 'sharepoint') {
+            if (Receive-RemoteFile $s.File $local) { Write-RunLog "Downloaded $($s.File) from SharePoint. It stays published as it is until the history has loaded." }
+            continue
+        }
+        $published = Join-Path $Settings.LocalFolder $s.File
+        if (-not (Test-Path -LiteralPath $published) -or (Get-Item -LiteralPath $published).Length -le 0) { continue }
+        $partial = $local + '.download'
+        try {
+            Copy-Item -LiteralPath $published -Destination $partial -Force
+            Move-Item -LiteralPath $partial -Destination $local -Force
+        } finally {
+            Remove-Item -LiteralPath $partial -Force -ErrorAction SilentlyContinue
+        }
+        Write-RunLog "Copied $($s.File) from $($Settings.LocalFolder). It stays there as it is until the history has loaded."
+    }
+}
+
+# Loads the history in windows, oldest first, into the seed folder, and saves its progress after
+# each one, so a run that stops carries on from the last window that finished. A run starts no new
+# window that might not finish before the task's time limit. Says where to publish from: the seed
+# folder while the first load is under way, nowhere while the history loads again (the published
+# files stay as they were), and the data folder once it has all loaded, when it found any.
+function Invoke-Seed {
+    $progress = if ($Seed) { $null } else { Read-SeedProgress }
+    if (-not $progress) {
+        Clear-Folder $SeedDir
+        if (-not (Test-Path -LiteralPath (Join-Path $DataDir 'AIO_Interactions.csv'))) {
+            Get-PublishedFiles
+            $Result.noData = & $TestNoData
+        }
+        $from = $Today.AddDays(-[int]$Settings.SeedDays)
+        $progress = [ordered]@{ from = $from; next = $from; window = [int]$Settings.SeedWindowDays; loading = $false; done = $false; found = $false; rows = $null; stops = 0 }
+        Write-RunLog ('Loading the history from {0}, {1} days at a time.' -f (Format-Day $from), $progress.window)
+    } elseif ($progress.loading) {
+        # The last run stopped while it loaded a window, probably at the task's time limit.
+        if ($progress.window -le 1) { $progress.stops = [int]$progress.stops + 1 }
+        $progress.window = [int][math]::Max(1, [math]::Floor($progress.window / 2))
+        $progress.loading = $false
+        if ($progress.stops -ge 2) {
+            Write-RunLog ('The history is stuck at {0}: {1} runs in a row stopped while they loaded that one day. This run tries it again. PAX''s logs are in {2}.' -f (Format-Day $progress.next), $progress.stops, $PaxLogDir) 'WARN'
+        } else {
+            Write-RunLog ('The last run stopped before it finished. The history carries on loading from {0}, {1} at a time.' -f (Format-Day $progress.next), $(if ($progress.window -eq 1) { 'one day' } else { '{0} days' -f $progress.window })) 'WARN'
+        }
+    } elseif (-not $progress.done) {
+        Write-RunLog ('Carrying on loading the history from {0}.' -f (Format-Day $progress.next))
+    }
+    Save-SeedProgress $progress
+    Set-SeedResult $progress
+    Save-Result
+    $windows = 0
+    $longest = [timespan]::Zero
+    while (-not $progress.done -and $progress.next -lt $Today) {
+        if ($windows -and ((Get-Date) - $RunStarted) + $longest -gt $SeedBudget) {
+            Write-RunLog ('Stopping for now, so the run ends before the task''s time limit. The next run carries on from {0}.' -f (Format-Day $progress.next))
+            break
+        }
+        $end = $progress.next.AddDays($progress.window)
+        if ($end -gt $Today) { $end = $Today }
+        $progress.loading = $true
+        Save-SeedProgress $progress
+        $began = Get-Date
+        try {
+            $run = Invoke-Window $SeedDir $progress.next $end
+            $progress.next = $end
+            $progress.stops = 0
+            if ($run.Rows -ge 0) { $progress.rows = [long]$progress.rows + $run.Rows }
+        } finally {
+            $progress.loading = $false
+            Save-SeedProgress $progress
+            Set-SeedResult $progress
+            $Result.noData = & $TestNoData
+            Save-Result
+        }
+        $windows++
+        $took = (Get-Date) - $began
+        if ($took -gt $longest) { $longest = $took }
+    }
+    if ($progress.done -or $progress.next -ge $Today) {
+        $message = Complete-Seed $progress
+        Set-SeedResult $progress
+        # With no Copilot interactions, the files stay as they were, so there's nothing new to publish.
+        return [pscustomobject]@{ From = $(if ($progress.found) { $DataDir } else { $null }); Message = $message }
+    }
+    $loaded = 'Loaded the history from {0} to {1}.' -f (Format-Day $progress.from), (Format-Day ($progress.next.AddDays(-1)))
+    if (Test-Path -LiteralPath (Join-Path $DataDir 'AIO_Interactions.csv')) {
+        return [pscustomobject]@{ From = $null; Message = "$loaded The rest loads at the next run; until then the published files stay as they were." }
+    }
+    [pscustomobject]@{ From = $SeedDir; Message = "$loaded The rest loads at the next run." }
+}
+
+if ($CheckAccess) {
+    Test-SiteAccess
+    exit 0
+}
+
+$exitCode = 0
+try {
+    Write-RunLog "AI in One PAX refresh started. Installer version $($Settings.InstallerVersion)."
+    Save-Result
+    if (-not (Test-Path -LiteralPath $Settings.PaxScript)) { throw "PAX isn't at $($Settings.PaxScript). Run the installer again to repair it." }
+    $hash = (Get-FileHash -LiteralPath $Settings.PaxScript -Algorithm SHA256).Hash
+    if ($hash -ne $Settings.PaxSha256) { throw "PAX at $($Settings.PaxScript) has changed (SHA-256 $hash), so it wasn't run. Run the installer again to repair it." }
+    if ($Settings.Destination -eq 'sharepoint' -and -not $Settings.DriveId) { throw "The installer hasn't checked the SharePoint library yet. Run the installer again to repair it." }
+    # PAX looks for Python on PATH, and installs one itself, silently, when it finds none. Put the
+    # one the installer checked first, and stop rather than let PAX install another.
+    if (-not $Settings.PythonDir -or -not (Test-Path -LiteralPath (Join-Path $Settings.PythonDir 'python.exe'))) {
+        throw "Python isn't in $($Settings.PythonDir) any more. Run the installer again to repair it."
+    }
+    $env:PATH = $Settings.PythonDir + [IO.Path]::PathSeparator + $env:PATH
+
+    $credential = if ($Settings.CredentialType -eq 'secret') { 'client secret' } else { 'certificate' }
+    $expires = if ($Settings.CredentialType -ne 'secret') {
+        (Get-RunCertificate).NotAfter.ToUniversalTime()
+    } elseif ($Settings.SecretExpires) {
+        [datetimeoffset]::Parse($Settings.SecretExpires, [Globalization.CultureInfo]::InvariantCulture).UtcDateTime
+    } else { $null }
+    if ($expires) {
+        $daysLeft = [int][math]::Floor(($expires - (Get-Date).ToUniversalTime()).TotalDays)
+        if ($daysLeft -lt 30) { Write-RunLog "The task's $credential expires in $daysLeft days. Run the installer again on this PC to renew it." 'WARN' }
+    }
+
+    $interactions = Join-Path $DataDir 'AIO_Interactions.csv'
+    $seedRequested = $Seed -or (Test-Path -LiteralPath $SeedRequest)
+    if ($Settings.Destination -eq 'sharepoint') {
+        $script:Token = Get-GraphToken
+        # A new PC, or lost local files: start from the SharePoint copies, so no history is lost.
+        if (-not $seedRequested) {
+            foreach ($s in @($Streams | Where-Object Wanted)) {
+                $local = Join-Path $DataDir $s.File
+                if (-not (Test-Path -LiteralPath $local) -and (Receive-RemoteFile $s.File $local)) {
+                    Write-RunLog "Downloaded $($s.File) from SharePoint to append to it."
+                }
+            }
+        }
+    }
+
+    # The history loads when it's asked for, and on the first run. After a history with no Copilot
+    # interactions, later runs load only the last few days, until one finds some.
+    $mode = if ($seedRequested -or -not ((Test-Path -LiteralPath $interactions) -or (Test-Path -LiteralPath $NoDataFile))) { 'seed' } else { 'daily' }
+    $Result.mode = $mode
+    Save-Result
+    $note = $null
+    if ($mode -eq 'seed') {
+        $seedRun = Invoke-Seed
+        $publishFrom = $seedRun.From
+        $note = $seedRun.Message
+    } else {
+        $start = $Today.AddDays(-[int]$Settings.WindowDays)
+        $run = Invoke-Window $DataDir $start $Today
+        $publishFrom = $DataDir
+        if ($run.Empty) { $note = 'No new Copilot interactions from {0} to {1}.' -f (Format-Day $start), (Format-Day ($Today.AddDays(-1))) }
+    }
+    if ($publishFrom) {
+        if ($Settings.Destination -eq 'sharepoint') { $script:Token = Get-GraphToken }
+        Publish-Files $publishFrom
+    }
+    $Result.noData = & $TestNoData
+    $Result.status = if (@($Result.warnings).Count) { 'warning' } else { 'ok' }
+    $published = @($Result.files).Count
+    $Result.message = if ($note -and -not $published) {
+        $note
+    } else {
+        ('{0} Published {1} {2}.' -f $note, $published, $(if ($published -eq 1) { 'file' } else { 'files' })).Trim()
+    }
+    Write-RunLog 'Done.'
+} catch {
+    $Result.status = 'failed'
+    $Result.message = $_.Exception.Message
+    Write-RunLog $_.Exception.Message 'ERROR'
+    $exitCode = if ($Result.exitCode) { [int]$Result.exitCode } else { 1 }
+} finally {
+    Clear-WorkDir
+    Remove-OldFiles $LogDir 'run-*.log'
+    Remove-OldFiles $LogDir 'pax-metrics-*.json'
+    Remove-OldFiles $PaxLogDir '*'
+    Save-Result
+}
+exit $exitCode
