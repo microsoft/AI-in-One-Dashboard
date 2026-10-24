@@ -22,7 +22,7 @@ import { daysLeft, ensureCredential, ensurePaxApp, removePaxCredentials, RENEW_D
 import { defaultLocalFolder, KEPT_DIRS, paxFiles, runDir, stateRoot, TASK_NAME } from './names.js';
 import { ensurePaxTools, runPwshOf } from './pc.js';
 import { filesLabel, taskLogon } from './plan.js';
-import { connectModel, deployPaxModel, ensurePaxWorkspace, ensureRefreshSchedule, FIRST_REFRESH_MS, localGuidance, paxViewerAccess, refreshPaxModel } from './report.js';
+import { connectModel, deployPaxModel, ensurePaxWorkspace, ensureRefreshSchedule, FIRST_REFRESH_MS, forgetMissingModel, localGuidance, paxViewerAccess, refreshPaxModel } from './report.js';
 import { checkAccess, taskInfo } from './scripts.js';
 import { describeCheck, ensureSiteAccess, folderLabel, revokeSiteGrant, sizeOf } from './site.js';
 import { describeRun, describeStopped, ensureTask, logonOf, noDataYet, noPasswordWarning, readLastRun, removeTask, staleRun, startRun, waitForRun } from './task.js';
@@ -501,6 +501,7 @@ async function refresh(ctx, opts) {
   const { ui, config } = ctx;
   const sm = config.semanticModel;
   if (!withReport(config) || !sm.id || !config.fabric.workspaceId) throw new Error('There is no semantic model yet. Run the installer first.');
+  if (await forgetMissingModel(ctx)) return connectModel(ctx);
   if (!sm.bound) {
     ui.note(`${sm.name} isn't signed in to SharePoint yet, so that comes first.`);
     return connectModel(ctx);

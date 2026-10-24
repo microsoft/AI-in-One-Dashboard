@@ -660,6 +660,17 @@ test('run --wait: a run that found no Copilot interactions is not a failure, and
   assert.equal(calls.requests.filter((r) => r.args?.includes('-CheckAccess')).length, 0, 'no check of the folder, and no refresh');
 });
 
+test('refresh: a model that was deleted from the workspace is forgotten, with no raw 404', async (t) => {
+  const files = [{ name: FILES.interactions, exists: true, size: 10 }, { name: FILES.users, exists: true, size: 10 }];
+  const { ctx, config, out } = paxCtx(t, { pax: { ...REGISTERED, site: SITE }, check: { ok: true, files }, config: { semanticModel: { ...model(true), id: 'm1', name: 'AI in One', bound: true } } });
+  config.fabric = { ...config.fabric, workspaceId: 'ws1', workspaceName: 'Copilot Reporting' };
+  /** @type {any} */ (ctx.api.fabric).listItems = async () => [];
+  assert.equal(await runPaxCommand(ctx, 'refresh', { wait: false }), false);
+  assert.equal(config.semanticModel.id, undefined);
+  assert.ok(out().includes('AI in One isn\'t in "Copilot Reporting" any more.'), out());
+  assert.ok(out().includes(`AI in One isn't deployed. Run "${commandLine('update')}".`), out());
+});
+
 /** @param {string} s */
 const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 

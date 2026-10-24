@@ -121,9 +121,10 @@ function setup(o = {}) {
 }
 let setups = 0;
 
-/** Marks the model as deployed. @param {ReturnType<typeof setup>} s @param {string} [id] */
+/** Marks the model as deployed, and puts it in the workspace. @param {ReturnType<typeof setup>} s @param {string} [id] */
 function deployed(s, id = 'm1') {
   Object.assign(s.config.semanticModel, { enabled: true, id });
+  s.fabric.add('SemanticModel', s.config.semanticModel.name, null).id = id;
 }
 
 /** An access check that found these files in the folder. @param {string[]} names @returns {import('../src/pax/scripts.js').AccessCheck} */
@@ -489,10 +490,52 @@ test('deployPaxModel: a refused update of a deployed model stops the run, still 
 test('deployPaxModel: leaves a model published from Power BI Desktop as it is', async () => {
   const s = setup();
   Object.assign(s.config.semanticModel, { desktop: true, id: 'm1', signature: 'desktop' });
+  s.fabric.add('SemanticModel', 'AI in One', null).id = 'm1';
   assert.deepEqual(await deployPaxModel(s.ctx), { deployed: true, reportOk: true });
   assert.deepEqual(s.fabric.calls, []);
   assert.equal(s.config.semanticModel.signature, 'desktop');
   assert.ok(s.text().includes(`${OK} Semantic model AI in One is in place. It was published from Power BI Desktop, so the installer leaves it as it is.`), s.text());
+});
+
+/** A context whose recorded model was deleted from the workspace. @param {object} [sm] */
+function deletedModel(sm = {}) {
+  const s = setup();
+  Object.assign(s.config.fabric, { workspaceId: 'ws1', workspaceName: 'Copilot Reporting' });
+  Object.assign(s.config.semanticModel, { enabled: true, id: 'gone', bound: true, refreshTimes: ['06:00', '12:00'], report: { id: 'r0', name: 'AI in One', modelId: 'gone' }, ...sm });
+  return s;
+}
+const DELETED = '! AI in One isn\'t in "Copilot Reporting" any more.';
+
+test('deployPaxModel: a Desktop model that was deleted is forgotten, and one published again under its name is taken on', async () => {
+  const s = deletedModel({ desktop: true, signature: 'desktop' });
+  const model = s.fabric.add('SemanticModel', 'AI in One', null);
+  assert.deepEqual(await deployPaxModel(s.ctx), { deployed: true, reportOk: true });
+  const sm = s.config.semanticModel;
+  assert.equal(sm.id, model.id);
+  assert.equal(sm.bound, false, 'the new model needs signing in');
+  assert.equal(sm.refreshTimes, undefined);
+  assert.equal(sm.report, undefined, 'the old report went with the old model');
+  assert.ok(s.text().includes(DELETED), s.text());
+  assert.ok(!s.text().includes('is in place'), s.text());
+});
+
+test('connectModel: a model that was deleted is forgotten, and the owner is told to run update instead of getting a 404', async () => {
+  const s = deletedModel();
+  assert.equal(await connectModel(s.ctx, { check: found(BOTH) }), false);
+  const sm = s.config.semanticModel;
+  assert.deepEqual([sm.id, sm.bound, sm.refreshTimes, sm.report], [undefined, undefined, undefined, undefined]);
+  assert.ok(s.text().includes(DELETED), s.text());
+  assert.ok(s.text().includes(`! AI in One isn't deployed. Run "${commandLine('update')}".`), s.text());
+  assert.deepEqual(s.powerBi.calls, []);
+});
+
+test('connectModel: a Desktop model that was deleted is forgotten, and the steps to publish it again are shown', async () => {
+  const s = deletedModel({ desktop: true });
+  assert.equal(await connectModel(s.ctx, { check: found(BOTH) }), false);
+  assert.deepEqual(s.ui.asked, ['Have you published it?']);
+  assert.ok(s.text().includes(DELETED), s.text());
+  assert.ok(s.text().includes("The workspace didn't take AI in One from the installer, so publish it from Power BI Desktop:"), s.text());
+  assert.deepEqual(s.powerBi.calls, []);
 });
 
 test('deployPaxModel: takes on the model and report once they are published from Power BI Desktop', async () => {

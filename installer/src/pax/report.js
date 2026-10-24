@@ -155,6 +155,29 @@ async function adoptPublished(ctx) {
 }
 
 /**
+ * Forgets the recorded model when it's no longer in the workspace (someone deleted it), so the
+ * steps that make or find a model run again instead of Power BI calls that get a 404.
+ * @param {Ctx} ctx
+ * @returns {Promise<boolean>}  true when the model was gone and has been forgotten.
+ */
+export async function forgetMissingModel(ctx) {
+  const { ui, config, api } = ctx;
+  const sm = config.semanticModel;
+  const ws = config.fabric.workspaceId;
+  if (!sm.id || !ws) return false;
+  const models = await api.fabric.listItems(ws, 'SemanticModel');
+  if (models.some((m) => m.id === sm.id)) return false;
+  ui.warn(`${sm.name} isn't in "${config.fabric.workspaceName ?? DEFAULT_WORKSPACE_NAME}" any more.`);
+  delete sm.id;
+  delete sm.bound;
+  delete sm.report;
+  delete sm.refreshTimes;
+  delete sm.reload;
+  ctx.save();
+  return true;
+}
+
+/**
  * Deploys the model from the SharePoint edition's template and publishes the report on it. When
  * the workspace won't take the model from the installer, it's published from Power BI Desktop
  * instead, once the first load has written the files (see connectModel).
@@ -168,7 +191,7 @@ export async function deployPaxModel(ctx) {
   sm.enabled = true;
   const file = sources.paxModelFile;
   if (!file) throw new Error('This copy of the installer has no SharePoint edition Power BI template (a .pbit with "PBI-SharePoint" in its name) to build the model from.');
-  if (sm.desktop && sm.id) {
+  if (sm.desktop && sm.id && !(await forgetMissingModel(ctx))) {
     ui.ok(`Semantic model ${sm.name} is in place. It was published from Power BI Desktop, so the installer leaves it as it is.`);
     return { deployed: true, reportOk: true };
   }
@@ -481,6 +504,7 @@ export async function connectModel(ctx, o = {}) {
     ui.info(`Once "${commandLine('status')}" shows the first run finished, run "${commandLine('check')}".`);
     return false;
   }
+  await forgetMissingModel(ctx);
   if (sm.desktop && !sm.id) await publishFromDesktop(ctx);
   if (!sm.id) {
     if (!sm.desktop) ui.warn(`${sm.name} isn't deployed. Run "${commandLine('update')}".`);
