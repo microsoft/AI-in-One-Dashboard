@@ -1,5 +1,5 @@
 ---
-name: AI in One (App Edition)
+name: AI in One app
 description: Calm analyst workspace for Copilot and agent adoption, computed in the browser from PAX exports.
 colors:
   canvas: "#f3f6f5"
@@ -78,7 +78,7 @@ components:
     textColor: "{colors.ink-2}"
 ---
 
-# DESIGN.md: AI in One (App Edition)
+# DESIGN.md: AI in One app
 
 > Recorded from the shipped build in `src/index.css`, `src/ui/theme.ts` and the components in `src/ui/`. The impeccable documenter ran inline in degraded mode (no subagent), so the qualitative language here was written without a user interview.
 

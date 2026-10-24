@@ -1,4 +1,4 @@
-# AI in One: App Edition
+# AI in One app
 
 An app version of the AI in One Power BI dashboard. It shows the same metrics as the Power BI report, with the same DAX definitions, in a simpler layout: six tabs with short sub-views instead of fifteen report pages.
 
@@ -10,11 +10,11 @@ There are three ways to use it. None of them needs a Power BI licence.
 
 | Option | What you do | Best for |
 |---|---|---|
+| **Copilot Managed App** (recommended, preview) | Follow [Start here](../README.md#-start-here-the-app-preview) in the main README: an admin turns on two settings, then you deploy it with the `ms` CLI and share it. | Sharing it across your organisation, hosted in your Microsoft 365 tenant. |
 | **Open it on your PC** | Download [`download/AI-in-One-App.html`](download/AI-in-One-App.html) (choose **Download raw file**) and open it in Edge or Chrome. | Trying it, or one person looking at the numbers. Works offline. |
-| **Put it in a Fabric workspace** | Run one line in PowerShell (below). | Sharing it with your team inside Fabric. |
-| **Copilot Managed App** | See [Deploy](#as-a-copilot-managed-app). | Tenants that use Copilot Managed Apps. |
+| **Put it in a Fabric workspace** (the Fabric App) | Run one line in PowerShell (below). | Sharing it with your team inside Fabric. |
 
-The downloaded page opens with a labelled synthetic sample. Choose **Change data** and drop in your PAX CSVs.
+The app opens with a labelled synthetic sample. Choose **Change data** and drop in your PAX CSVs.
 
 ### Put it in a Fabric workspace
 
@@ -79,6 +79,19 @@ The design system is in [DESIGN.md](DESIGN.md) and the product brief is in [PROD
 
 Most people should use [Get the app](#get-the-app). This section is for deploying from a clone of the repo. The same `npm run build` output runs in two hosts.
 
+### As a Copilot Managed App
+
+The full steps, including the admin settings, licensing and sharing, are in [Start here](../README.md#-start-here-the-app-preview) in the main README. In short, from this folder:
+
+```powershell
+npm ci              # installs the app's packages and the pinned ms CLI
+npx ms auth login
+npx ms app init -n "AI in One" --repo none -b ./dist -S "npm run build"   # once; add -e <environment-id> to pick an environment, or if environment lookup times out
+npx ms app deploy
+```
+
+`ms app init` writes `ms.config.json` with your tenant's app and environment IDs. It's gitignored, so each deployer runs it once, and keeps it to deploy updates. Run `npx ms` in this folder: anywhere else, it looks for an unrelated npm package called `ms`.
+
 ### As a Fabric App in a Fabric workspace
 
 The prerequisites are the same as [above](#put-it-in-a-fabric-workspace). The project config is [`rayfin/rayfin.yml`](rayfin/rayfin.yml). The app keeps no server-side data, so only auth and static hosting are on.
@@ -89,12 +102,3 @@ npx rayfin up --tenant <tenant-id> --workspace-id <workspace-id> -y
 ```
 
 It prints the item's portal link. People need access to the item (share it, or give them a workspace role) to open it. To update, run `npx rayfin up` again. The deploy state it writes (`rayfin/.deployments.json`, `rayfin/.env`) is gitignored.
-
-### As a Copilot Managed App
-
-You need the `ms` CLI, signed in to the target tenant. `ms app init` writes `ms.config.json` with your tenant's app and environment IDs. It's gitignored, so each deployer runs it once.
-
-```powershell
-ms app init -n "AI in One" --repo none -b ./dist -S "npm run build"   # add -e <environment-id> if environment lookup times out
-ms app deploy
-```
