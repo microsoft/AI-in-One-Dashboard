@@ -46,12 +46,13 @@ The AI-in-One Dashboard and AI Business Value PBITs consume it **with no changes
 
 ## `MODE`, and how it relates to Power BI incremental refresh
 
-The notebook has two run modes:
+The notebook has three run modes:
 
 | `MODE` | What it does | How it writes | When to use |
 |--------|--------------|---------------|-------------|
 | `backfill` | Pulls `BACKFILL_DAYS` of history in one go | Replaces the rows from the first of those days on and keeps older rows. With no table yet, creates it | First load, or loading more history |
 | `incremental` | Pulls from the start of the day of the latest `CreationDate` already in the table (high-water mark) | Replaces the rows from that day on | Scheduled daily/weekly runs |
+| `rebuild` | Pulls `BACKFILL_DAYS` of history in one go, like `backfill` | Overwrites the whole table, so rows older than the first of those days go. If it finds no records, leaves the table as it is | Rarely: a schema change, a snapshot of just those days, or duplicates older than the audit log keeps. The installer never uses it |
 
 **Recommended sequence:** run once with `MODE='backfill'` to seed history, then switch
 to `MODE='incremental'` on the schedule.
@@ -76,7 +77,10 @@ Incremental Refresh to the template is a sensible *later* enhancement, not a blo
 
 Scheduling `MODE='backfill'` doesn't turn the table into a snapshot of the last `BACKFILL_DAYS`:
 each run fetches all of those days again and keeps older rows, so you get the same table as
-`incremental` gives you, from much longer runs. Keep the schedule on `MODE='incremental'`.
+`incremental` gives you, from much longer runs. Keep the schedule on `MODE='incremental'`. If you'd
+prefer the ingester to behave like the previous weekly snapshot (overwrite each run, no
+accumulation), schedule `MODE='rebuild'`: each run fetches all of `BACKFILL_DAYS` again and
+overwrites the table.
 
 ## Duplicate rows from earlier versions
 
@@ -92,8 +96,10 @@ If your table already has duplicates, run the notebook once with `MODE='backfill
 `BACKFILL_DAYS` that reaches back past the oldest day with duplicates, then go back to
 `MODE='incremental'`. A backfill replaces the rows from its first day on and keeps older rows, so
 duplicates older than that stay. The audit log keeps 180 days by default and older rows can't be
-fetched again, so a backfill can't clear duplicates among them. Windows the staging manifest
-already lists as succeeded are read from staging rather than fetched again.
+fetched again, so a backfill can't clear duplicates among them. To drop those, run once with
+`MODE='rebuild'` instead: it overwrites the whole table with the `BACKFILL_DAYS` it fetches, so
+every older row goes, duplicated or not. Windows the staging manifest already lists as succeeded
+are read from staging rather than fetched again.
 
 The staging folder (`Files/_audit_staging`) still keeps every run's files. Later runs don't read
 them, so after a successful run you can delete the folder to save space; the next run then

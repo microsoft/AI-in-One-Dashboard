@@ -60,7 +60,8 @@ Adds a second way to get the data, with PAX instead of Fabric, and the AI in One
   first day on and keeps older rows, as the daily runs do. A reload of fewer days than are loaded
   now starts without asking, with `--yes` too, and the install record keeps the most days loaded.
   On a Lakehouse you set up by hand, the first load keeps rows older than the days it loads: see
-  **Already set up by hand** in the README.
+  **Already set up by hand** in the README. The audit notebook gets `MODE = 'rebuild'`, which
+  overwrites the whole table as a backfill used to; the installer never uses it.
 - Removing the installer (`install.ps1 -Uninstall`) keeps the `pax` and `pax-run` folders in
   `%LOCALAPPDATA%\AIInOne`, which the scheduled task runs from, and `managed-app`, which holds the
   AI in One app's deployment settings. With PAX, run **Uninstall** first.

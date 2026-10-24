@@ -271,7 +271,9 @@ The installer's first load keeps the rows older than the days it loads, on an ex
 too, including any duplicates an earlier version of the notebook wrote there. To clear those, run
 a backfill that reaches back past the oldest duplicated day: the notebook as in step 2, or
 `aio-install run --backfill-days <n>` after setup. The audit log keeps 180 days by default and
-older rows can't be fetched again, so a backfill can't clear duplicates among them.
+older rows can't be fetched again, so a backfill can't clear duplicates among them. To drop those
+too, run the notebook once with `MODE = 'rebuild'`, then set `MODE` back to `'incremental'`. A
+rebuild overwrites the whole table with the days it loads, so every older row goes.
 
 ## Update, repair or change
 
