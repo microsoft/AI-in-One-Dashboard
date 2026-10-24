@@ -113,7 +113,8 @@ export async function ensurePaxApp(ctx) {
  * pair once it's off, and Sites.Selected once the files stay on the PC. They come off its API
  * permissions, and their admin consent goes when the signed-in user can take it away; otherwise
  * the installer says who can. An app the user brought keeps them: the installer says which ones
- * this setup doesn't use. Only the permissions an earlier setup may have asked for are looked at.
+ * this setup doesn't use. Only the permissions an earlier setup may have asked for are looked at,
+ * so on its first run an app the user brought gets no note: it may have them for other work.
  * @param {Ctx} ctx
  * @param {{ canConsent: boolean }} who
  */
@@ -125,6 +126,7 @@ export async function dropUnneededPermissions(ctx, who) {
     app.permissions = paxPermissions(pax);
     ctx.save();
   };
+  if (app.existing && !app.permissions) return done();
   const names = paxUnneeded(pax).filter((p) => !app.permissions || app.permissions.includes(p));
   if (!names.length || !app.appId || !app.servicePrincipalId) return done();
   const appId = app.appId;

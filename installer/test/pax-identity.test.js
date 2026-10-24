@@ -906,6 +906,30 @@ test('dropUnneededPermissions: an app the user brought keeps its permissions, an
   has(out, apiPermissionsUrl(APP_ID));
 });
 
+test('dropUnneededPermissions: an app the user brought gets no note on its first run; a later setup that needs less still gets one', async (t) => {
+  const first = paxCtx(t, { pax: { agent365: false } });
+  first.config.app.existing = true;
+  withPermissions(first, BOTH);
+  await dropUnneededPermissions(first.ctx, { canConsent: true });
+  assert.deepEqual(first.graph.names(), []);
+  assert.equal(plain(first.ui), '', 'Application.Read.All may be there for other work');
+  assert.deepEqual(first.config.app.permissions, [...PAX_PERMISSIONS]);
+  assert.equal(first.saves(), 1);
+
+  const later = paxCtx(t, { pax: { agent365: true } });
+  later.config.app.existing = true;
+  withPermissions(later, BOTH);
+  await dropUnneededPermissions(later.ctx, { canConsent: true });
+  assert.equal(plain(later.ui), '');
+  assert.deepEqual(later.config.app.permissions, BOTH);
+  paxOf(later).agent365 = false;
+  await dropUnneededPermissions(later.ctx, { canConsent: true });
+  has(plain(later.ui), `"${PAX_APP_NAME}" has Graph application permissions this setup doesn't use: ${AGENT365_PERMISSIONS.join(', ')}.`);
+  assert.deepEqual(later.graph.args('removeRequiredAccess'), []);
+  assert.deepEqual(later.graph.args('deleteAppRoleAssignment'), []);
+  assert.deepEqual(later.config.app.permissions, [...PAX_PERMISSIONS]);
+});
+
 test('dropUnneededPermissions: no Graph calls when the last setup asked for no more than this one', async (t) => {
   const p = paxCtx(t, { pax: { agent365: false } });
   p.config.app.permissions = [...PAX_PERMISSIONS];
