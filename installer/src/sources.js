@@ -29,11 +29,48 @@ export function findModelTemplate(root) {
 }
 
 /**
+ * The last by name of the files in a folder that match, the newest when they carry a YYYY-MM-DD date.
+ * @param {string} dir
+ * @param {RegExp} pattern
+ * @returns {string | undefined}  The file's name.
+ */
+function newest(dir, pattern) {
+  if (!existsSync(dir)) return undefined;
+  return readdirSync(dir)
+    .filter((f) => pattern.test(f))
+    .sort()
+    .at(-1);
+}
+
+/**
+ * The Power BI template that reads the PAX files from SharePoint, relative to the source folder: the
+ * newest "PBI-SharePoint" .pbit at its root. The PAX path deploys it.
+ * @param {string} root  The source folder.
+ * @returns {string | undefined}
+ */
+export const findPaxModelTemplate = (root) => newest(root, /PBI-SharePoint.*\.pbit$/i);
+
+/**
+ * The Power BI template that reads the PAX files from a folder on a PC, relative to the source folder:
+ * the newest Rollup Edition .pbit at its root that isn't the SharePoint one. A checkout has it; the exe
+ * doesn't carry it, so the installer links to it instead.
+ * @param {string} root  The source folder.
+ * @returns {string | undefined}
+ */
+export const findRollupTemplate = (root) => newest(root, /Rollup Edition(?!.*SharePoint).*\.pbit$/i);
+
+/** The AI in One app's build, relative to the source folder. The exe carries it; a checkout has it once built. */
+export const APP_DIST = 'app/dist';
+
+/**
  * @typedef {object} Sources
  * @property {string} dir
  * @property {Record<import('./catalog.js').NotebookKey, import('./transform/notebook.js').Notebook>} notebooks
  * @property {any} pipeline
  * @property {string} [modelFile]  The Fabric edition's .pbit, read only when the semantic model is deployed.
+ * @property {string} [paxModelFile]  The .pbit the PAX path deploys, which reads the files from SharePoint.
+ * @property {string} [rollupModelFile]  The .pbit for PAX files kept on a PC. Only in a checkout.
+ * @property {string} [appDist]  The AI in One app's build, when it's there.
  */
 
 /**
@@ -54,11 +91,17 @@ export function loadSources(dir = DEFAULT_SOURCE_DIR) {
     notebooks[nb.key] = readJson(file);
   }
   const model = findModelTemplate(root);
+  const paxModel = findPaxModelTemplate(root);
+  const rollup = findRollupTemplate(root);
+  const app = join(root, APP_DIST);
   return {
     dir: root,
     notebooks,
     pipeline: readJson(pipelineFile),
     modelFile: model ? join(root, model) : undefined,
+    ...(paxModel ? { paxModelFile: join(root, paxModel) } : {}),
+    ...(rollup ? { rollupModelFile: join(root, rollup) } : {}),
+    ...(existsSync(join(app, 'index.html')) ? { appDist: app } : {}),
   };
 }
 

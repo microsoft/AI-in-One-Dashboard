@@ -86,6 +86,18 @@ export function graphApi(http) {
     }
   }
 
+  /**
+   * The app's certificates. Asked for on their own, for one app, they come with their public keys,
+   * which a change to the list has to send back (https://learn.microsoft.com/graph/api/resources/keycredential).
+   * @param {string} applicationObjectId
+   * @returns {Promise<any[]>}
+   */
+  const keyCredentials = async (applicationObjectId) =>
+    (await http.get(`/applications/${applicationObjectId}`, { query: { $select: 'keyCredentials' } }))?.keyCredentials ?? [];
+
+  /** A certificate as Graph returned it, ready to send back. @param {any} k */
+  const sendBack = (k) => Object.fromEntries(Object.entries(k).filter(([name, v]) => !name.startsWith('@') && v !== null && v !== undefined));
+
   return {
     me: () => http.get('/me', { query: { $select: 'id,displayName,userPrincipalName' } }),
     /** @returns {Promise<{ roleTemplateId: string, displayName: string }[]>} */
@@ -132,12 +144,13 @@ export function graphApi(http) {
     /**
      * @param {string} displayName
      * @param {{ id: string }[]} appRoles
+     * @param {string} [notes]  What the app is for, shown on its Overview page.
      */
-    createApplication: (displayName, appRoles) =>
+    createApplication: (displayName, appRoles, notes = APP_NOTES) =>
       http.post('/applications', {
         displayName,
         signInAudience: 'AzureADMyOrg',
-        notes: 'Created by the AI in One installer. Its notebooks read the Copilot audit log, Copilot licences and users from Microsoft Graph.',
+        notes,
         requiredResourceAccess: appRoles.length ? [{ resourceAppId: GRAPH_APP_ID, resourceAccess: appRoles.map((r) => ({ id: r.id, type: 'Role' })) }] : [],
       }),
     /**
@@ -182,6 +195,38 @@ export function graphApi(http) {
       (await http.get(`/applications/${applicationObjectId}`, { query: { $select: 'passwordCredentials' } })).passwordCredentials ?? [],
     /** @param {string} applicationObjectId @param {string} keyId */
     removePassword: (applicationObjectId, keyId) => http.post(`/applications/${applicationObjectId}/removePassword`, { keyId }),
+
+    keyCredentials,
+    /**
+     * Adds a certificate's public key to the app and returns the new key's ID. A PATCH replaces the
+     * whole list, so the app's other certificates are sent back with it
+     * (https://learn.microsoft.com/graph/applications-how-to-add-certificate).
+     * @param {string} applicationObjectId
+     * @param {{ der: string, displayName: string, startDateTime: string, endDateTime: string }} cert  der: the public certificate, base64.
+     * @returns {Promise<string>}
+     */
+    async addCertificate(applicationObjectId, cert) {
+      const before = await keyCredentials(applicationObjectId);
+      const known = new Set(before.map((k) => k.keyId));
+      const added = { type: 'AsymmetricX509Cert', usage: 'Verify', key: cert.der, displayName: cert.displayName, startDateTime: cert.startDateTime, endDateTime: cert.endDateTime };
+      await http.patch(`/applications/${applicationObjectId}`, { keyCredentials: [...before.map(sendBack), added] });
+      const after = await keyCredentials(applicationObjectId);
+      const keyId = after.find((k) => !known.has(k.keyId))?.keyId;
+      if (!keyId) throw new Error('Microsoft Entra took the certificate but didn\'t list it on the app.');
+      return keyId;
+    },
+    /**
+     * Takes certificates off the app, keeping the others. Returns how many it took off.
+     * @param {string} applicationObjectId
+     * @param {string[]} keyIds
+     */
+    async removeCertificates(applicationObjectId, keyIds) {
+      const before = await keyCredentials(applicationObjectId);
+      const keep = before.filter((k) => !keyIds.includes(k.keyId));
+      if (keep.length === before.length) return 0;
+      await http.patch(`/applications/${applicationObjectId}`, { keyCredentials: keep.map(sendBack) });
+      return before.length - keep.length;
+    },
 
     /** A user by UPN or email-style sign-in name. Null when there's no such user. @param {string} upn */
     getUser: (upn) => getOrNull(`/users/${encodeURIComponent(upn)}?$select=id,displayName,userPrincipalName`),
@@ -255,6 +300,61 @@ export function graphApi(http) {
       http.post(`/servicePrincipals/${resourceId}/appRoleAssignedTo`, { principalId, resourceId, appRoleId }, replicationRetry),
 
   };
+}
+
+/** What the Fabric route's app is for, on its Overview page in Entra. */
+export const APP_NOTES = 'Created by the AI in One installer. Its notebooks read the Copilot audit log, Copilot licences and users from Microsoft Graph.';
+
+/**
+ * SharePoint calls for the PAX route: finding the site and its document library, and the
+ * Sites.Selected permission that lets the app write to that one site. Each call names the site by
+ * its address or ID; none searches the tenant.
+ * @param {import('../http.js').HttpClient} http  Signed in with a token that has Sites.FullControl.All, to manage the site's permissions.
+ */
+export function sitesApi(http) {
+  return {
+    /**
+     * @param {string} host  Such as contoso.sharepoint.com.
+     * @param {string} path  Such as /sites/AIinOne. Empty for the root site.
+     */
+    siteByPath: (host, path) => http.get(path ? `/sites/${host}:${path}` : `/sites/${host}`, { query: { $select: 'id,displayName,name,webUrl' } }),
+    /** The site's document libraries. @param {string} siteId @returns {Promise<any[]>} */
+    drives: (siteId) => http.list(`/sites/${siteId}/drives`, { query: { $select: 'id,name,webUrl,driveType' } }),
+    /** Apps with access to the site through Sites.Selected. The list leaves out each one's roles. @param {string} siteId @returns {Promise<any[]>} */
+    permissions: (siteId) => http.list(`/sites/${siteId}/permissions`),
+    /** One permission, with its roles. @param {string} siteId @param {string} permissionId */
+    permission: (siteId, permissionId) => http.get(`/sites/${siteId}/permissions/${permissionId}`),
+    /**
+     * Gives an app a role on the site (https://learn.microsoft.com/graph/api/site-post-permissions).
+     * @param {string} siteId
+     * @param {{ appId: string, displayName: string }} app
+     * @param {('read' | 'write')[]} roles
+     */
+    grant: (siteId, app, roles) =>
+      http.post(`/sites/${siteId}/permissions`, { roles, grantedToIdentities: [{ application: { id: app.appId, displayName: app.displayName } }] }, { once: true }),
+    /** @param {string} siteId @param {string} permissionId @param {('read' | 'write')[]} roles */
+    updateGrant: (siteId, permissionId, roles) => http.patch(`/sites/${siteId}/permissions/${permissionId}`, { roles }),
+    /** @param {string} siteId @param {string} permissionId */
+    revoke: (siteId, permissionId) => http.del(`/sites/${siteId}/permissions/${permissionId}`),
+  };
+}
+
+/** @typedef {ReturnType<typeof sitesApi>} SitesApi */
+
+/**
+ * The site permission that names the app, if there is one.
+ * @param {any[]} permissions  As sitesApi().permissions returns them.
+ * @param {string} appId
+ */
+export function appGrant(permissions, appId) {
+  const id = appId.toLowerCase();
+  const names = (/** @type {any} */ p) => [
+    ...(p.grantedToIdentitiesV2 ?? []).map((/** @type {any} */ g) => g?.application?.id),
+    ...(p.grantedToIdentities ?? []).map((/** @type {any} */ g) => g?.application?.id),
+    p.grantedToV2?.application?.id,
+    p.grantedTo?.application?.id,
+  ];
+  return permissions.find((p) => names(p).some((x) => typeof x === 'string' && x.toLowerCase() === id)) ?? null;
 }
 
 /** @typedef {ReturnType<typeof graphApi>} GraphApi */

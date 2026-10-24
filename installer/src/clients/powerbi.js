@@ -29,9 +29,29 @@ export function powerBiApi(http) {
     },
     /** @param {string} workspaceId @param {string} datasetId @param {string} requestId */
     getRefresh: (workspaceId, datasetId, requestId) => http.get(`/groups/${workspaceId}/datasets/${datasetId}/refreshes/${requestId}`),
+    /**
+     * Starts a plain refresh, which works in a workspace without a capacity, unlike an enhanced
+     * one. Returns the request ID Power BI gave it, or '' when there was none.
+     * @param {string} workspaceId @param {string} datasetId
+     * @returns {Promise<string>}
+     */
+    async startRefresh(workspaceId, datasetId) {
+      const res = await http.request('POST', `/groups/${workspaceId}/datasets/${datasetId}/refreshes`, { body: { notifyOption: 'NoNotification' } });
+      return res.headers.get('requestid') ?? '';
+    },
     /** @param {string} workspaceId @param {string} datasetId @param {number} [top] @returns {Promise<any[]>} */
     refreshes: async (workspaceId, datasetId, top = 5) =>
       (await http.get(`/groups/${workspaceId}/datasets/${datasetId}/refreshes`, { query: { $top: top } }))?.value ?? [],
+    /**
+     * Sets when Power BI refreshes a model by itself
+     * (https://learn.microsoft.com/rest/api/power-bi/datasets/update-refresh-schedule-in-group).
+     * @param {string} workspaceId @param {string} datasetId
+     * @param {{ enabled: boolean, days?: string[], times?: string[], localTimeZoneId?: string, notifyOption?: 'NoNotification' | 'MailOnFailure' }} schedule
+     */
+    setRefreshSchedule: (workspaceId, datasetId, schedule) =>
+      http.patch(`/groups/${workspaceId}/datasets/${datasetId}/refreshSchedule`, { value: schedule }),
+    /** @param {string} workspaceId @param {string} datasetId */
+    refreshSchedule: (workspaceId, datasetId) => http.get(`/groups/${workspaceId}/datasets/${datasetId}/refreshSchedule`),
     /**
      * Runs a DAX query.
      * @param {string} workspaceId @param {string} datasetId @param {string} query

@@ -6,7 +6,10 @@
  */
 import { allowsAction, ROLES } from './clients/azure.js';
 import { APP_ROLES, CONSENT_ROLES, FABRIC_ADMIN_ROLE } from './clients/graph.js';
-import { secretMode } from './config.js';
+import { secretMode, targetOf } from './config.js';
+import { ADMIN_STEPS } from './managed-app/errors.js';
+import { NOT_READY_NAMES } from './managed-app/flow.js';
+import { checkPc, pcRows } from './pax/pc.js';
 import { BIG_CAPACITY_SEATS, copilotLicences, seatCount } from './seats.js';
 import { canWriteSecrets } from './steps/identity.js';
 import { blockedSettings, CONCEALED_NAMES_SETTING, concealedNames, largeCapacity, runsFabric } from './steps/plan.js';
@@ -72,11 +75,15 @@ export function keyVaultWanted(ctx) {
 }
 
 /**
- * @param {{ api: import('./install.js').Apis, user: import('./install.js').User, config: import('./config.js').InstallConfig, useKeyVault?: boolean }} ctx
+ * On the PAX route there's no Fabric capacity, Key Vault or notebook, and the audit log isn't
+ * affected by concealed names, so those checks go. This PC's checks come instead.
+ * @param {{ api: import('./install.js').Apis, user: import('./install.js').User, config: import('./config.js').InstallConfig, useKeyVault?: boolean, runPwsh?: import('./pax/ps.js').RunPwsh, env?: NodeJS.ProcessEnv }} ctx
  * @returns {Promise<Prereq[]>}
  */
 export async function checkPrereqs(ctx) {
   const { api, user, config } = ctx;
+  const pax = targetOf(config) === 'pax';
+  const pc = pax ? checkPc(ctx) : undefined;
 
   const roles = api.graph.myDirectoryRoles();
   const eligible = api.graph.myEligibleRoles(user.id);
@@ -135,7 +142,7 @@ export async function checkPrereqs(ctx) {
     });
 
   /** Owner, or Contributor plus User Access Administrator, per subscription: only for Key Vault. */
-  const azureRbac = keyVaultWanted(ctx)
+  const azureRbac = keyVaultWanted(ctx) && !pax
     ? guard(
         {
           id: 'azure-rbac',
@@ -198,7 +205,9 @@ export async function checkPrereqs(ctx) {
       {
         id: 'fabric-admin',
         label: 'Fabric administrator — only needed if the tenant settings below are off',
-        neededFor: 'Reading and switching on the Fabric tenant settings the model and the report need. If they are already on, you don\'t need this role.',
+        neededFor: pax
+          ? 'Reading and switching on the tenant setting the report\'s custom visuals need. If it is already on, you don\'t need this role.'
+          : 'Reading and switching on the Fabric tenant settings the model and the report need. If they are already on, you don\'t need this role.',
         howTo: 'Ask a Fabric administrator to check the tenant settings below and turn on any that are off, or ask a Global Administrator for the Fabric Administrator role.',
         optional: true,
       },
@@ -208,8 +217,10 @@ export async function checkPrereqs(ctx) {
       {
         id: 'register-apps',
         label: 'Register apps in Entra',
-        neededFor: 'Creating the app registration that collects the data.',
-        howTo: 'Ask for the Application Administrator or Cloud Application Administrator role, use an app registration you already have, or get the admin pack for an admin to register it.',
+        neededFor: pax ? 'Creating the app registration the scheduled task signs in as.' : 'Creating the app registration that collects the data.',
+        howTo: pax
+          ? 'Ask for the Application Administrator or Cloud Application Administrator role, or use an app registration you own already.'
+          : 'Ask for the Application Administrator or Cloud Application Administrator role, use an app registration you already have, or get the admin pack for an admin to register it.',
       },
       async () => {
         if (config.app.appId) return { status: 'met', detail: `Uses the app registration ${config.app.appId}.` };
@@ -255,24 +266,28 @@ export async function checkPrereqs(ctx) {
           : { status: 'missing', detail: 'No Microsoft 365 Copilot licences found in this tenant.' };
       },
     ),
-    guard(
-      {
-        id: 'fabric-capacity',
-        label: 'Active Fabric capacity',
-        neededFor: 'The AI in One workspace, Lakehouse, notebooks and pipeline run on it.',
-        howTo: 'Start a Fabric trial, or ask a capacity admin to make you a contributor on an F2 or larger capacity.',
-      },
-      async () => {
-        const caps = (await api.fabric.listCapacities()).filter((cap) => cap.state === 'Active' && runsFabric(cap));
-        if (!caps.length) return { status: 'missing', detail: 'No active Fabric capacity (F2 or larger, or a trial) you can assign workspaces to.' };
-        const names = caps.slice(0, 3).map((cap) => `${cap.displayName ?? cap.id}${cap.sku ? ` (${cap.sku})` : ''}`);
-        const n = await seats();
-        const small = n >= BIG_CAPACITY_SEATS && !caps.some((cap) => largeCapacity(cap))
-          ? ` With ${seatCount(n)} Copilot seats assigned, use F64 or larger: on a smaller capacity, loads take longer and may hit their time limits.`
-          : '';
-        return { status: 'met', detail: `${caps.length} available: ${names.join(', ')}${caps.length > 3 ? ` and ${caps.length - 3} more` : ''}.${small}` };
-      },
-    ),
+    ...(pax
+      ? []
+      : [
+          guard(
+            {
+              id: 'fabric-capacity',
+              label: 'Active Fabric capacity',
+              neededFor: 'The AI in One workspace, Lakehouse, notebooks and pipeline run on it.',
+              howTo: 'Start a Fabric trial, or ask a capacity admin to make you a contributor on an F2 or larger capacity.',
+            },
+            async () => {
+              const caps = (await api.fabric.listCapacities()).filter((cap) => cap.state === 'Active' && runsFabric(cap));
+              if (!caps.length) return { status: 'missing', detail: 'No active Fabric capacity (F2 or larger, or a trial) you can assign workspaces to.' };
+              const names = caps.slice(0, 3).map((cap) => `${cap.displayName ?? cap.id}${cap.sku ? ` (${cap.sku})` : ''}`);
+              const n = await seats();
+              const small = n >= BIG_CAPACITY_SEATS && !caps.some((cap) => largeCapacity(cap))
+                ? ` With ${seatCount(n)} Copilot seats assigned, use F64 or larger: on a smaller capacity, loads take longer and may hit their time limits.`
+                : '';
+              return { status: 'met', detail: `${caps.length} available: ${names.join(', ')}${caps.length > 3 ? ` and ${caps.length - 3} more` : ''}.${small}` };
+            },
+          ),
+        ]),
     ...(azureRbac
       ? [
           azureRbac,
@@ -304,7 +319,9 @@ export async function checkPrereqs(ctx) {
       {
         id: 'tenant-settings',
         label: 'Fabric tenant settings',
-        neededFor: 'The model\'s connection and the report\'s custom visuals each need a tenant setting on.',
+        neededFor: pax
+          ? 'The report\'s custom visuals need a tenant setting on.'
+          : 'The model\'s connection and the report\'s custom visuals each need a tenant setting on.',
         howTo: 'A Fabric administrator switches them on in the admin portal, under Tenant settings.',
       },
       async () => {
@@ -315,27 +332,75 @@ export async function checkPrereqs(ctx) {
         } catch {
           return { status: 'unknown', detail: 'Couldn\'t check: only a Fabric Administrator can read tenant settings.' };
         }
-        const off = blockedSettings(Object.fromEntries(list.map((s) => [s.settingName, s])), { reports: true });
+        // The PAX model signs in as its owner, not as the app, so only the report's setting counts.
+        const off = blockedSettings(Object.fromEntries(list.map((s) => [s.settingName, s])), { reports: true }).filter((s) => !pax || s.reports);
         return off.length
           ? { status: 'missing', detail: `Off: ${off.map((s) => s.title).join('; ')}.` }
           : { status: 'met', detail: 'The settings AI in One needs are on.' };
       },
     ),
-    guard(
-      {
-        id: 'concealed-names',
-        label: 'Microsoft 365 reports show user names',
-        neededFor: 'Matching licensed users to their Copilot activity. While reports conceal user names, the licensed users load with hashed names.',
-        howTo: `A Global Administrator can turn concealed names off: ${CONCEALED_NAMES_SETTING}.`,
-        optional: true,
-      },
-      async () => {
-        const concealed = await concealedNames(api);
-        if (concealed === false) return { status: 'met', detail: 'Reports show user names.' };
-        if (concealed) return { status: 'missing', detail: 'Reports conceal user names, so the dashboard gets hashed user names until it\'s turned off.' };
-        return { status: 'unknown', detail: `Couldn't check: reading it needs a reports reader or admin role. To check by hand, open ${CONCEALED_NAMES_SETTING}.` };
-      },
-    ),
+    ...(pax
+      ? []
+      : [
+          guard(
+            {
+              id: 'concealed-names',
+              label: 'Microsoft 365 reports show user names',
+              neededFor: 'Matching licensed users to their Copilot activity. While reports conceal user names, the licensed users load with hashed names.',
+              howTo: `A Global Administrator can turn concealed names off: ${CONCEALED_NAMES_SETTING}.`,
+              optional: true,
+            },
+            async () => {
+              const concealed = await concealedNames(api);
+              if (concealed === false) return { status: 'met', detail: 'Reports show user names.' };
+              if (concealed) return { status: 'missing', detail: 'Reports conceal user names, so the dashboard gets hashed user names until it\'s turned off.' };
+              return { status: 'unknown', detail: `Couldn't check: reading it needs a reports reader or admin role. To check by hand, open ${CONCEALED_NAMES_SETTING}.` };
+            },
+          ),
+        ]),
   ];
-  return Promise.all(checks);
+  const items = await Promise.all(checks);
+  return pc ? [...items, ...paxRows(config), ...pcRows(await pc)] : items;
+}
+
+/**
+ * The PAX route's own rows: where the files go, and the AI in One app. Neither can be checked
+ * until the install has chosen them, so until then they say what's needed.
+ * @param {import('./config.js').InstallConfig} config
+ * @returns {Prereq[]}
+ */
+export function paxRows(config) {
+  const p = config.pax;
+  /** @type {Prereq[]} */
+  const rows = [];
+  if (p?.destination !== 'local') {
+    const site = p?.site;
+    rows.push({
+      id: 'sharepoint-site',
+      label: 'A SharePoint site you own',
+      neededFor: 'The folder the scheduled task puts the files in, where the report and the AI in One app read them. Or keep the files in a folder on this PC.',
+      howTo: 'Choose a site you own: the installer gives the app write access to that site only. If you don\'t own one, the installer gives you the steps to send a SharePoint administrator.',
+      optional: true,
+      ...(site?.checkedAt
+        ? { status: 'met', detail: `The app can write to ${site.webUrl ?? site.url}.` }
+        : { status: 'unknown', detail: 'Checked when you choose the site.' }),
+    });
+  }
+  if (p?.deployApp !== false) {
+    const app = config.managedApp;
+    const missing = app?.missing ?? [];
+    rows.push({
+      id: 'managed-apps',
+      label: 'Copilot managed apps in your Power Platform environment',
+      neededFor: 'The AI in One app. Without it, the installer finishes at the report, and you can deploy the app later.',
+      howTo: [ADMIN_STEPS.createApps, ADMIN_STEPS.externalArtifacts, ADMIN_STEPS.licences].map((s) => `${s.who}: ${s.what}`).join(' '),
+      optional: true,
+      ...(missing.length
+        ? { status: 'missing', detail: `Off when the installer last tried: ${missing.map((m) => NOT_READY_NAMES[m]).join('; ')}.` }
+        : app?.deployedAt
+          ? { status: 'met', detail: app.url ? `Deployed: ${app.url}` : 'Deployed.' }
+          : { status: 'unknown', detail: 'Checked when the app deploys.' }),
+    });
+  }
+  return rows;
 }

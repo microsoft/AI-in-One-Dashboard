@@ -372,8 +372,25 @@ test('parseCli: commands, sign-in methods and validation', () => {
   assert.throws(() => parseCli(['--bogus']), /Unknown option/);
 
   assert.equal(parseCli(['--target', 'fabric']).target, 'fabric');
-  assert.throws(() => parseCli(['--target', 'azure']), /--target must be fabric/);
-  for (const gone of ['deploy-app', 'upload']) assert.throws(() => parseCli([gone]), /Unknown command/, gone);
+  assert.equal(parseCli(['--target', 'pax']).target, 'pax');
+  assert.throws(() => parseCli(['--target', 'azure']), /--target must be fabric or pax/);
+  assert.throws(() => parseCli(['upload']), /Unknown command/);
+  assert.equal(parseCli(['deploy-app']).command, 'deploy-app');
+  assert.equal(parseCli(['deploy-app', '--environment-id', ' Default-1234abcd-0000 ']).environmentId, 'Default-1234abcd-0000');
+  assert.equal(parseCli(['install', '--target', 'pax', '--environment-id', '00000000-0000-0000-0000-000000000001']).environmentId, '00000000-0000-0000-0000-000000000001');
+  assert.equal(parseCli(['install']).environmentId, undefined);
+  assert.throws(() => parseCli(['run', '--environment-id', 'x']), /--environment-id goes with install, update, deploy-app or access/);
+  for (const bad of ['', ' ', 'a b', 'x;y', 'x'.repeat(101)]) assert.throws(() => parseCli(['install', '--environment-id', bad]), /must be an environment ID/, bad);
+  assert.throws(() => parseCli(['deploy-app', '--target', 'fabric']), /comes with the PAX route only/);
+  assert.throws(() => parseCli(['install', '--target', 'fabric', '--environment-id', 'e']), /--environment-id is for the AI in One app/);
+  assert.throws(() => parseCli(['install', '--target', 'pax', '--key-vault']), /--key-vault is for the Fabric route/);
+  assert.throws(() => parseCli(['install', '--target', 'pax', '--no-key-vault']), /--no-key-vault is for the Fabric route/);
+  assert.throws(() => parseCli(['install', '--target', 'pax', '--secret-in-notebook']), /--secret-in-notebook is for the Fabric route/);
+  assert.throws(() => parseCli(['rotate-secret', '--target', 'pax', '--secret-days', '30']), /--secret-days is for the Fabric route/);
+  assert.throws(() => parseCli(['rerun-failed', '--target', 'pax']), /rerun-failed is for the Fabric route/);
+  assert.equal(parseCli(['run', '--target', 'pax', '--backfill-days', '30']).backfillDays, 30);
+  assert.equal(parseCli(['install', '--key-vault']).fabricOnly, '--key-vault');
+  assert.equal(parseCli(['install']).fabricOnly, undefined);
   assert.equal(parseCli(['install', '--key-vault']).useKeyVault, true);
   assert.equal(parseCli(['install', '--no-key-vault']).secretInNotebook, true);
   assert.throws(() => parseCli(['run', '--key-vault']), /--key-vault goes with install/);
@@ -436,11 +453,14 @@ test('messages name the exe when it started the installer', () => {
   assert.equal(installerWindow({}), 'your terminal');
   assert.equal(installerWindow(exe), 'the installer window');
   assert.equal(EXE_NAME, 'AIInOneInstaller.exe');
-  assert.match(help(), /^Sets up AI in One in Microsoft Fabric/);
+  assert.match(help(), /^Sets up AI in One, the reports on how your organisation uses Copilot/);
   assert.match(help(), /Usage: (aio-install|AIInOneInstaller\.exe) \[command\] \[options\]/);
   assert.match(help(), /uninstall\s+Delete what the installer created/);
-  assert.match(help(), /--target <target>\s+Where AI in One runs: fabric, the only target for now/);
-  assert.doesNotMatch(help(), /deploy-app/);
+  assert.match(help(), /--target <target>\s+Where AI in One gets its data: fabric \(the default\) or pax/);
+  assert.match(help(), /deploy-app\s+PAX: deploy the AI in One app again/);
+  assert.match(help(), /--environment-id <id>\r?\n\s+With install, update, deploy-app or access, on PAX/);
+  assert.doesNotMatch(help(), /App Edition/i);
+  for (const line of help().split(/\r?\n/)) assert.ok(line.length <= 100, `help line too long: ${line}`);
 });
 
 test('messages name the PowerShell command when install.ps1 started the installer', () => {
@@ -464,8 +484,8 @@ test('messages name the PowerShell command when install.ps1 started the installe
   assert.equal(SCRIPT_URL, scriptUrl(VERSION), "this release's own script");
   assert.equal(SCRIPT_COMMAND, `irm ${SCRIPT_URL} | iex`);
 
-  const update = { version: '0.2.0', url: 'https://example.test/r' };
-  const next = 'irm https://github.com/microsoft/AI-in-One-Dashboard/releases/download/installer-v0.2.0/install.ps1 | iex';
+  const update = { version: '9.0.0', url: 'https://example.test/r' };
+  const next = 'irm https://github.com/microsoft/AI-in-One-Dashboard/releases/download/installer-v9.0.0/install.ps1 | iex';
   const hint = updateHint(update, pwsh);
   assert.ok(hint.includes(next), hint);
   assert.equal(hint, `Close the installer and run "${next}" in PowerShell, then choose Repair or change.`);
@@ -480,8 +500,8 @@ test('messages keep -UseInstalledNode when install.ps1 ran the installer with th
   assert.equal(INSTALLED_NODE_ENV, 'AI_IN_ONE_USE_INSTALLED_NODE');
   assert.equal(bundled(installed), true, 'still the release download');
   assert.ok(reopenHint(installed).includes(`"$env:AI_IN_ONE_USE_INSTALLED_NODE = '1'; ${SCRIPT_COMMAND}" again`));
-  const update = { version: '0.2.0', url: 'https://example.test/r' };
-  const next = 'irm https://github.com/microsoft/AI-in-One-Dashboard/releases/download/installer-v0.2.0/install.ps1 | iex';
+  const update = { version: '9.0.0', url: 'https://example.test/r' };
+  const next = 'irm https://github.com/microsoft/AI-in-One-Dashboard/releases/download/installer-v9.0.0/install.ps1 | iex';
   assert.equal(updateHint(update, installed), `Close the installer and run "$env:AI_IN_ONE_USE_INSTALLED_NODE = '1'; ${next}" in PowerShell, then choose Repair or change.`);
   assert.ok(!updateHint(update, installed).includes(SCRIPT_URL));
   assert.doesNotMatch(reopenHint({ [LAUNCHER_ENV]: 'pwsh' }), /INSTALLED_NODE/);
@@ -506,8 +526,8 @@ test('in Azure Cloud Shell: noticed from its environment, with commands for its 
   assert.equal(commandLine('status', cs), '~/.ai-in-one/aio-install status');
   assert.equal(installerWindow(cs), 'Cloud Shell');
   assert.equal(reopenHint(cs), 'To run it again, run ~/.ai-in-one/aio-install in Cloud Shell.');
-  const hint = updateHint({ version: '0.2.0', url: 'https://example.test/r' }, cs);
-  assert.equal(hint, 'Run "irm https://github.com/microsoft/AI-in-One-Dashboard/releases/download/installer-v0.2.0/install.ps1 | iex" in Cloud Shell\'s PowerShell, then install to repair or change.');
+  const hint = updateHint({ version: '9.0.0', url: 'https://example.test/r' }, cs);
+  assert.equal(hint, 'Run "irm https://github.com/microsoft/AI-in-One-Dashboard/releases/download/installer-v9.0.0/install.ps1 | iex" in Cloud Shell\'s PowerShell, then install to repair or change.');
   assert.ok(!hint.includes(SCRIPT_URL), "this release's script would start this version again");
 });
 

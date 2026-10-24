@@ -28,7 +28,7 @@ const reason = (err) => /** @type {Error} */ (err).message;
  * "a", "a and b", "a, b and c".
  * @param {string[]} items
  */
-const listOf = (items) => (items.length < 2 ? items.join('') : `${items.slice(0, -1).join(', ')} and ${items.at(-1)}`);
+export const listOf = (items) => (items.length < 2 ? items.join('') : `${items.slice(0, -1).join(', ')} and ${items.at(-1)}`);
 
 /**
  * Deletes the workspace's managed private endpoints and waits until Fabric has removed them.
@@ -94,7 +94,7 @@ export function createdItems(config) {
  * @param {string} workspaceId
  * @param {CreatedItem[]} items
  */
-async function deleteItems(ctx, workspaceId, items) {
+export async function deleteItems(ctx, workspaceId, items) {
   const { ui, api } = ctx;
   for (const item of items) {
     const label = `${item.kind} "${item.name}"`;
@@ -169,7 +169,7 @@ async function deleteModelConnection(ctx) {
  * @param {Ctx} ctx
  * @returns {Promise<boolean>}  Whether it's gone.
  */
-async function deleteAppRegistration(ctx) {
+export async function deleteAppRegistration(ctx) {
   const { ui, config, api } = ctx;
   const app = config.app;
   if (!app.objectId || app.existing || app.adminPack) return false;

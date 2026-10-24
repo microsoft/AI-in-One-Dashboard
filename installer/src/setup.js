@@ -3,8 +3,10 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { collectedLabels } from './catalog.js';
-import { archiveConfig, loadConfig, removeFile, saveConfig } from './config.js';
+import { archiveConfig, emptyPax, loadConfig, removeFile, saveConfig, targetOf } from './config.js';
 import { armErrors } from './clients/azure.js';
+import { PAX_APP_NAME } from './pax/names.js';
+import { confirmPaxPlan, filesLabel, paxCollected, paxPlan, paxPreflight } from './pax/plan.js';
 import { plan, preflight, confirmPlan } from './steps/plan.js';
 import { isResumeLater } from './steps/identity.js';
 
@@ -16,12 +18,22 @@ const draftFile = (/** @type {string} */ file) => `${file}.draft.json`;
 const recordRevision = (/** @type {string} */ file) => existsSync(file) ? createHash('sha256').update(readFileSync(file)).digest('hex') : 'new';
 
 /**
- * The settings categories, in the order plan() asks them. Data collection is information only.
+ * The settings categories, in the order plan() asks them. On Fabric, data collection is information only.
  * @param {InstallConfig} config
  */
 export function setupCategories(config) {
   const done = new Set(config.setup?.completed ?? []);
   const entry = (/** @type {string} */ id, /** @type {string} */ title, /** @type {string} */ summary) => ({ id, title, summary, complete: done.has(id) });
+  if (targetOf(config) === 'pax') {
+    const pax = config.pax ?? emptyPax();
+    return [
+      entry('data', 'Data collection', paxCollected(pax).join(', ')),
+      entry('placement', 'Where the files go', `${filesLabel(pax)}${pax.deployApp ? '; the AI in One app' : ''}`),
+      entry('access', 'Viewer access', config.access?.groupName ?? config.access?.groupId ?? 'Choose who can view'),
+      entry('identity', 'App registration', config.app.displayName ?? config.app.appId ?? `Create ${PAX_APP_NAME}`),
+      entry('schedule', 'Schedule and loading', `Daily at ${pax.runAt}${pax.signedOut ? ', also while signed out' : ''}; ${config.history.days} days`),
+    ];
+  }
   return [
     entry('data', 'Data collection', collectedLabels(config.modules).join(', ')),
     entry('placement', 'Fabric placement', `${config.fabric.workspaceName ?? 'Choose workspace'}; capacity: ${config.fabric.capacityId ?? 'not set'}`),
@@ -34,9 +46,9 @@ export function setupCategories(config) {
 /**
  * Retain error codes through explanatory wrappers; never require the browser to parse error prose.
  * @param {unknown} err
- * @param {InstallConfig} [_config]  Kept for the callers; every category is Fabric's now.
+ * @param {InstallConfig} [config]
  */
-export function setupRecovery(err, _config) {
+export function setupRecovery(err, config) {
   const e = /** @type {{ body?: unknown, cause?: unknown, message?: string, operations?: unknown }} */ (err ?? {});
   const source = e.cause ?? e;
   const cause = /** @type {{ body?: unknown, message?: string, operations?: unknown }} */ (source);
@@ -45,7 +57,12 @@ export function setupRecovery(err, _config) {
   const text = `${codes} ${e.message ?? ''} ${cause.message ?? ''} ${JSON.stringify(cause.operations ?? [])}`;
   let section;
   let label;
-  if (/region|location|capacity|quota|SkuNotAvailable|NotAvailableForSubscription|SubscriptionIsOverQuota/i.test(text)) {
+  if (config && targetOf(config) === 'pax') {
+    if (/SharePoint site|document library|no library called|workspace called|create Power BI workspaces/i.test(text)) {
+      section = 'placement';
+      label = 'Change where the files go';
+    }
+  } else if (/region|location|capacity|quota|SkuNotAvailable|NotAvailableForSubscription|SubscriptionIsOverQuota/i.test(text)) {
     section = 'placement';
     label = 'Change region or capacity';
   }
@@ -89,13 +106,24 @@ function oneOff(setup) {
 /** @param {InstallConfig} before @param {InstallConfig} after */
 function changedCategories(before, after) {
   const old = setupCategories(before);
-  const values = (/** @type {InstallConfig} */ config) => ({
-    data: [config.modules],
-    placement: [config.fabric.capacityId, config.fabric.workspaceName, config.fabric.lakehouseName, config.scale],
-    access: config.access,
-    identity: [config.app, config.keyVault],
-    schedule: [config.schedule, config.history, config.setup?.runFirstLoad, config.setup?.reloadHistoryDays],
-  });
+  const values = (/** @type {InstallConfig} */ config) => {
+    const pax = config.pax;
+    return targetOf(config) === 'pax'
+      ? {
+          data: [pax?.agent365],
+          placement: [pax?.destination, pax?.site?.url, pax?.site?.library, pax?.site?.folder, pax?.localFolder, config.fabric.workspaceName, pax?.deployApp],
+          access: config.access,
+          identity: [config.app],
+          schedule: [pax?.runAt, pax?.signedOut, config.history, config.setup?.runFirstLoad, config.setup?.reloadHistoryDays],
+        }
+      : {
+          data: [config.modules],
+          placement: [config.fabric.capacityId, config.fabric.workspaceName, config.fabric.lakehouseName, config.scale],
+          access: config.access,
+          identity: [config.app, config.keyVault],
+          schedule: [config.schedule, config.history, config.setup?.runFirstLoad, config.setup?.reloadHistoryDays],
+        };
+  };
   const previousValues = values(before);
   const nextValues = values(after);
   return setupCategories(after).flatMap((cat) => {
@@ -129,13 +157,15 @@ export async function reviewSetup(ctx) {
   }
   const baseRevision = recordRevision(ctx.file);
   const baseline = structuredClone(ctx.config);
-  const deployed = !!ctx.config.fabric.lakehouseId;
+  const pax = targetOf(ctx.config) === 'pax';
+  const deployed = pax ? !!ctx.config.pax?.taskRegisteredAt : !!ctx.config.fabric.lakehouseId;
   ctx.config.setup ??= { completed: deployed ? setupCategories(ctx.config).map((cat) => cat.id) : [] };
   // One-off answers: a restored draft carries them for this session; the install record never does.
   oneOff(ctx.config.setup);
-  ctx.runFirstLoad ??= ctx.config.firstRun?.status !== 'Completed';
+  ctx.runFirstLoad ??= pax ? !ctx.config.pax?.firstRunStartedAt : ctx.config.firstRun?.status !== 'Completed';
   baseline.setup = { ...(baseline.setup ?? { completed: [] }), runFirstLoad: ctx.runFirstLoad, reloadHistoryDays: ctx.reloadHistoryDays };
-  if (ctx.config.app.existing && !ctx.config.keyVault.secretSetAt && !ctx.pendingSecret) {
+  // A Fabric app registration of the user's own needs its secret before the identity category is done.
+  if (!pax && ctx.config.app.existing && !ctx.config.keyVault.secretSetAt && !ctx.pendingSecret) {
     ctx.config.setup.completed = ctx.config.setup.completed.filter((id) => id !== 'identity');
   }
   let notice = deployed ? 'Existing resources are reused where safe. Editing settings never deletes them.' : '';
@@ -180,11 +210,12 @@ export async function reviewSetup(ctx) {
       let planned = false;
       try {
         // Refresh before every edit and retry, never use the rewind API cache for live availability.
-        const pre = await preflight(ctx);
+        const pre = pax ? await paxPreflight(ctx) : await preflight(ctx);
         if (choice !== 'deploy') {
           ctx.advanced = true;
           ctx.ui.beginSection();
-          await plan(ctx, pre, choice);
+          if (pax) await paxPlan(ctx, pre, choice);
+          else await plan(ctx, pre, choice);
           planned = true;
           const completed = new Set(ctx.config.setup?.completed);
           completed.add(choice);
@@ -194,11 +225,11 @@ export async function reviewSetup(ctx) {
         }
         const missing = categories.filter((cat) => !cat.complete);
         if (missing.length) throw new Error(`Review these categories first: ${missing.map((cat) => cat.title).join(', ')}.`);
-        if (!pre.capacities.some((cap) => cap.id === ctx.config.fabric.capacityId)) {
+        if (!pax && !pre.capacities.some((cap) => cap.id === ctx.config.fabric.capacityId)) {
           throw new Error('Review Fabric placement: the selected capacity is no longer active or accessible.');
         }
         checkpoint();
-        const go = await confirmPlan(ctx, pre);
+        const go = pax ? await confirmPaxPlan(ctx, pre) : await confirmPlan(ctx, pre);
         if (!go) continue;
         if (recordRevision(ctx.file) !== baseRevision) throw new Error('The install record changed while you edited this draft. Save and close, then reopen setup to keep the latest deployed IDs and resolve the draft conflict.');
         // Marked first so a draft a synced folder keeps locked is cleaned up next run, not treated as a conflict.

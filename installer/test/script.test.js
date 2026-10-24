@@ -10,6 +10,7 @@ import { SCRIPT_NAME, ZIP_NAME, installScript, scriptCommand, scriptSha256, zipU
 import { INSTALL_DOCS } from '../packaging/signing.js';
 import { NOTEBOOKS, NOTEBOOKS_DIR } from '../src/catalog.js';
 import { CLOUD_SHELL_ENV, CLOUD_SHELL_SHIM, EXE_ENV, INSTALLED_NODE_ENV, LAUNCHER_ENV, SCRIPT_COMMAND, SCRIPT_SHIM, SCRIPT_URL } from '../src/launch.js';
+import { KEPT_DIRS, TASK_NAME } from '../src/pax/names.js';
 import { REPO } from '../src/update-check.js';
 
 /** @param {string} rel */
@@ -186,6 +187,21 @@ test('script: commands, URLs and settings agree between the launchers and the in
   for (const name of [LAUNCHER_ENV, CLOUD_SHELL_ENV, INSTALLED_NODE_ENV]) assert.ok(TEMPLATE.includes(`$env:${name}`), name);
   assert.ok(LAUNCHER.includes(`psi.EnvironmentVariables["${EXE_ENV}"] = "1";`), EXE_ENV);
   assert.ok(LAUNCHER.includes(`private const string Docs = "https://github.com/${REPO}/${INSTALL_DOCS}";`), 'the exe links to the user guide');
+});
+
+test('script: both launchers keep the folders the PAX route runs from, which the installer names', () => {
+  const ps = /^\s*\$Kept = @\(([^)]*)\)\s*$/m.exec(WINDOWS);
+  assert.ok(ps, 'install.ps1 lists $Kept');
+  assert.deepEqual([...ps[1].matchAll(/'([^']*)'/g)].map((m) => m[1]), [...KEPT_DIRS]);
+  const cs = /internal static readonly string\[\] KeptDirs = \{([^}]*)\};/.exec(LAUNCHER);
+  assert.ok(cs, 'Launcher.cs lists KeptDirs');
+  assert.deepEqual([...cs[1].matchAll(/"([^"]*)"/g)].map((m) => m[1]), [...KEPT_DIRS]);
+  assert.match(WINDOWS, /if \(\$dir\.Name -eq \$Id -or \$Kept -contains \$dir\.Name\) \{ continue \}/, 'install.ps1 leaves them when it removes other versions');
+  assert.match(LAUNCHER, /if \(name == id \|\| Kept\(name\)\) continue;/, 'and so does the exe');
+  const uninstall = WINDOWS.slice(WINDOWS.indexOf('if ($Uninstall) {'), WINDOWS.indexOf('if (-not (Test-Path -LiteralPath (Join-Path $Root $Marker))) {'));
+  assert.match(uninstall, /if \(\$item\.PSIsContainer -and \$Kept -contains \$item\.Name\) \{ \$stayed \+= \$item\.Name \}/, '-Uninstall leaves them');
+  assert.match(uninstall, /if \(-not \$stayed\.Count\) \{ Remove-Tree \$AioHome \$null \}/, 'and removes the home folder only when none is there');
+  assert.ok(uninstall.includes(`'${TASK_NAME}'`), 'and names the task that runs from them');
 });
 
 test('script: the whole launcher runs in a script block, so iex leaves nothing behind in the session', () => {
