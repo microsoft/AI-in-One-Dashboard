@@ -26,7 +26,7 @@ All three are produced by [`../scripts/Generate_Synthetic_Rollup_Data.ps1`](../s
 
 ## ▶️ How to use it
 
-1. Download the [Rollup Edition template](../README.md#-which-edition-should-i-download) and open the `.pbit` in Power BI Desktop.
+1. Download the [Rollup Edition template](../docs/power-bi-report.md#which-edition) and open the `.pbit` in Power BI Desktop.
 2. When prompted for parameters, paste the **full local path** to each file above.
    *(Use the 3-in-1 auto-detect edition — the PBI-SharePoint edition only accepts SharePoint URLs.)*
 3. Click **Load**. Every page populates.

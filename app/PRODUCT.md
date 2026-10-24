@@ -1,8 +1,8 @@
 <!-- impeccable:product-schema 1 -->
-# AI in One — App Edition
+# AI in One app
 
 ## Platform
-Web app, hosted as a Copilot Studio / Cowork **Managed App** (Copilot Managed Runtime). Desktop first (1280–1600px), usable down to 390px.
+Web app, hosted as a **Copilot Managed App** (Copilot Managed Runtime, preview) and deployed from this repo with the `ms` CLI. It also runs as a Fabric App, or as a single HTML file. Desktop first (1280–1600px), usable down to 390px.
 
 ## Users
 - **Adoption and change leads** who track Microsoft 365 Copilot, Copilot Chat and agent rollout across the organisation, report progress to leadership, and decide where to focus enablement.
