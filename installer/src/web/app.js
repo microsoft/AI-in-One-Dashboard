@@ -98,12 +98,62 @@ const COMMANDS = {
 };
 const ROW_ORDER = ['run', 'rerun-failed', 'refresh', 'status', 'check', 'update', 'access', 'rotate-secret', 'uninstall', 'install'];
 
+// With PAX, a scheduled task on this PC runs PAX and puts the files in a folder. Where a command reads
+// differently, this replaces COMMANDS' text. hide: there's no row for it.
+const PAX_COMMANDS = {
+  run: {
+    title: 'Run PAX now', section: 'PAX run',
+    desc: 'Start the scheduled task now and wait for PAX to finish. Then refresh the model on the new files.',
+    off: 'The scheduled task isn\'t set up yet.',
+  },
+  'rerun-failed': { hide: true },
+  refresh: {
+    desc: 'Refresh the semantic model from the files in SharePoint now.',
+  },
+  status: {
+    desc: 'The scheduled task and its last run, when its sign-in expires, and where the files, the model and the app are. Changes nothing.',
+  },
+  check: {
+    title: 'Check the files', short: 'Check files', section: 'File check',
+    row: 'Check the files', button: 'Check the files',
+    desc: 'Look for each file in the folder and when it last changed. For a SharePoint folder, first check that the app registration can still write there, then refresh the model and test it with a small query.',
+    off: 'The scheduled task isn\'t set up yet.',
+  },
+  update: {
+    desc: 'Update PAX, the scheduled task\'s script, the semantic model, the report and the app from this version of the installer. The next scheduled run uses them.',
+    off: 'The scheduled task isn\'t set up yet.',
+  },
+  'rotate-secret': {
+    title: 'Renew the task\'s sign-in', short: 'Renew sign-in', section: 'New sign-in',
+    row: 'Renew the task\'s sign-in', button: 'Renew sign-in',
+    desc: 'Give the scheduled task a new certificate, or a new client secret where this PC can\'t make certificates. The old one comes off the app registration once the task has signed in with the new one.',
+    off: 'The scheduled task isn\'t set up yet.',
+  },
+  access: {
+    desc: 'Choose the viewer group if there isn\'t one yet. Then add viewers or an owner, share the report and the app with the group if that\'s still to do, or give the group Build on the model again. To share AI in One, add people to the group.',
+    off: 'Viewers need the semantic model or the app first.',
+  },
+  uninstall: {
+    desc: 'Remove the scheduled task, its sign-in and its working files on this PC, the app, the app registration\'s access to the SharePoint site, and the report, or its workspace if the installer created it. Ask before deleting an app registration the installer created. The files PAX wrote stay.',
+  },
+  prereqs: {
+    desc: 'See which roles, licences and tenant settings you have and which are missing, and whether this PC can run PAX. Changes nothing.',
+  },
+};
+/** A command's text on a route. */
+const cmdOf = (cmd, route) => ({ ...COMMANDS[cmd], ...(route === 'pax' ? PAX_COMMANDS[cmd] : null) });
+
 // The install's stages in the order the installer prints them. Other headings (Who can view, the
-// history question, Schedule, Advanced settings...) slot in as they come.
+// history question, Schedule, Advanced settings...) slot in as they come. Some are on one route
+// only, and the rail leaves them out on the other.
 const INSTALL_STAGES = [
-  'Sign in', 'Checking your tenant', 'What it collects', 'Fabric', 'App registration',
+  'Sign in', 'Checking your tenant', 'Checking this PC', 'What it collects', 'Fabric', 'Where the files go', 'App registration',
   'Key Vault for the app secret', 'Ready to set up', 'Setting up', 'Done',
 ];
+const FABRIC_STAGES = new Set(['Fabric', 'Key Vault for the app secret']);
+const PAX_STAGES = new Set(['Checking this PC', 'Where the files go']);
+const onlyOn = (title) => (FABRIC_STAGES.has(title) ? 'fabric' : PAX_STAGES.has(title) ? 'pax' : undefined);
+const onRoute = (run) => (s) => !s.only || s.only === run.route;
 const DONE_HEADINGS = new Set(['AI in One is set up', 'AI in One is set up, still reloading', 'AI in One is partly set up', 'Connect Power BI']);
 
 const METHODS = [
@@ -116,15 +166,37 @@ const WAITING = {
   'device-code': 'Getting a sign-in code.',
   'azure-cli': 'Using your Azure CLI sign-in.',
 };
-const NEEDS = [
-  'An active Fabric capacity (F2 or larger, or a trial) you can assign workspaces to, or a workspace where you\'re an Admin or Member.',
-  'A Power BI Pro or Premium Per User licence, to publish the model and the report and to share the report.',
-  'The Fabric tenant settings that the model\'s connection and the report\'s custom visuals need. If any are off, a Fabric administrator turns them on.',
-  'Optional: an Azure subscription where you can create a Key Vault, or a vault you can read secrets from. By default, the app\'s client secret goes in the notebooks instead, where anyone with a role in the workspace can read it.',
-  'Permission to register apps in Entra, or an app registration you already have. If you have neither, you get an admin pack to send an admin.',
-  'A Global Administrator or Privileged Role Administrator to grant admin consent. If that isn\'t you, you get a link to send them.',
+const ROUTES = [
+  { value: 'fabric', name: 'Fabric', desc: 'Notebooks in a Fabric workspace load the audit log each day. Needs a Fabric capacity (F2 or larger, or a trial).' },
+  { value: 'pax', name: 'PAX, on this Windows PC', desc: 'A scheduled task on this PC runs PAX each day and puts the files in a SharePoint folder, for the report and the AI in One app. No capacity.' },
 ];
+// The scheduled task's last run (pax/task.js LastRun's status).
+const PAX_RUN = { running: 'Running', ok: 'Succeeded', warning: 'Succeeded with warnings', failed: 'Failed' };
+const LEDE = {
+  fabric: 'Answer a few questions and review the plan. Then the installer sets up AI in One in your tenant: an app registration, with its secret in the notebooks or in Azure Key Vault; a Fabric workspace with a Lakehouse; the notebooks and pipeline that load Copilot audit logs, licensed users and org data; and the AI in One semantic model and report.',
+  pax: 'Answer a few questions and review the plan. Then the installer sets up AI in One: a scheduled task on this PC that runs PAX each day for Copilot audit logs and licensed users; an app registration for the task to sign in as, which can write to one SharePoint site only; the AI in One semantic model and report on the files; and the AI in One app.',
+};
+const NEEDS = {
+  fabric: [
+    'An active Fabric capacity (F2 or larger, or a trial) you can assign workspaces to, or a workspace where you\'re an Admin or Member.',
+    'A Power BI Pro or Premium Per User licence, to publish the model and the report and to share the report.',
+    'The Fabric tenant settings that the model\'s connection and the report\'s custom visuals need. If any are off, a Fabric administrator turns them on.',
+    'Optional: an Azure subscription where you can create a Key Vault, or a vault you can read secrets from. By default, the app\'s client secret goes in the notebooks instead, where anyone with a role in the workspace can read it.',
+    'Permission to register apps in Entra, or an app registration you already have. If you have neither, you get an admin pack to send an admin.',
+    'A Global Administrator or Privileged Role Administrator to grant admin consent. If that isn\'t you, you get a link to send them.',
+  ],
+  pax: [
+    'This Windows PC or server, on most days, with PowerShell 7 and Python 3.10 or later. The installer offers to install Python for your account. PowerShell must be allowed to run local scripts: the installer never changes the policy or works round it.',
+    'A SharePoint site you own, for the files. Or a folder on this PC, for Power BI Desktop and the app only.',
+    'A Power BI Pro or Premium Per User licence, to publish the model and the report and to share the report.',
+    'For the AI in One app: Copilot managed apps turned on in your Power Platform environment, and Power Apps Premium or Copilot Credits for each person who opens it. If the tenant isn\'t ready, setup finishes at the report.',
+    'Permission to register apps in Entra, or an app registration you own.',
+    'A Global Administrator or Privileged Role Administrator to grant admin consent. If that isn\'t you, you get a link to send them.',
+  ],
+};
 const launcher = () => app.state?.launcher ?? {};
+/** The route: the install record's, a setup draft's, or the one chosen on the home page. */
+const routeOf = () => app.state?.record?.target ?? app.state?.draftTarget ?? app.target ?? 'fabric';
 const installerName = () => launcher().command ?? 'aio-install';
 const installerWindow = () => launcher().window ?? 'your terminal';
 const GLYPH = { ok: 'check', warn: 'warn', fail: 'x' };
@@ -148,6 +220,7 @@ const app = {
   conn: 'ok',
   method: null,
   tenant: null,
+  target: null,
   startError: '',
   starting: false,
   railOpen: false,
@@ -312,7 +385,9 @@ async function start(command, extra = {}) {
   app.starting = true;
   app.startError = '';
   byId('view').replaceChildren(renderHome());
-  const r = await post('/api/start', { command, method, ...(tenant ? { tenant } : {}), ...extra });
+  // Without a record, setup and the prerequisites check go the route the home page shows.
+  const route = !st.record && (command === 'install' || command === 'prereqs') ? { target: routeOf() } : {};
+  const r = await post('/api/start', { command, method, ...(tenant ? { tenant } : {}), ...route, ...extra });
   app.starting = false;
   if (!r.ok) {
     app.startError = r.body?.error ?? 'It didn\'t start. Try again.';
@@ -383,16 +458,18 @@ function newStage(title, o = {}) {
   return {
     id: ++stageIds, title, heading: null, level: o.level ?? 0, parent: o.parent ?? null, status: 'upcoming',
     items: [], kids: [], startedAt: 0, endedAt: 0, n: o.n, total: o.total, el: null, body: null, kidsEl: null,
-    step: !!o.step, failed: false,
+    step: !!o.step, failed: false, only: o.level ? undefined : onlyOn(title),
   };
 }
 
 function createRun(e) {
   const cmd = e.command;
-  const title = cmd === 'install' && app.state?.record?.installed ? COMMANDS.install.row : COMMANDS[cmd].title;
+  const route = routeOf();
+  const c = cmdOf(cmd, route);
+  const title = cmd === 'install' && app.state?.record?.installed ? c.row : c.title;
   const run = {
-    command: cmd, title, startedAt: e.at, endedAt: 0, state: 'running', error: '', phase: 'signin',
-    stages: cmd === 'install' ? INSTALL_STAGES.map((t) => newStage(t)) : [newStage('Sign in'), newStage(COMMANDS[cmd].section)],
+    command: cmd, route, title, startedAt: e.at, endedAt: 0, state: 'running', error: '', phase: 'signin',
+    stages: cmd === 'install' ? INSTALL_STAGES.map((t) => newStage(t)) : [newStage('Sign in'), newStage(c.section)],
     cur: null, child: null, doneTitle: '', signedIn: false, user: null, prompts: new Map(), progress: new Map(), adopted: false,
     events: [e],
   };
@@ -522,6 +599,11 @@ function apply(e) {
   const run = app.run;
   if (!run) return;
   switch (e.type) {
+    case 'route':
+      // The route the installer took, so the rail shows that route's stages.
+      run.route = e.target;
+      schedule();
+      return;
     case 'heading':
       return onHeading(run, e);
     case 'step':
@@ -1060,7 +1142,7 @@ function renderPrompt(item) {
 
   if (item.kind === 'settings') {
     body = h('div', { class: 'ask-body' },
-      h('p', { class: 'hint' }, 'Open any category to edit its settings. Your other answers stay unchanged. A capacity that\'s active now could be paused by the time you deploy.'),
+      h('p', { class: 'hint' }, `Open any category to edit its settings. Your other answers stay unchanged.${app.run?.route === 'pax' ? '' : ' A capacity that\'s active now could be paused by the time you deploy.'}`),
       item.notice ? h('p', { class: 'err', role: 'alert' }, item.notice) : null,
       h('div', { class: 'settings-grid' }, item.categories.map((cat) =>
         h('button', { type: 'button', class: 'settings-card', onclick: () => answer(item, cat.id) },
@@ -1248,6 +1330,26 @@ function methodPicker() {
     }));
 }
 
+/** A new install's route. PAX needs this PC to be Windows, since its scheduled task runs here. */
+function routePicker(busy) {
+  const current = routeOf();
+  return h('fieldset', { class: 'methods' },
+    h('legend', null, 'Where should AI in One get its data?'),
+    ROUTES.map((r) => {
+      const off = r.value === 'pax' && !app.state.paxHere;
+      const input = h('input', { type: 'radio', name: 'route', value: r.value, checked: r.value === current, disabled: off || busy });
+      input.addEventListener('change', () => {
+        app.target = r.value;
+        byId('view').replaceChildren(renderHome());
+        byId('view').querySelector(`input[name="route"][value="${r.value}"]`)?.focus();
+      });
+      return h('label', { class: 'method' }, input,
+        h('span', { class: 'method-text' },
+          h('span', { class: 'method-name' }, r.name, off ? h('span', { class: 'method-tag' }, 'Needs Windows') : null),
+          h('span', { class: 'method-desc' }, r.desc)));
+    }));
+}
+
 function signedInNote() {
   const u = app.state.user;
   return h('p', { class: 'ln ok' }, h('span', { class: 'gl' }, icon('check')),
@@ -1321,13 +1423,16 @@ function renderHome() {
   }
 
   if (!rec?.installed) {
-    kids.unshift(head('sliders', 'Set up AI in One', `Fabric installer ${st.version}`));
+    const route = routeOf();
+    kids.unshift(head('sliders', 'Set up AI in One', `Installer ${st.version}`));
     kids.push(updateBanner());
     kids.push(staleBanner(busy));
     if (running) kids.push(runningBanner());
-    kids.push(h('p', { class: 'lede' },
-      'Answer a few questions and review the plan. Then the installer sets up AI in One in your tenant: an app registration, with its secret in the notebooks or in Azure Key Vault; a Fabric workspace with a Lakehouse; the notebooks and pipeline that load Copilot audit logs, licensed users and org data; and the AI in One semantic model and report.'));
+    kids.push(h('p', { class: 'lede' }, LEDE[route]));
     if (rec) kids.push(h('p', { class: 'hint' }, 'Your answers from last time are saved, so the questions start from them.'));
+    else if (st.draftTarget) {
+      kids.push(h('p', { class: 'hint' }, `Setup carries on from your answers last time, with ${ROUTES.find((r) => r.value === route)?.name ?? route}.`));
+    }
 
     const tenantInput = h('input', {
       id: 'tenant', class: 'field', type: 'text', value: app.tenant ?? st.defaults.tenant ?? '', autocomplete: 'off',
@@ -1337,6 +1442,7 @@ function renderHome() {
       app.tenant = tenantInput.value;
     });
     const form = h('form', { class: 'panel-body', novalidate: true },
+      rec || st.draftTarget ? null : routePicker(busy),
       st.user ? signedInNote() : [
         methodPicker(),
         h('div', { class: 'tenant' },
@@ -1352,7 +1458,7 @@ function renderHome() {
       ev.preventDefault();
       start('install');
     });
-    kids.push(h('section', { class: 'panel' }, h('div', { class: 'panel-head' }, h('h2', null, 'Sign in to your tenant')), form));
+    kids.push(h('section', { class: 'panel' }, h('div', { class: 'panel-head' }, h('h2', null, rec || st.draftTarget ? 'Sign in to your tenant' : 'Choose a route and sign in')), form));
     kids.push(prereqsPanel(busy));
     return h('div', { class: 'page' }, kids);
   }
@@ -1362,11 +1468,29 @@ function renderHome() {
   kids.push(staleBanner(busy));
   if (running) kids.push(runningBanner());
 
+  const pax = rec.target === 'pax';
   const days = rec.secretExpires ? Math.floor((Date.parse(rec.secretExpires) - Date.now()) / 86_400_000) : null;
   const soon = days != null && days < 30;
   const firstRun = rec.firstRun ? rec.firstRun.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/ ([A-Z])/g, (_, c) => ` ${c.toLowerCase()}`) : 'Not run yet';
   const link = (text, url) => (url ? h('a', { href: url, target: '_blank', rel: 'noreferrer' }, text) : text);
-  const rows = [
+  const expires = rec.secretExpires ? h('span', { class: soon ? 'soon' : null }, `${rec.secretExpires} (${days < 0 ? 'expired' : `in ${days} days`})`) : 'Unknown';
+  const recordRow = ['Install record', [h('div', null, st.configFile),
+    /[\\/]Documents[\\/]/i.test(st.configFile ?? '') ? h('p', { class: 'hint' }, 'If OneDrive syncs your Documents folder, this record follows you to your other PCs.') : null]];
+  const rows = (pax ? [
+    ['Tenant', rec.tenantId],
+    ['Files', rec.files],
+    ['Collects', rec.data.join(', ')],
+    ['Scheduled task', rec.task ?? 'Not set up'],
+    ['Workspace', rec.workspace ? link(rec.workspace, rec.workspaceUrl) : null],
+    ['Semantic model', rec.model ?? 'Not deployed'],
+    ['Report', rec.report ? link(rec.report.name, rec.report.url) : 'Not deployed'],
+    ['The AI in One app', rec.app ? link(rec.app.name, rec.app.url) : rec.appSkipped ? `Not deployed: ${rec.appSkipped}` : 'Not deployed'],
+    ['Viewer group', rec.viewers],
+    [rec.credential === 'secret' ? 'Client secret expires' : 'Certificate expires', expires],
+    ['Last run', rec.lastRun ? `${PAX_RUN[rec.lastRun.status] ?? rec.lastRun.status}${rec.lastRun.mode === 'seed' ? ', loading history' : ''}, ${new Date(rec.lastRun.at).toLocaleString()}` : 'Not run yet'],
+    ['Audit history', rec.historyDays ? `${rec.historyDays} days` : null],
+    recordRow,
+  ] : [
     ['Tenant', rec.tenantId],
     ['Workspace', link(rec.workspace, rec.workspaceUrl)],
     ['Lakehouse', rec.lakehouse],
@@ -1375,20 +1499,19 @@ function renderHome() {
     ['Report', rec.report ? link(rec.report.name, rec.report.url) : 'Not deployed'],
     ['Viewer group', rec.viewers],
     ['Schedule', rec.schedule ?? 'Not set'],
-    ['Client secret expires', rec.secretExpires ? h('span', { class: soon ? 'soon' : null }, `${rec.secretExpires} (${days < 0 ? 'expired' : `in ${days} days`})`) : 'Unknown'],
+    ['Client secret expires', expires],
     ['First load', firstRun],
     ['Audit history', rec.historyDays ? `${rec.historyDays} days` : null],
-    ['Install record', [h('div', null, st.configFile),
-      /[\\/]Documents[\\/]/i.test(st.configFile ?? '') ? h('p', { class: 'hint' }, 'If OneDrive syncs your Documents folder, this record follows you to your other PCs.') : null]],
-  ].filter(([, v]) => v != null && v !== '');
+    recordRow,
+  ]).filter(([, v]) => v != null && v !== '');
   kids.push(h('section', { class: 'panel' },
     h('div', { class: 'panel-head' }, h('h2', null, 'Your installation'),
       rec.workspaceUrl ? h('a', { href: rec.workspaceUrl, target: '_blank', rel: 'noreferrer' }, 'Open the workspace') : null),
     h('div', { class: 'panel-body' }, h('dl', { class: 'record' }, rows.map(([k, v]) => [h('dt', null, k), h('dd', null, v)])))));
 
   const primary = soon && rec.can['rotate-secret'] ? 'rotate-secret' : rec.firstRun !== 'Completed' && rec.can.run ? 'run' : 'status';
-  const actions = ROW_ORDER.map((cmd) => {
-    const c = COMMANDS[cmd];
+  const actions = ROW_ORDER.filter((cmd) => !cmdOf(cmd, rec.target).hide).map((cmd) => {
+    const c = cmdOf(cmd, rec.target);
     const can = cmd === 'install' || !!rec.can[cmd];
     const history = cmd === 'run' && can ? historyPicker(busy, rec) : null;
     return h('li', { class: 'row' }, icon(c.icon),
@@ -1419,7 +1542,7 @@ const BACKFILL = [
 
 /**
  * Run now can reload audit history, like run --backfill-days. Fewer days than are loaded drops the rest,
- * so the installer asks first (install.js run()) and the question shows on the run page.
+ * so the installer asks first (install.js run(), or with PAX, pax/flow.js runNow()) and the question shows on the run page.
  */
 function historyPicker(busy, rec) {
   const hint = h('span', { class: 'row-desc', id: 'backfill-hint' });
@@ -1427,7 +1550,9 @@ function historyPicker(busy, rec) {
   const paint = () => {
     const n = Number(app.backfill || 0);
     hint.textContent = n ? [
-      'Rebuilds the audit table with just these days, then runs the data check.',
+      rec.target === 'pax'
+        ? 'PAX loads these days of audit history again, then the model refreshes on the new files.'
+        : 'Rebuilds the audit table with just these days, then runs the data check.',
       n >= 90 ? 'In a large tenant, this can take several hours. The usual schedule carries on afterwards.' : '',
       loaded && n < loaded ? `That's fewer than the ${loaded} days loaded now. The installer asks before it drops the older days.` : '',
     ].filter(Boolean).join(' ') : '';
@@ -1444,8 +1569,8 @@ function historyPicker(busy, rec) {
 }
 
 /**
- * Roles, licences, capacities, tenant settings and, for Key Vault, Azure access: what the signed-in user has and lacks.
- * Before sign-in it lists what's needed, with a button that signs in and checks.
+ * Roles, licences, capacities, tenant settings, for Key Vault Azure access, and with PAX this PC: what the signed-in user has and lacks.
+ * Before sign-in it lists what the chosen route needs, with a button that signs in and checks.
  */
 function prereqsPanel(busy) {
   const st = app.state;
@@ -1456,8 +1581,10 @@ function prereqsPanel(busy) {
   let body;
   if (p) {
     const counts = ['met', 'eligible', 'missing', 'unknown'].map((s) => [s, p.items.filter((i) => i.status === s).length]).filter(([, n]) => n);
+    const other = !st.record && p.target && p.target !== routeOf() ? ROUTES.find((r) => r.value === p.target) : null;
     body = [
       h('p', { class: 'hint' }, `Checked as ${p.upn} at ${when}. ${counts.map(([s, n]) => `${n} ${PREREQ_STATE[s].toLowerCase()}`).join(', ')}. Only active roles count. A role you can activate yourself in Entra (Privileged Identity Management) needs activating first.`),
+      other ? h('p', { class: 'hint' }, `This check was for ${other.name}. Check again for the route you've chosen.`) : null,
       renderPrereqs(p.items),
     ];
   } else if (st.user) {
@@ -1465,7 +1592,7 @@ function prereqsPanel(busy) {
   } else {
     body = [
       h('p', { class: 'hint' }, 'Sign in to check which of these you have. The check only reads; it changes nothing.'),
-      h('ul', { class: 'needs' }, NEEDS.map((n) => h('li', null, n))),
+      h('ul', { class: 'needs' }, NEEDS[routeOf()].map((n) => h('li', null, n))),
     ];
   }
   return h('section', { class: 'panel' },
@@ -1508,7 +1635,7 @@ function renderRail() {
   const where = app.view === 'run' && run ? (target(run)?.title ?? run.title) : 'Home';
 
   const top = h('div', { class: 'rail-top' },
-    h('div', { class: 'brand' }, h('span', { class: 'brand-name' }, 'AI in One'), h('span', { class: 'brand-sub' }, 'Fabric installer')),
+    h('div', { class: 'brand' }, h('span', { class: 'brand-name' }, 'AI in One'), h('span', { class: 'brand-sub' }, 'Installer')),
     h('button', {
       type: 'button', class: 'rail-toggle', 'data-key': 'toggle', 'aria-expanded': String(app.railOpen), 'aria-controls': 'rail-menu',
       onclick: () => {
@@ -1527,9 +1654,9 @@ function renderRail() {
       h('button', {
         type: 'button', class: 'dest', 'data-key': 'run', 'aria-current': app.view === 'run' ? 'page' : null, onclick: () => show('run'),
       }, icon(COMMANDS[run.command].icon), h('span', { class: 'dest-text' },
-        h('span', { class: 'dest-label' }, run.command === 'install' ? run.title : COMMANDS[run.command].title),
+        h('span', { class: 'dest-label' }, run.title),
         h('span', { class: 'dest-blurb' }, blurb(run)))),
-      h('ol', { class: 'stages', 'aria-label': 'Stages' }, run.stages.map((s) => h('li', null,
+      h('ol', { class: 'stages', 'aria-label': 'Stages' }, run.stages.filter(onRoute(run)).map((s) => h('li', null,
         stageButton(s),
         s.kids.length ? h('ol', { class: 'steps' }, s.kids.map((k) => h('li', null, stageButton(k)))) : null)))) : null);
 
@@ -1775,7 +1902,7 @@ function runFacts(run) {
 function saveRecord(run) {
   const L = [`# ${headTitle(run)}`, '', ...runFacts(run)];
   if (run.error) L.push('', `**Error:** ${run.error}`);
-  for (const s of run.stages) L.push(...stageMarkdown(s, 2));
+  for (const s of run.stages.filter(onRoute(run))) L.push(...stageMarkdown(s, 2));
   L.push('', '---', '', '_Written by the AI in One installer. Secrets are masked and sign-in codes left out._');
   download(`aio-${run.command}-${stamp(run.startedAt)}.md`, L);
 }
