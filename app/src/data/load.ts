@@ -130,6 +130,7 @@ export function buildDataset(
     if (date < minDate) minDate = date
   }
   const months = [...new Set(rows.map((r) => r.month))].sort()
+  if (!rows.length) minDate = ''
   const orgs = [...new Set([...rows.map((r) => r.org), ...[...people.values()].map((p) => p.org)])].sort()
   return { rows, people, agents: buildAgents(agents), maxDate, minDate, months, orgs, source, label }
 }
@@ -163,5 +164,7 @@ export async function loadFiles(files: File[]): Promise<{ dataset: Dataset; foun
   if (!parts.interactions) throw new Error('No PAX interactions file found. It needs UserKey and ThreadId columns.')
   const found = Object.keys(parts) as FileKind[]
   const label = files.map((f) => f.name).join(', ')
-  return { dataset: buildDataset(parts.interactions, parts.users ?? [], parts.agents ?? [], 'upload', label), found }
+  const dataset = buildDataset(parts.interactions, parts.users ?? [], parts.agents ?? [], 'upload', label)
+  if (!dataset.rows.length) throw new Error('The interactions file has no usable rows. Each row needs a UserKey and a date. Your current data has not changed.')
+  return { dataset, found }
 }

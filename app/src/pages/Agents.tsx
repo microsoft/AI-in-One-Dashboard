@@ -263,7 +263,7 @@ function FeatureLegend() {
 }
 
 export function AgentHealth() {
-  const { filters, setFilter, openAgent } = useData()
+  const { ds, filters, setFilter, openAgent } = useData()
   const { inventory } = useAgentData()
   const counts = REVIEWS.map((r) => ({ key: r, label: r, value: inventory.filter((p) => p.review === r).length, color: REVIEW_COLOR[r] }))
   const toRec = (p: AgentProfile): AgentRec => ({
@@ -285,6 +285,11 @@ export function AgentHealth() {
   return (
     <>
       <AgentKpis variant="health" />
+      {ds.agents.length === 0 && (
+        <p className="notice" role="status">
+          Load the Agent 365 file to see each agent's review status. Use <b>Change data</b> to add it.
+        </p>
+      )}
       <Panel title="Agents by review status" note="Select a status to filter the review table">
         <div className="grid grid-2">
           <BarList

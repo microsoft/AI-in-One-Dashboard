@@ -63,3 +63,14 @@ export function totalLicensed(ds: Dataset, org: string): number {
   for (const p of ds.people.values()) if (p.hasLicense && (!org || p.org === org)) ids.add(p.id)
   return ids.size
 }
+
+/** Inactive licensed users, never negative. NaN (shown as a dash) when nobody is licensed, e.g. no users file. */
+export function inactiveLicensed(total: number, active: number): number {
+  return total > 0 ? Math.max(0, total - active) : NaN
+}
+
+/** KPI sub-text for licence totals, with a hint when the users file is missing or nobody in view is licensed. */
+export function licensedNote(ds: Dataset, total: number, note: string): string {
+  if (total > 0) return note
+  return ds.people.size ? 'no licensed users in this view' : 'load the users file to see licences'
+}

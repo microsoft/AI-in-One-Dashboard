@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import type { Row } from '../data/types'
-import { byRank, totalLicensed, useData } from '../data/store'
+import { byRank, inactiveLicensed, licensedNote, totalLicensed, useData } from '../data/store'
 import { gloss } from '../data/glossary'
 import { groupBy, isChat, isL, isU, M, momChange, series } from '../metrics/core'
 import { flat, pivot } from '../metrics/pivot'
@@ -70,9 +70,9 @@ function PopKpis({ pop, rows }: { pop: Pop; rows: Row[] }) {
   const page = `${c.page} - Usage Trends`
   return (
     <KpiRow>
-      <Kpi tone={c.tone} label="Active users" value={int(k.active)} sub={pop === 'licensed' ? `of ${int(k.total)} licensed` : 'unlicensed, chat'} help={gloss('Active Users', page)} />
+      <Kpi tone={c.tone} label="Active users" value={int(k.active)} sub={pop === 'licensed' ? licensedNote(ds, k.total, `of ${int(k.total)} licensed`) : 'unlicensed, chat'} help={gloss('Active Users', page)} />
       {pop === 'licensed' && (
-        <Kpi label="Inactive licensed users" value={int(k.total - k.active)} sub="licensed, no activity in period" help="Licensed users minus licensed users with Copilot activity in the selected period." />
+        <Kpi label="Inactive licensed users" value={int(inactiveLicensed(k.total, k.active))} sub={licensedNote(ds, k.total, 'licensed, no activity in period')} help="Licensed users minus licensed users with Copilot activity in the selected period." />
       )}
       <Kpi
         label={pop === 'licensed' ? 'Sessions (excl. agents)' : 'Total sessions'}

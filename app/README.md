@@ -51,6 +51,8 @@ Click **Change data** in the header and drop in your PAX CSVs. The app works out
 | Entra users with licensing | `UserKey` plus `Organization` or `Has license` | Recommended (organisation filter and licence pages) |
 | Agent 365 inventory | `Agent name` | Optional (agent health and use cases) |
 
+If the users file is missing, licence totals show a dash and a hint to load it. If the Agent 365 file is missing, Health check says so. An interactions file with no rows is rejected, and the current data stays.
+
 A synthetic sample in `public/sample/` loads on first open and is clearly labelled as sample data. To rebuild it from the synthetic files at the repo root, run `node scripts/prepare-sample.mjs`.
 
 The Guide tab lists where the app deliberately differs from the Power BI report. For example, month-over-month compares the last complete month with the month before it. Agents with fewer than three users are hidden from the sessions-by-agent visuals, as a privacy floor.
@@ -61,6 +63,7 @@ The Guide tab lists where the app deliberately differs from the Power BI report.
 npm install
 npm run dev         # local dev server
 npm run lint
+npm test            # data-loading tests
 npm run build       # type-check and build to dist/ (Fabric App and Managed App hosting)
 npm run build:file  # build the single-file download to download/AI-in-One-App.html
 ```

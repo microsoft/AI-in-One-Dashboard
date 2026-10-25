@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { totalLicensed, useData } from '../data/store'
+import { inactiveLicensed, licensedNote, totalLicensed, useData } from '../data/store'
 import { gloss } from '../data/glossary'
 import { groupBy, M, series } from '../metrics/core'
 import { pivot } from '../metrics/pivot'
@@ -35,10 +35,10 @@ export function OverviewTrends() {
   return (
     <>
       <KpiRow>
-        <Kpi tone="licensed" label="M365 Copilot active users" value={int(d.lic)} sub={`of ${int(d.totalLic)} licensed`} help={gloss('M365 Copilot Active Users', P)} />
+        <Kpi tone="licensed" label="M365 Copilot active users" value={int(d.lic)} sub={licensedNote(ds, d.totalLic, `of ${int(d.totalLic)} licensed`)} help={gloss('M365 Copilot Active Users', P)} />
         <Kpi tone="unlicensed" label="Copilot Chat active users" value={int(d.unlic)} sub="unlicensed" help={gloss('Unlicensed Chat Active Users', P)} />
         <Kpi tone="agent" label="Agent active users" value={int(d.agentUsers)} sub="any licence" help={gloss('Agent Active Users', P)} />
-        <Kpi label="Inactive licensed users" value={int(d.totalLic - d.lic)} sub="licensed, no activity in period" help="Licensed users minus licensed users with Copilot activity in the selected period." />
+        <Kpi label="Inactive licensed users" value={int(inactiveLicensed(d.totalLic, d.lic))} sub={licensedNote(ds, d.totalLic, 'licensed, no activity in period')} help="Licensed users minus licensed users with Copilot activity in the selected period." />
       </KpiRow>
       <div className="grid grid-2">
         <Panel title="Active users by organisation" note="Licensed, unlicensed and agent users">
@@ -123,7 +123,7 @@ export function OverviewLeaderboard() {
         <Kpi tone="licensed" label="M365 Copilot users" value={int(d.lic)} sub={<><b>{dec1(d.licWeekly)}</b> sessions per user per week</>} help={gloss('M365 Copilot Users', PL)} />
         <Kpi tone="unlicensed" label="Copilot Chat users" value={int(d.unlic)} sub={<><b>{dec1(d.unlicWeekly)}</b> sessions per user per week</>} help={gloss('Unlicensed Chat Users', PL)} />
         <Kpi tone="agent" label="Agent users" value={int(d.agentUsers)} sub={<><b>{dec1(d.agentWeekly)}</b> sessions per user per week</>} help={gloss('Agent Users', PL)} />
-        <Kpi label="Inactive licensed users" value={int(d.totalLic - d.lic)} sub={`of ${int(d.totalLic)} licensed`} />
+        <Kpi label="Inactive licensed users" value={int(inactiveLicensed(d.totalLic, d.lic))} sub={licensedNote(ds, d.totalLic, `of ${int(d.totalLic)} licensed`)} />
       </KpiRow>
       <Panel title="M365 Copilot (licensed) leaderboard" note="Expand an organisation to see its people" help={gloss('% Copilot Users Using Agents (Licensed)', PL)}>
         <DataTable label="Licensed usage leaderboard" columns={cols(COLOR.licensed)} rows={d.licPivot} initialSort={{ key: 'users', desc: true }} search={search} childNoun="organisations or people" />
