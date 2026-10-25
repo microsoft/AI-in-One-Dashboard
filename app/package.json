@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "build:file": "tsc -b && vite build --mode file",
     "lint": "eslint .",
+    "test": "vitest run",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -33,6 +34,7 @@
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.59.2",
     "vite": "^8.0.12",
-    "vite-plugin-singlefile": "^2.3.3"
+    "vite-plugin-singlefile": "^2.3.3",
+    "vitest": "^5.0.5"
   }
 }

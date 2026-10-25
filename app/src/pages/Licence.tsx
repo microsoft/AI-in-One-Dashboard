@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { byRank, totalLicensed, useData } from '../data/store'
+import { byRank, inactiveLicensed, licensedNote, totalLicensed, useData } from '../data/store'
 import { gloss } from '../data/glossary'
 import { M, median } from '../metrics/core'
 import { licencePriority } from '../metrics/licence'
@@ -80,8 +80,8 @@ export function Licence() {
     <>
       <KpiRow>
         <Kpi tone="unlicensed" label="Unlicensed active users" value={int(d.unlic)} sub="candidates for a licence" help={gloss('Unlicensed Active Users', P)} />
-        <Kpi tone="licensed" label="Licensed active users" value={int(d.lic)} sub={`of ${int(d.total)} licensed`} help={gloss('Licensed Active Users', P)} />
-        <Kpi label="Inactive licensed users" value={int(d.total - d.lic)} sub="licences that could be reassigned" />
+        <Kpi tone="licensed" label="Licensed active users"         value={int(d.lic)} sub={licensedNote(ds, d.total, `of ${int(d.total)} licensed`)} help={gloss('Licensed Active Users', P)} />
+                <Kpi label="Inactive licensed users" value={int(inactiveLicensed(d.total, d.lic))} sub={licensedNote(ds, d.total, 'licences that could be reassigned')} />
         <Kpi wide label="Top priority organisation" value={d.top ?? '–'} sub="highest score from its users' medians" />
       </KpiRow>
       <div className="grid grid-2-1">
