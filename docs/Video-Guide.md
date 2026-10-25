@@ -1,6 +1,6 @@
 # 🎬 AI-in-One Dashboard — Video Guide & Chapter Reference
 
-Two narrated, client-ready walkthroughs ship with the AI-in-One Dashboard. Both play inline on the [repository's **Watch First** section](../README.md#-watch-first) — no download required. Use the timestamps below to jump straight to the topic you need.
+Two narrated, client-ready walkthroughs ship with the AI-in-One Dashboard. Both play inline on the [repository's **Videos** section](../README.md#videos) — no download required. Use the timestamps below to jump straight to the topic you need.
 
 > Prefer a printable copy? Download the **[Word version](AI-in-One-Dashboard-Video-Guide.docx?raw=1)**.
 

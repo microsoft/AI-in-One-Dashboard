@@ -1,6 +1,6 @@
 # 📥 Get your data: PAX
 
-Part of [AI in One](../README.md). The [app](../README.md#-start-here-the-app-preview) and the [Power BI report](power-bi-report.md) both read the files described here. For the short version, see [Where your data comes from](../README.md#-where-your-data-comes-from-pax) in the README.
+Part of [AI in One](../README.md). The [app](deploy-the-app.md) and the [Power BI report](power-bi-report.md) both read the files described here. For the short version, see [The data files](../README.md#-where-your-data-comes-from-pax) in the README.
 
 **On this page:** [Required input format](#-important--required-input-file-format) · [What is PAX?](#-what-is-pax) · [Run PAX](#-get-your-data--run-pax-to-produce-the-files) · [Audit logging](#audit-logging) · [Agent 365](#agent-365) · [SharePoint URLs](#sharepoint-url) · [Fabric: Azure Container Apps job](#aca-job) · [Multi-month history](#appendfile)
 

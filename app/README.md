@@ -10,7 +10,7 @@ There are three ways to use it. None of them needs a Power BI licence.
 
 | Option | What you do | Best for |
 |---|---|---|
-| **Copilot Managed App** (recommended, preview) | Follow [Start here](../README.md#-start-here-the-app-preview) in the main README: an admin turns on two settings, then you deploy it with the `ms` CLI and share it. | Sharing it across your organisation, hosted in your Microsoft 365 tenant. |
+| **Copilot Managed App** (recommended, preview) | Follow [Deploy the app](../docs/deploy-the-app.md): an admin turns on two settings, then you deploy it with the `ms` CLI and share it. | Sharing it across your organisation, hosted in your Microsoft 365 tenant. |
 | **Open it on your PC** | Download [`download/AI-in-One-App.html`](download/AI-in-One-App.html) (choose **Download raw file**) and open it in Edge or Chrome. | Trying it, or one person looking at the numbers. Works offline. |
 | **Put it in a Fabric workspace** (the Fabric App) | Run one line in PowerShell (below). | Sharing it with your team inside Fabric. |
 
@@ -81,7 +81,7 @@ Most people should use [Get the app](#get-the-app). This section is for deployin
 
 ### As a Copilot Managed App
 
-The full steps, including the admin settings, licensing and sharing, are in [Start here](../README.md#-start-here-the-app-preview) in the main README. In short, from this folder:
+The full steps, including the admin settings, licensing and sharing, are in [Deploy the app](../docs/deploy-the-app.md). In short, from this folder:
 
 ```powershell
 npm ci              # installs the app's packages and the pinned ms CLI
