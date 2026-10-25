@@ -229,6 +229,20 @@
                 "type": "Expression"
               },
               "type": "bool"
+            },
+            "PAX_USERS_CSV": {
+              "value": {
+                "value": "@pipeline().parameters.PAX_USERS_CSV",
+                "type": "Expression"
+              },
+              "type": "string"
+            },
+            "PAX_INTERACTIONS_CSV": {
+              "value": {
+                "value": "@pipeline().parameters.PAX_INTERACTIONS_CSV",
+                "type": "Expression"
+              },
+              "type": "string"
             }
           }
         }
@@ -259,6 +273,14 @@
       "EnableOrgDataPull": {
         "type": "Boolean",
         "defaultValue": true
+      },
+      "PAX_USERS_CSV": {
+        "type": "String",
+        "defaultValue": ""
+      },
+      "PAX_INTERACTIONS_CSV": {
+        "type": "String",
+        "defaultValue": ""
       }
     }
   }

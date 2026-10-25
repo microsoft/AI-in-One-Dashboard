@@ -22,7 +22,7 @@ This tour shows what each page looks like and what it's for, so you know where t
 | Area | Pages |
 |---|---|
 | 🧭 **Start here** | [1 · Copilot Usage Explorer](#page-1) |
-| 🔍 **Copilot overall** | [2 · License Prioritization](#page-2) &nbsp;·&nbsp; [3 · Combined Trends](#page-3) &nbsp;·&nbsp; [4 · Combined Leaderboard](#page-4) |
+| 🔍 **Copilot overall** | [2 · License Prioritization](#page-2) · [3 · Combined Trends](#page-3) &nbsp;·&nbsp; [4 · Combined Leaderboard](#page-4) |
 | 🤖 **Agents** | [5 · Usage Trends](#page-5) &nbsp;·&nbsp; [6 · Habit Formation](#page-6) &nbsp;·&nbsp; [7 · Leaderboard](#page-7) &nbsp;·&nbsp; [8 · Health Check](#page-8) &nbsp;·&nbsp; [9 · Use Cases](#page-9) &nbsp;·&nbsp; [10 · Agent Details](#page-10) |
 | 📈 **M365 Copilot** | [11 · Usage Trends](#page-11) &nbsp;·&nbsp; [12 · Habit Formation](#page-12) &nbsp;·&nbsp; [13 · Leaderboard](#page-13) |
 | 📊 **Copilot Chat** | [14 · Usage Trends](#page-14) &nbsp;·&nbsp; [15 · Habit Formation](#page-15) &nbsp;·&nbsp; [16 · Leaderboard](#page-16) |
@@ -62,6 +62,16 @@ These controls work the same way on every analytical page.
 > [!TIP]
 > **Minimum Group Size** decides how much detail you see. The default, **3**, keeps reporting at team level; a group needs at least three eligible people before its detail appears. Views that list individual people, such as **By user**, appear only when the report owner approves a setting of **1**.
 
+## Observed history across the report
+
+All **17 existing report pages** use the shared temporal model; observation history does not add a report page. Matching Users and activity inputs count stable people, not state `UserKey` rows. Organizational scope uses each person's latest organization; activity is attributed to the license state in effect at the event, not simply the latest snapshot.
+
+**First seen** means a dated observation, not a license assignment timestamp. Monthly paid membership includes people with a licensed state at any point in that month. Paid and free populations can overlap during a period; count distinct people rather than adding them. Unknown stays Unknown, and collection does not reconstruct unobserved changes.
+
+The existing person hierarchy and row-level security still determine whose data a viewer can see. **Minimum Group Size** remains **3** by default; individual detail requires an approved **1**. On existing person rows, the hidden **License timeline - First seen** tooltip shows the selected person's recorded states, subject to those same access and identity rules. **User License Timeline** is a general **Metric Glossary & Guide** definition, not a separate report page.
+
+For file-based editions, use matching approved PAX append runs with `-UserHistory On` to collect prospective observations. Existing parameters and paths do not change. History Off and one-state inputs preserve snapshot behavior.
+
 **Reporting roots:** a blank PAX **Manager_UserKey** is authoritative top of chain. If a requested manager cannot be found in the file, that person becomes a root; their reports keep their hierarchy. Any missing-manager diagnostic belongs to that person only, not their descendants.
 
 ---
@@ -96,6 +106,22 @@ These controls work the same way on every analytical page.
 </div>
 
 <a id="page-2"></a>
+
+## Prioritization and monthly comparisons
+
+**License Prioritization** separates paid/free directory and activity counts, with independent **Paid activity** and **Free Chat activity** selections. Use **Departments** for ranked department comparisons, or **People & chart** for the existing view and protected person search. **Clear filters** resets the new selectors and person selection too.
+
+**Sessions** remains the default priority-score metric. Choosing **Prompts** substitutes prompt units into the same 10/5/5 benchmarks and 60/30/10 weights: 60% weekly volume / 10, 30% active days per week / 5 and 10% volume per active day / 5. The score is uncapped, not a percentage, a productivity measure or an automatic licensing decision. Individual ranks remain employee-only; blank manager/department ranks have no rank background.
+
+On **Combined Trends**, switch to **Monthly comparison** for paid/free totals, distinct active people and per-active-person ratios in each temporal month/cohort population, not today's directory cohort applied to every month. It respects the dates, organization, license, access and eligible-headcount rules. Weekly-only rank controls do not change monthly totals. With observed license history, cohort membership can overlap; a distinct total can be smaller than the sum of paid and free counts.
+
+**Keep the interpretation consistent:**
+
+- Responses per prompt is unavailable: current PAX messages are prompt-only. Responses would need an explicit producer contract, response identity and parent-prompt linkage; no response metric is implied.
+- Habit bands stay fixed at **1–5 / 6–10 / 11–15 / 16+** distinct active days in the displayed month. Zero-day users are outside these bands.
+- Inferred activities use stored PAX behavior labels from resource/action/context/plugin/app-host evidence and sometimes agent-name keywords. Leading patterns use the most agent sessions, with alphabetical ties. They do not analyze prompt text, apply AI inference or measure outcomes.
+- Other AI examples include non-agent **autonomous** and **logic app** hosts, with blank identity labels. The unchanged sample has no Unclassified rows; unfamiliar-host/unknown-license rule examples are hypothetical.
+- The unchanged sample's **7,973** agent users are **5,829 paid + 2,144 free**, with no overlap in that sample. That is not a universal rule once observed history is present. “Most organizations” means departments reached: the sample maximum is **11**, with **Access Help Center** first alphabetically among **134** tied agents.
 
 ## 2 · 📊 License Prioritization
 
@@ -415,8 +441,6 @@ These controls work the same way on every analytical page.
 
 > **The question it answers:** *What does this number mean, and how should I read it?*
 
-![Metric Glossary & Guide](media/v2.0.0/pages/17-metric-glossary-guide.png)
-
 **What you'll see**
 - **Filter by Page:** choose any of the 17 pages to see only the definitions you need. It opens on Copilot Usage Explorer.
 - **Plain-language definitions** for every number and control. For example, *prompts* are requests, and *sessions* are conversations.
@@ -438,3 +462,24 @@ Explore more free reports at **[aka.ms/Analytics-Hub](https://aka.ms/Analytics-H
 Built and maintained by the **Microsoft Copilot Analytics team**.
 
 </div>
+
+### Explore the additional views
+
+![Department prioritization](media/v2.0.0/pages/license-prioritization-departments.png)
+
+*Department prioritization, using synthetic snapshot data.*
+
+![Protected person search](media/v2.0.0/pages/license-prioritization-person-search.png)
+
+*Individual search is shown only with approved Minimum Group Size 1.*
+
+![Monthly comparison](media/v2.0.0/pages/combined-monthly-comparison.png)
+
+*Monthly comparison of the unchanged synthetic snapshot. Observed-history populations may overlap.*
+
+### Supporting history definitions
+
+- **License History Enabled:** Multiple observed states enable the history view. History Off and one-state seeds keep existing reporting behavior; access rules remain in force.
+- **License Population in Period:** Distinct authorized people with an observed state in effect during the selected period. The earliest dated state also covers earlier events; parallel Unknown states are excluded when dated states exist. Paid/free periods can overlap, so distinct totals need not equal their sum.
+
+- **User License Timeline:** One-line state: First seen timeline in the general Metric Glossary & Guide grouping. Existing person-row tooltips follow individual-detail and person-identity rules.

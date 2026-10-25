@@ -19,7 +19,15 @@ Graph licensing report -----> aio_v2_licenses_raw
 
 Delta tables are stored in **OneLake**. The report imports them through `Sql.Database`; it is **not Direct Lake**. The report retains the SharePoint edition's calculations, report pages, filters, bookmarks and two security roles. Only its required activity/directory source layer changes. The optional agent inventory remains a SharePoint-hosted Agent 365 CSV.
 
+All three editions have **17 visible pages**, with **Copilot Usage Explorer** first, **540 calculation expressions** and Minimum Group Size **3** by default. License Prioritization includes paid/free counts, independent activity filters, a Sessions/Prompts score selector, department prioritization and a protected searchable person list. Sessions is the default; either score is an uncapped prioritization heuristic, not a percentage or proof of productivity. Monthly comparison stays on Combined Trends and uses observed monthly license populations when history is available. Person license timelines use the existing privacy and access controls.
+
 ## 1. Prerequisites and permissions
+
+Spark capacity and access to the attached Lakehouse are required for either
+source path. The Graph application/Key Vault requirements below apply to the
+included collectors. The processed-PAX alternative runs preparation directly
+from approved Lakehouse CSVs and does not call those collectors or require
+their Graph credentials.
 
 - A Fabric workspace on active capacity, a Lakehouse and permission to create/run notebooks and write its tables.
 - A Lakehouse SQL analytics endpoint that the Power BI refresh identity can read. Use a dedicated Lakehouse or appropriate SQL permissions; report RLS does not secure direct access to OneLake, notebooks or SQL.
@@ -89,6 +97,49 @@ If you already maintain an authoritative Entra/HR directory, you may skip the or
 
 ## 4. Open the v2 template
 
+### Alternative: already-processed PAX files, including observation history
+
+To use processed PAX AIO data instead of the current Graph snapshots, put the
+matching Users and Interactions CSVs in the attached Lakehouse's **Files** area.
+In `Copilot_Report_Data_Preparation`, set both optional parameters:
+
+```python
+PAX_USERS_CSV = "Files/PAX/AIO_..._Users.csv"
+PAX_INTERACTIONS_CSV = "Files/PAX/AIO_..._Interactions.csv"
+```
+
+Run preparation directly to avoid Graph collection. The supplied pipeline can
+also forward these optional paths, but still runs its current-snapshot
+collectors and requires their credentials. Leave **both blank** to keep the existing
+snapshot path unchanged. Supplying only one fails. Use single processed CSV
+files, not raw audit/Graph exports, folders or wildcards. Full ABFSS Files paths
+are supported for another Lakehouse. Keep TENANT_ID and the existing output
+table parameters configured for the approved source.
+
+The processed path preserves exported state UserKey, EffectiveDate, manager
+old-state keys and already-attributed event keys. Multiple distinct license
+states per normalized person are supported; duplicate person/state rows,
+colliding keys, inconsistent Users licensing and incorrectly attributed event keys/status are
+rejected before publication. No extra PAX PersonKey field or new producer flag
+is required. Use the approved PAX observation-history output; this option does
+not invent history from current-only snapshots.
+
+First seen is the PAX observation date, **not** license assignment time. Legacy
+processed data without EffectiveDate remains undated, and History Off/one-state
+inputs preserve the existing behavior. Monthly paid/free populations may
+overlap; distinct totals count people once. Individual names/timelines keep the
+existing Minimum Group Size and access rules.
+
+Preparation validates first, writes a common generation ID, then marks Ready
+only after both output tables and counts reconcile. Source CSVs are never
+rewritten. Follow the [schema contract](SCHEMA.md) for exact attribution,
+tenant-origin, key and publication requirements. SQL endpoint synchronization
+and the normal controlled refresh/access verification are still required.
+
+The downloaded preparation notebook embeds its processed-PAX helpers,
+classifiers and shared support. It does not import repository `src` files at
+runtime; source modules are needed only to maintain/regenerate the notebook.
+
 Open [AI-in-One-v2.0.0-Fabric-OneLake-Template.pbit](../../templates/AI-in-One-v2.0.0-Fabric-OneLake-Template.pbit) in current Power BI Desktop.
 
 Set:
@@ -141,7 +192,14 @@ Validate the published report with an individual contributor, a manager, a cross
 | Audit query succeeded but is truncated | Reduce the query window; see resilience notes |
 | Snapshot state is Publishing | Fix the failed preparation and rerun it before refresh |
 | SQL snapshot/count mismatch | Wait for SQL endpoint synchronization; ensure no overlapping notebook/refresh runs |
-| Manager absent, cycle or broken hierarchy | Correct the authoritative directory; the model restricts invalid chains rather than granting a broader tree |
+| Requested manager absent from Users | A nonblank Manager_UserKey becomes an unresolved root; valid descendants remain visible within authorized access |
+| Cycle or broken hierarchy | Correct the authoritative directory; invalid chains do not grant a broader tree |
+
+A blank `Manager_UserKey` is an intentional **top of chain**. If a nonblank
+requested manager is absent from Users, only that person's manager is marked
+unresolved; that person becomes a root and valid descendants are not hidden.
+Manager keys are resolved to people, not to a particular license state.
+Cycles remain invalid. Correct source evidence rather than inventing links.
 
 ## Source maintenance
 

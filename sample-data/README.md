@@ -37,7 +37,7 @@ The full file names are `AIO_Realistic_Interactions.zip` (it contains `AIO_Reali
 
 **3. Open the template** for your edition in Power BI Desktop and paste the three paths. Keep **Minimum Group Size** at **3** for team-level views, or set it to **1** to explore the individual views too. Every name is made up.
 
-**4. Select Load.** With about 1.2 million rows, the first load takes a few minutes. The report opens on **🧭 Copilot Usage Explorer**, and every page fills with data.
+**4. Select Load.** The report opens on **🧭 Copilot Usage Explorer**. These unchanged sample files show snapshot behavior across the existing report pages.
 
 ## 👀 What you'll see
 
@@ -85,6 +85,26 @@ The [synthetic generator](../scripts/Generate_Synthetic_Rollup_Data.ps1) retains
 ```
 
 Use a new output directory. This mode never overwrites the input exports. It writes the three CSVs with LF line endings and a zip with fixed archive metadata. Repeating it on the corrected sample produces identical CSV and zip bytes. The Users and Agents files are unchanged by this surface-only update.
+
+## Prioritization and monthly comparisons
+
+**License Prioritization** separates paid/free directory and activity counts, with independent **Paid activity** and **Free Chat activity** selections. Use **Departments** for ranked department comparisons, or **People & chart** for the existing view and protected person search. **Clear filters** resets the new selectors and person selection too.
+
+**Sessions** remains the default priority-score metric. Choosing **Prompts** substitutes prompt units into the same 10/5/5 benchmarks and 60/30/10 weights: 60% weekly volume / 10, 30% active days per week / 5 and 10% volume per active day / 5. The score is uncapped, not a percentage, a productivity measure or an automatic licensing decision. Individual ranks remain employee-only; blank manager/department ranks have no rank background.
+
+On **Combined Trends**, switch to **Monthly comparison** for paid/free totals, distinct active people and per-active-person ratios in each temporal month/cohort population, not today's directory cohort applied to every month. It respects the dates, organization, license, access and eligible-headcount rules. Weekly-only rank controls do not change monthly totals. With observed license history, cohort membership can overlap; a distinct total can be smaller than the sum of paid and free counts.
+
+**Keep the interpretation consistent:**
+
+- Responses per prompt is unavailable: current PAX messages are prompt-only. Responses would need an explicit producer contract, response identity and parent-prompt linkage; no response metric is implied.
+- Habit bands stay fixed at **1–5 / 6–10 / 11–15 / 16+** distinct active days in the displayed month. Zero-day users are outside these bands.
+- Inferred activities use stored PAX behavior labels from resource/action/context/plugin/app-host evidence and sometimes agent-name keywords. Leading patterns use the most agent sessions, with alphabetical ties. They do not analyze prompt text, apply AI inference or measure outcomes.
+- Other AI examples include non-agent **autonomous** and **logic app** hosts, with blank identity labels. The unchanged sample has no Unclassified rows; unfamiliar-host/unknown-license rule examples are hypothetical.
+- The unchanged sample's **7,973** agent users are **5,829 paid + 2,144 free**, with no overlap in that sample. That is not a universal rule once observed history is present. “Most organizations” means departments reached: the sample maximum is **11**, with **Access Help Center** first alphabetically among **134** tied agents.
+
+## Observation history in the sample
+
+The shipped sample is unchanged and contains no observed license transitions. It illustrates snapshot/one-state behavior across the existing report pages. Matching append runs with `-UserHistory On` can collect prospective observations: counts use stable people rather than state `UserKey` rows, organization follows each person's latest record, and activity follows the event-time license. **First seen** is an observation, not an assignment date. The source files and generator remain unchanged.
 
 ## 🚀 Ready for your own data?
 

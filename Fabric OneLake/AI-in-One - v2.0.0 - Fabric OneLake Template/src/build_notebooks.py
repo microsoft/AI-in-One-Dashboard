@@ -1,6 +1,7 @@
 """Build self-contained Fabric notebooks from reviewed sources and pinned AIO classifiers."""
 
 import ast
+import argparse
 import hashlib
 import json
 from pathlib import Path
@@ -90,6 +91,7 @@ SPECS = [
         "ORG_TABLE": "aio_v2_org_raw", "LICENSE_TABLE": "aio_v2_licenses_raw",
         "USERS_TABLE": "aio_v2_users", "INTERACTIONS_TABLE": "aio_v2_interactions",
         "PUBLICATION_TABLE": "aio_v2_publication", "USE_EXISTING_ORG": False,
+        "PAX_USERS_CSV": "", "PAX_INTERACTIONS_CSV": "",
         "MAX_INPUT_AGE_HOURS": 48, "MAX_LICENSE_REPORT_AGE_DAYS": 7,
         "REQUIRE_ALL_ACTIVITY_USERS_IN_DIRECTORY": False,
     }),
@@ -125,6 +127,8 @@ def build_pipeline():
     prepare = activity("Prepare_Report_Data", "REPLACE_WITH_PREPARATION_NOTEBOOK_ID", {
         "TENANT_ID": parameter("@pipeline().parameters.TENANT_ID"), "RUN_ID": parameter(run),
         "USE_EXISTING_ORG": parameter("@not(pipeline().parameters.EnableOrgDataPull)", "bool"),
+        "PAX_USERS_CSV": parameter("@pipeline().parameters.PAX_USERS_CSV"),
+        "PAX_INTERACTIONS_CSV": parameter("@pipeline().parameters.PAX_INTERACTIONS_CSV"),
     })
     prepare["dependsOn"] = [{"activity": name, "dependencyConditions": ["Succeeded"]} for name in
                             ("Run_Audit_Log_Ingester", "Run_Licensed_Users_Ingester", "Conditionally_Run_Org_Data")]
@@ -136,6 +140,8 @@ def build_pipeline():
                 **{key: {"type": "String", "defaultValue": value} for key, value in AUTH.items() if key != "RUN_ID"},
                 "RunId": {"type": "String", "defaultValue": ""},
                 "EnableOrgDataPull": {"type": "Boolean", "defaultValue": True},
+                "PAX_USERS_CSV": {"type": "String", "defaultValue": ""},
+                "PAX_INTERACTIONS_CSV": {"type": "String", "defaultValue": ""},
             },
         },
     }
@@ -144,7 +150,7 @@ def build_pipeline():
     print("Built success-gated four-notebook pipeline.")
 
 
-def build():
+def build(notebooks_only=False):
     classifiers = classifier_source()
     (PACKAGE / "src" / "classification_generated.py").write_text(classifiers, encoding="utf-8")
     common = (PACKAGE / "src" / "common.py").read_text(encoding="utf-8")
@@ -159,12 +165,18 @@ def build():
                  "Bare table names resolve in the default Lakehouse (dbo on schema-enabled Lakehouses). "
                  "This package writes only `aio_v2_` (or explicit `aio_test_`) tables. "
                  "Power BI remains Import through the SQL analytics endpoint. Tables outside these permitted prefixes are never overwritten.\n\n"
-                 "Configure the parameter cell before running. Keep notebook outputs free of credentials and personal data."),
+                 "Configure the parameter cell before running. Keep notebook outputs free of credentials and personal data." +
+                 ("\n\nLeave both `PAX_USERS_CSV` and `PAX_INTERACTIONS_CSV` blank for current snapshots. "
+                  "Set both to matching already-processed AIO CSV files under Lakehouse Files to preserve PAX "
+                  "license-state keys and observation history. Run preparation directly for this alternative; "
+                  "it validates the files and does not collect or invent history."
+                  if module == "prepare" else "")),
             cell("code", config, ["parameters"]),
             cell("code", common),
         ]
         if module == "prepare":
             cells.append(cell("code", classifiers))
+            cells.append(cell("code", (PACKAGE / "src" / "processed_pax.py").read_text(encoding="utf-8")))
         cells.append(cell("code", code))
         cells.append(cell("code", f"{invocation}(spark, {{{', '.join(repr(key) + ': ' + key for key in params)}}})"))
         notebook = {
@@ -188,8 +200,11 @@ def build():
                 "LRU decorators are omitted for Spark worker serialization. Stable keys and Spark publication "
                 "are provided by this package; the source processor is unchanged.",
     }, indent=2), encoding="utf-8")
-    build_pipeline()
+    if not notebooks_only:
+        build_pipeline()
 
 
 if __name__ == "__main__":
-    build()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--notebooks-only", action="store_true")
+    build(notebooks_only=parser.parse_args().notebooks_only)

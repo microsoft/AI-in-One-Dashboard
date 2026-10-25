@@ -28,6 +28,26 @@ Activity-level retries are zero: retry/resume is controlled by the notebooks and
 
 Pipeline secure input/output settings keep parameter and activity details out of ordinary logs. They do not replace workspace permissions or Key Vault access control. The pipeline stores only a secret **name**, not the secret value.
 
+## Already-processed PAX inputs
+
+Both `PAX_USERS_CSV` and `PAX_INTERACTIONS_CSV` are optional String pipeline
+parameters with blank defaults. The preparation activity explicitly forwards
+them to the identically named notebook parameters. Both blank retains the
+current-snapshot route; both supplied selects matching processed AIO CSVs for
+preparation.
+
+These bindings do **not** skip the collection branches: this pipeline still
+runs its Graph collectors and requires their normal credentials and successful
+completion. To use processed PAX files without Graph collection, run or
+schedule the preparation notebook directly with both paths instead. That
+standalone route preserves exported state keys, observation dates and event
+attribution without creating history from a current-only snapshot.
+
+Both paths use the same prepared output names and publication gate. Leave both
+CSV parameters blank for the pipeline's unchanged snapshot defaults. See the
+[setup guide](../README.md) and [schema contract](../SCHEMA.md) before changing
+sources; do not mix key generations or manually mark partial output Ready.
+
 ## Schedule and Power BI refresh
 
 Do not overlap executions. Allow all collection and preparation work to finish. Verify the SQL endpoint exposes the completed generation, then refresh the Power BI Import semantic model.

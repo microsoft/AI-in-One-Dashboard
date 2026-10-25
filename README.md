@@ -37,14 +37,16 @@ The AI-in-One dashboard has helped many organizations understand how people use 
 | 🤖 **Agent Details.** A new page for any agent, reached from the tab or by right-clicking an agent name. | 🔒 **Minimum Group Size.** Team-level reporting by default; individual detail only when you approve it. |
 | 📊 **Clearer comparisons.** Side-by-side bars, plain percentage definitions and month labels on every habit page. | 💬 **Prompts and sessions together.** See how much people ask, not just how often they start a conversation. |
 | ✅ **Health Check that follows you.** Agent review figures now respect your team and date choices. | 📖 **Metric Glossary & Guide.** Definitions and reading tips for all 17 pages. |
-| ⚡ **Fast loads, growing history.** PAX prepares the data first and can add each new day automatically. | 🧹 **One-click reset.** **Clear filters** resets selections and expanded tables without leaving the page. |
+| 🗂️ **Prepared inputs, growing history.** PAX prepares the data first and can add each new day automatically. | 🧹 **One-click reset.** **Clear filters** resets selections and expanded tables without leaving the page. |
 
 As customers explore new questions, v2.0.0 brings more context to those conversations: usage bands follow the selected dates and organization, licensed activity includes every recorded experience, and the relevant tables and weekly comparisons pair prompts with sessions.
+
+**Observed history across the existing report** keeps people counts stable and attributes activity to the recorded license state. Protected person timelines use First seen observations, not assignment dates.
 
 ### More context for everyday adoption questions
 
 - **Follow the pattern, not a weekend dip.** Explorer marks each month start on its bold 7-day trends. Switch **Activity by experience** between sessions and prompts without changing the selected people or dates.
-- **Compare like with like.** License Prioritization can compare median weekly sessions or prompts; its axis, selected-scope median and scale follow that choice. Licensed directory headcount is shown separately from active and inactive use. The score explanation gives the existing 60/30/10 weights and the 10-session, 5-day and 5-session-per-active-day benchmarks; these are heuristics, not validated targets.
+- **Compare like with like.** License Prioritization can compare median weekly sessions or prompts; its axis, selected-scope median and scale follow that choice. Licensed directory headcount is shown separately from active and inactive use. The score explanation gives the existing 60/30/10 weights and the 10-volume-unit, 5-day and 5-volume-unit-per-active-day benchmarks; these are heuristics, not validated targets.
 - **Understand agent engagement.** Agents Usage Trends pairs sessions and prompts per active week by usage rank; hover over a Top 5 agent for its description and type. Use Cases ranks its Top 10 by an equal-weight comparison of return rate, sessions per user and prompts per session, among agents with at least **MAX(Minimum Group Size, 5)** users. Sessions, then agent name, break ties.
 - **Find the right agent and audience.** The stable **Top builder** headline and **Creator** filter help explore a builder's catalog, including matching agents with no usage; usage values still follow disclosure rules. The Agent User Leaderboard adds **Most used agent** and **Agents used** within each row's scope. Scroll right for these columns.
 - **Know where navigation takes you.** The Leaderboard's **Agent Details** button and right-click drillthrough keep the clicked agent in scope. The drillthrough page explains this and provides **Open Agent Details** to browse all agents in the selected organizational/date scope.
@@ -73,7 +75,7 @@ Dashboard downloads are **Power BI templates (.pbit)**. Load a template in Power
 > **Not sure?** Choose **SharePoint**: it refreshes itself on a schedule with no gateway. Choose **Local CSV** to explore in Power BI Desktop first, or when your files stay on your PC or a file share. Choose **Fabric OneLake** when your organization already runs Microsoft Fabric and wants the data in a Lakehouse.
 
 > [!NOTE]
-> **Using Fabric OneLake?** This edition doesn't use PAX. Fabric notebooks collect the data from Microsoft Graph into your Lakehouse, so follow the **[Fabric OneLake setup guide](Fabric%20OneLake/README.md)** instead of Steps 1 to 3 below, then come back to [Step 4](#-step-4-publish-share-and-refresh) to set up row-level security and share. A PAX Fabric-native solution is on the way.
+> **Using Fabric OneLake?** Choose current Graph snapshots or the preparation notebook's paired, already-processed PAX AIO CSV inputs in your Lakehouse, so follow the **[Fabric OneLake setup guide](Fabric%20OneLake/README.md)** instead of Steps 1 to 3 below, then come back to [Step 4](#-step-4-publish-share-and-refresh) to set up row-level security and share. A PAX Fabric-native solution is on the way.
 
 <a id="-quick-start"></a>
 
@@ -505,6 +507,32 @@ Run `python .\scripts\Purview_CopilotInteraction_Processor_v4.2.3.py --help` for
 
 <a id="-step-3-open-the-template"></a>
 
+## Observed history across the report
+
+All **17 existing report pages** use the shared temporal model; observation history does not add a report page. Matching Users and activity inputs count stable people, not state `UserKey` rows. Organizational scope uses each person's latest organization; activity is attributed to the license state in effect at the event, not simply the latest snapshot.
+
+**First seen** means a dated observation, not a license assignment timestamp. Monthly paid membership includes people with a licensed state at any point in that month. Paid and free populations can overlap during a period; count distinct people rather than adding them. Unknown stays Unknown, and collection does not reconstruct unobserved changes.
+
+The existing person hierarchy and row-level security still determine whose data a viewer can see. **Minimum Group Size** remains **3** by default; individual detail requires an approved **1**. On existing person rows, the hidden **License timeline - First seen** tooltip shows the selected person's recorded states, subject to those same access and identity rules. **User License Timeline** is a general **Metric Glossary & Guide** definition, not a separate report page.
+
+For file-based editions, use matching approved PAX append runs with `-UserHistory On` to collect prospective observations. Existing parameters and paths do not change. History Off and one-state inputs preserve snapshot behavior.
+
+## Prioritization and monthly comparisons
+
+**License Prioritization** separates paid/free directory and activity counts, with independent **Paid activity** and **Free Chat activity** selections. Use **Departments** for ranked department comparisons, or **People & chart** for the existing view and protected person search. **Clear filters** resets the new selectors and person selection too.
+
+**Sessions** remains the default priority-score metric. Choosing **Prompts** substitutes prompt units into the same 10/5/5 benchmarks and 60/30/10 weights: 60% weekly volume / 10, 30% active days per week / 5 and 10% volume per active day / 5. The score is uncapped, not a percentage, a productivity measure or an automatic licensing decision. Individual ranks remain employee-only; blank manager/department ranks have no rank background.
+
+On **Combined Trends**, switch to **Monthly comparison** for paid/free totals, distinct active people and per-active-person ratios in each temporal month/cohort population, not today's directory cohort applied to every month. It respects the dates, organization, license, access and eligible-headcount rules. Weekly-only rank controls do not change monthly totals. With observed license history, cohort membership can overlap; a distinct total can be smaller than the sum of paid and free counts.
+
+**Keep the interpretation consistent:**
+
+- Responses per prompt is unavailable: current PAX messages are prompt-only. Responses would need an explicit producer contract, response identity and parent-prompt linkage; no response metric is implied.
+- Habit bands stay fixed at **1–5 / 6–10 / 11–15 / 16+** distinct active days in the displayed month. Zero-day users are outside these bands.
+- Inferred activities use stored PAX behavior labels from resource/action/context/plugin/app-host evidence and sometimes agent-name keywords. Leading patterns use the most agent sessions, with alphabetical ties. They do not analyze prompt text, apply AI inference or measure outcomes.
+- Other AI examples include non-agent **autonomous** and **logic app** hosts, with blank identity labels. The unchanged sample has no Unclassified rows; unfamiliar-host/unknown-license rule examples are hypothetical.
+- The unchanged sample's **7,973** agent users are **5,829 paid + 2,144 free**, with no overlap in that sample. That is not a universal rule once observed history is present. “Most organizations” means departments reached: the sample maximum is **11**, with **Access Help Center** first alphabetically among **134** tied agents.
+
 ## 3️⃣ Step 3: Open the template
 
 <details>
@@ -650,7 +678,7 @@ When the PAX users file includes **Manager_UserKey**, a blank value means the pe
 - **Unknown licensing stays Unknown.** Missing license information is never treated as "unlicensed".
 - **Active and inactive licensed users reconcile.** Active licensed users have any recorded Copilot activity in the selected dates, including agent-only activity. Inactive licensed users have none. Together they equal the licensed directory population in the same organization, reporting-team, license and access scope. Usage-band selections only narrow that population.
 - **Usage ranks follow your selection.** Each chat or agent rank family uses distinct prompts per active week among its active users in the selected dates and authorized population. Bands recalculate with dates and organization/team/license scope; ties share a band. Different rank selections intersect without changing one another's percentile thresholds.
-- **Licensing comes from the PAX Users output.** PAX collects license assignments through Microsoft Graph from those shown in the Microsoft 365 admin center. The activity-row source status reflects the Users snapshot used to prepare those rows; the model's looked-up status reflects the currently loaded Users output. Neither is historical entitlement at each activity timestamp.
+- **Licensing follows the supplied Users data.** History Off uses the current snapshot; observed history supports as-of activity attribution. First seen is not assignment time. Monthly paid membership means a licensed state at any point in the month; paid/free membership can overlap, so distinct totals need not equal their sum.
 - **Prompt comparisons use matching scopes.** Relevant leaderboards, habit/activity tables and tooltips show prompts and prompts per session. On Combined Leaderboard, agent prompt cells also respect the licensed or chat row's minimum-group check. Weekly comparison bars and applicable cards also show prompts per active week and prompt month-over-month change. Top-N session bars, line/area trends and scatter charts keep their existing series.
 - **Catalog agents are counted by ID, not name.** Different agents can share a name. Agent Leaderboard and Health Check count distinct catalog Title IDs and show agents observed only in activity separately as **Activity-only agents**.
 - **Agent identities reconcile across views.** Activity-only and ambiguous active agents follow the same dates, organization and access scope as Active Agents. In-catalog active, activity-only and ambiguous active counts sum to Active Agents. Duplicate names use short identifier suffixes, never internal match keys.

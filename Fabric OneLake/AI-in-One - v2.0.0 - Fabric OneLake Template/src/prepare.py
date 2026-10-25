@@ -34,6 +34,11 @@ def expand_audit_row(row):
 
 
 def run_preparation(spark, config):
+    tenant = normalized(config["TENANT_ID"])
+    if not tenant or tenant == "<source-tenant-guid>":
+        raise ValueError("TENANT_ID must be set to the source tenant GUID")
+    if processed_pax_inputs(config) is not None:
+        return run_processed_pax_preparation(spark, config)
     from pyspark.sql import functions as F, Window
     from pyspark.sql.types import StructType, StructField, StringType
     require_lakehouse()
@@ -44,7 +49,6 @@ def run_preparation(spark, config):
         checked_table(name)
     if len(names) != len(set(names)):
         raise ValueError("Source, output and publication table names must all be distinct.")
-    tenant = normalized(config["TENANT_ID"])
     uuid.UUID(tenant)
     batch = str(uuid.uuid4())
     run_id = config["RUN_ID"]
