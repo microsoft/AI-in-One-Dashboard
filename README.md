@@ -229,6 +229,9 @@ Everything here still works, if the app doesn't suit you.
 
 Both play here in the page — no download.
 
+**YouTube overview** *(2m 32s)*  
+https://youtu.be/W9JWgF6wcqg
+
 **Overview — what the dashboard measures, page by page** *(2m 40s)*
 
 https://github.com/user-attachments/assets/37f84c0c-125d-4814-890d-14001d5a3127
@@ -236,6 +239,9 @@ https://github.com/user-attachments/assets/37f84c0c-125d-4814-890d-14001d5a3127
 **Setup guide — getting your own data in, every source, start to finish** *(10m 12s)*
 
 https://github.com/user-attachments/assets/036ab946-7fa2-411b-b70a-e512e2028778
+
+**YouTube setup guide** *(10m 12s)*  
+https://youtu.be/z4FWazaBDS8
 
 📄 **[Video Guide & Chapter Reference](docs/Video-Guide.md)** — timestamped chapters for both videos, so you can jump straight to any topic. *(Also available as a [downloadable Word document](docs/AI-in-One-Dashboard-Video-Guide.docx?raw=1).)*
 
