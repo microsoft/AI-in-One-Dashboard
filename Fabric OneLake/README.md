@@ -1,6 +1,6 @@
 # AI-in-One dashboard: Fabric OneLake edition (v2.0.0)
 
-The Fabric edition is derived from the current SharePoint v2.0.0 template, with the same **17 visible report pages**, **540 calculation expressions**, relationships and security roles. **Copilot Usage Explorer** is the first page. The current preview includes the enhanced License Prioritization controls, monthly comparison on Combined Trends and person license timelines, alongside friendly app names, separate platform/catalog-status labels and system-agent controls. Minimum Group Size remains **3** by default; catalog Creator and Developer Name are visible within the viewer's access while individual usage remains protected.
+The Fabric edition is derived from the current SharePoint v2.0.0 template, with the same **17 visible report pages**, **541 calculation expressions**, relationships and security roles. **Copilot Usage Explorer** is the first page. v2.0.0 includes the enhanced License Prioritization controls, monthly comparison on Combined Trends and person license timelines, alongside friendly app names, separate platform/catalog-status labels and system-agent controls. Minimum Group Size remains **3** by default; catalog Creator and Developer Name are visible within the viewer's access while individual usage remains protected.
 
 **OneLake is the storage layer; Power BI uses Import mode through the Lakehouse SQL analytics endpoint. This is not Direct Lake.**
 

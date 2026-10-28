@@ -195,7 +195,7 @@ On **Combined Trends**, switch to **Monthly comparison** for paid/free totals, d
 **What you'll see**
 - **Most users** and **Most organizations:** which agents lead, with ties shown.
 - **Headline numbers:** active agents, agent users, agent adoption, weekly prompts and sessions per user, month-over-month change in prompts and sessions, and repeat users.
-- **Agent users and sessions over time**, and **weekly agent prompts and sessions per user by department**.
+- **Agent users, total sessions and total recorded prompts over time:** people use the left axis; session/prompt counts share the right axis. The department comparison shows **weekly agent prompts and sessions per user**.
 - **Top 5 agents by sessions.** Hover over an agent for its gated description and type; select it to filter the page.
 - **Average agent sessions and prompts per active week by usage rank:** paired bars compare usage bands with the same design as the licensed Copilot page. Per-user and per-active-week labels distinguish the units.
 - **Filters on the right** for return rate, review status, agent type, agent name, activity recency and user rank.
@@ -330,7 +330,7 @@ On **Combined Trends**, switch to **Monthly comparison** for paid/free totals, d
 
 **What you'll see**
 - **Headline numbers:** active licensed users, inactive licensed users, Copilot sessions, weekly prompts and sessions per user, prompt/session month-over-month change and weekly active days.
-- **Usage trend:** active users and sessions per user, week by week.
+- **Usage trend:** active users on the left axis, with sessions and recorded prompts per active licensed chat user on the right, using the same week/date context. These rates are not additionally divided by active weeks.
 - **Weekly prompts and sessions per user by department.**
 - **Average prompts and sessions per active week by usage rank:** from the top 10% of users to the bottom 25%. Bands use distinct prompts per active week and recalculate with the selected dates and population.
 - **Top 5 apps by Copilot sessions,** such as M365 Copilot Chat, Outlook, Teams and Word.
@@ -351,7 +351,7 @@ On **Combined Trends**, switch to **Monthly comparison** for paid/free totals, d
 - **Habit month**, printed at the top: the month before the end of your selected date range.
 - **Light, Moderate, Frequent and Daily cards,** using the same four active-day ranges as every habit page.
 - **Previous-month active days:** bars comparing the four groups.
-- **M365 Copilot user activity by department** for your whole selected period.
+- **M365 Copilot user activity by department** for your whole selected period: the unchanged Users and Prompts per user columns plus **Sessions**, using the existing licensed chat definition. Department, reporting-level and total rows calculate distinct sessions in their own context; they do not sum person/license-state rows.
 - **M365 Copilot active days:** the habit mix month by month.
 
 <div align="right"><a href="#top">⬆️ Back to top</a></div>
@@ -393,7 +393,7 @@ On **Combined Trends**, switch to **Monthly comparison** for paid/free totals, d
 
 **What you'll see**
 - **Headline numbers:** chat users, weekly prompts and sessions per user, prompt/session month-over-month change and weekly active days.
-- **Unlicensed chat usage trends** and **weekly chat prompts and sessions per user by department**.
+- **Unlicensed chat usage trends:** active people on the left axis; sessions and recorded prompts per user per active week on the right. Each person's volume is divided by their active weeks before averaging across active unlicensed Chat users. The department comparison retains **weekly chat prompts and sessions per user**.
 - **Average prompts and sessions per active week by dynamic usage rank.**
 - **Daily share of users with repeat sessions:** how many active people had more than one chat session that day.
 

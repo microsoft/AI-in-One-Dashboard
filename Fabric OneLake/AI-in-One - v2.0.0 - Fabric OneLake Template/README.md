@@ -19,7 +19,7 @@ Graph licensing report -----> aio_v2_licenses_raw
 
 Delta tables are stored in **OneLake**. The report imports them through `Sql.Database`; it is **not Direct Lake**. The report retains the SharePoint edition's calculations, report pages, filters, bookmarks and two security roles. Only its required activity/directory source layer changes. The optional agent inventory remains a SharePoint-hosted Agent 365 CSV.
 
-All three editions have **17 visible pages**, with **Copilot Usage Explorer** first, **540 calculation expressions** and Minimum Group Size **3** by default. License Prioritization includes paid/free counts, independent activity filters, a Sessions/Prompts score selector, department prioritization and a protected searchable person list. Sessions is the default; either score is an uncapped prioritization heuristic, not a percentage or proof of productivity. Monthly comparison stays on Combined Trends and uses observed monthly license populations when history is available. Person license timelines use the existing privacy and access controls.
+All three editions have **17 visible pages**, with **Copilot Usage Explorer** first, **541 calculation expressions** and Minimum Group Size **3** by default. License Prioritization includes paid/free counts, independent activity filters, a Sessions/Prompts score selector, department prioritization and a protected searchable person list. Sessions is the default; either score is an uncapped prioritization heuristic, not a percentage or proof of productivity. Monthly comparison stays on Combined Trends and uses observed monthly license populations when history is available. Person license timelines use the existing privacy and access controls.
 
 ## 1. Prerequisites and permissions
 

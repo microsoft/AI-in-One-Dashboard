@@ -153,7 +153,7 @@ different value is rejected. Files without tenant metadata do not independently
 attest their origin: the administrator must provide the matching approved
 source pair. Do not combine exports from different tenants or key generations.
 
-PAX prerelease 10 (`purview-v2.0.0-prerelease-20261009-10`) preserves CSV headers when writing files under OneLake `Files`, but replaces Delta-prohibited characters, including spaces, with underscores when writing tables:
+PAX v2.0 preserves CSV headers when writing files under OneLake `Files`, but replaces Delta-prohibited characters, including spaces, with underscores when writing tables:
 
 | CSV header | PAX Delta column | This edition's input |
 |---|---|---|

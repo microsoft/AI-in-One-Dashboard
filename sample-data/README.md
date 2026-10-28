@@ -25,7 +25,7 @@ The full file names are `AIO_Realistic_Interactions.zip` (it contains `AIO_Reali
 
 ## ▶️ Try it in four steps
 
-**1. Download the files and unzip the activity file.** Select each file in the table above, then select **⬇️ Download raw file** on the right of the file's toolbar. Extract `AIO_Realistic_Interactions.csv` from the zip; the dashboard reads the `.csv`, not the zip. To get everything at once, go to the [repository home page](https://github.com/microsoft/AI-in-One-Dashboard/tree/preview) and select **Code → Download ZIP**.
+**1. Download the files and unzip the activity file.** Select each file in the table above, then select **⬇️ Download raw file** on the right of the file's toolbar. Extract `AIO_Realistic_Interactions.csv` from the zip; the dashboard reads the `.csv`, not the zip. To get everything at once, go to the [repository home page](../) and select **Code → Download ZIP**.
 
 **2. Put the three `.csv` files where your edition can read them.**
 

@@ -6,7 +6,7 @@
 
 [![Version](https://img.shields.io/badge/version-v2.0.0-7c4dff?style=for-the-badge)](#-whats-new-in-v200)
 [![Power BI](https://img.shields.io/badge/Power%20BI-template-F2C811?style=for-the-badge&logo=powerbi&logoColor=black)](#-choose-your-edition)
-[![Data by PAX](https://img.shields.io/badge/data%20by-PAX-0078d4?style=for-the-badge)](https://aka.ms/PAX)
+[![Data by PAX](https://img.shields.io/badge/data%20by-PAX-0078d4?style=for-the-badge)](https://aka.ms/PAX-Prerelease)
 [![Analytics Hub](https://img.shields.io/badge/Analytics%20Hub-more%20free%20reports-8661c5?style=for-the-badge&logo=github&logoColor=white)](https://aka.ms/Analytics-Hub)
 
 **Built and maintained by the Microsoft Copilot Analytics team** · Free · Open source · Your data never leaves your tenant
@@ -60,7 +60,7 @@ The three chat tabs are explicitly named **Copilot Chat (Unlicensed)**. Per-user
 
 ## ⬇️ Choose your edition
 
-All three editions provide the v2.0.0 report's 17-page experience with privacy controls and row-level security, using different data sources and refresh paths. **The v2.0.0 preview update adds agent engagement ranking, scoped Leaderboard columns, clearer agent navigation, trend markers and hierarchy handling, alongside friendly app names, Features, catalog status and system-agent controls.** SharePoint, Local CSV and Fabric OneLake use the same report calculations; Fabric OneLake retains its notebook-prepared data tier and optional SharePoint-hosted Agent 365 CSV.
+All three editions provide the v2.0.0 report's 17-page experience with privacy controls and row-level security, using different data sources and refresh paths. **v2.0.0 adds agent engagement ranking, scoped Leaderboard columns, clearer agent navigation, trend markers and hierarchy handling, alongside friendly app names, Features, catalog status and system-agent controls.** SharePoint, Local CSV and Fabric OneLake use the same report calculations; Fabric OneLake retains its notebook-prepared data tier and optional SharePoint-hosted Agent 365 CSV.
 
 Dashboard downloads are **Power BI templates (.pbit)**. Load a template in Power BI Desktop to create your report.
 
@@ -333,7 +333,7 @@ New-MgSitePermission -SiteId "contoso.sharepoint.com,11111111-1111-1111-1111-111
 
 Repeat for each site PAX writes to. When you run PAX interactively instead, PAX requests `Sites.ReadWrite.All` at sign-in, which can only reach sites your own account can already edit.
 
-The [PAX documentation](https://aka.ms/PAX) covers each sign-in option, including app registrations and managed identities for unattended runs.
+The [PAX v2.0 documentation](https://aka.ms/PAX-Prerelease) covers each sign-in option, including app registrations and managed identities for unattended runs.
 
 ### 💻 Software
 
@@ -353,7 +353,7 @@ The [PAX documentation](https://aka.ms/PAX) covers each sign-in option, includin
 
 <br>
 
-> 💡 **Tip:** **Use [PAX](https://aka.ms/PAX), Microsoft's free Portable Audit eXporter.** It collects activity, people, licensing and agent data in one run and writes files that are ready for this dashboard. Prefer not to type commands? **[⌨️ Mini-Kitchen](https://PAXcookbook.com/Mini-Kitchen)** builds them for you.
+> 💡 **Tip:** **Use [PAX v2.0](https://aka.ms/PAX-Prerelease), Microsoft's free Portable Audit eXporter.** It collects activity, people, licensing and agent data in one run and writes files that are ready for this dashboard. Prefer not to type commands? **[⌨️ Mini-Kitchen](https://aka.ms/Mini-Kitchen)** builds them for you.
 
 ### ⚙️ Why PAX
 
@@ -362,16 +362,16 @@ The [PAX documentation](https://aka.ms/PAX) covers each sign-in option, includin
 | 🧩 **One run, every input.** Copilot and agent activity, people and licensing, and the Agent 365 catalog, all from one command. | ⚡ **Dashboard-ready output.** `-Dashboard AIO` prepares compact files before Power BI reads them, reducing raw-data processing. Refresh time still depends on data volume, source access and available resources. |
 | 📈 **History that grows itself.** A watermark adds only the days you don't have yet, with no gaps and no double counting. | ☁️ **Save where you work.** Write to a SharePoint library or to a local or network folder. |
 | 🛟 **Built for big tenants.** Checkpoint and resume, parallel collection and adaptive time-slicing keep long exports on track. | 🛡️ **Checks and recovery.** Replacement candidates are checked before publication and read back afterward. If publication fails, PAX attempts restoration and reports any destination it cannot verify. |
-| 🔐 **Optional de-identification.** `-Deidentify` replaces names and other identifiers with consistent stand-ins. | 🆓 **Free and open source.** Published by Microsoft on [GitHub](https://aka.ms/PAX). |
+| 🔐 **Optional de-identification.** `-Deidentify` replaces names and other identifiers with consistent stand-ins. | 🆓 **Free and open source.** Published by Microsoft on [GitHub](https://aka.ms/PAX-Prerelease). |
 
-Download the latest PAX script and its documentation from **[aka.ms/PAX](https://aka.ms/PAX)**.
+Download the PAX v2.0 prerelease script and its documentation from **[aka.ms/PAX-Prerelease](https://aka.ms/PAX-Prerelease)**.
 
 > [!IMPORTANT]
-> **The watermark examples below use PAX v2 preview features.** The [public v2 prerelease notes](https://github.com/microsoft/PAX/tree/purview-v2.0.0-prerelease-20261009-10) document those switches. The production release reached through **aka.ms/PAX** is a separate release channel and does not provide this v2 watermark workflow. Confirm your approved build and its release-specific seed/watermark instructions before using the examples.
+> **The commands below require PAX v2.0, which is still a prerelease.** The [PAX v2.0 documentation](https://aka.ms/PAX-Prerelease) documents those switches. The production release reached through **aka.ms/PAX** is a separate release channel and does not yet support this v2 workflow. Confirm your approved build and its seed/watermark instructions before using the examples.
 
 ### ⌨️ Build your command with Mini-Kitchen
 
-**[Mini-Kitchen](https://PAXcookbook.com/Mini-Kitchen)** builds a clean, copy-ready PAX command in your browser. Choose the **AI-in-One** preset, pick your dates and where to save the files, then copy the command and run it yourself.
+**[Mini-Kitchen](https://aka.ms/Mini-Kitchen)** builds a clean, copy-ready PAX command in your browser. Choose the **AI-in-One** preset, pick your dates and where to save the files, then copy the command and run it yourself.
 
 - **Nothing to install.** It runs in your browser.
 - **Never touches your tenant.** No sign-in, no credentials and no access to your audit, user or file data.
@@ -679,7 +679,7 @@ When the PAX users file includes **Manager_UserKey**, a blank value means the pe
 - **Active and inactive licensed users reconcile.** Active licensed users have any recorded Copilot activity in the selected dates, including agent-only activity. Inactive licensed users have none. Together they equal the licensed directory population in the same organization, reporting-team, license and access scope. Usage-band selections only narrow that population.
 - **Usage ranks follow your selection.** Each chat or agent rank family uses distinct prompts per active week among its active users in the selected dates and authorized population. Bands recalculate with dates and organization/team/license scope; ties share a band. Different rank selections intersect without changing one another's percentile thresholds.
 - **Licensing follows the supplied Users data.** History Off uses the current snapshot; observed history supports as-of activity attribution. First seen is not assignment time. Monthly paid membership means a licensed state at any point in the month; paid/free membership can overlap, so distinct totals need not equal their sum.
-- **Prompt comparisons use matching scopes.** Relevant leaderboards, habit/activity tables and tooltips show prompts and prompts per session. On Combined Leaderboard, agent prompt cells also respect the licensed or chat row's minimum-group check. Weekly comparison bars and applicable cards also show prompts per active week and prompt month-over-month change. Top-N session bars, line/area trends and scatter charts keep their existing series.
+- **Prompt comparisons use matching scopes.** Relevant leaderboards, habit/activity tables and tooltips show prompts and prompts per session. On Combined Leaderboard, agent prompt cells also respect the licensed or chat row's minimum-group check. Weekly comparison bars and applicable cards also show prompts per active week and prompt month-over-month change. The main M365 Copilot trend pairs sessions and prompts per active licensed chat user; the unlicensed Chat trend pairs each person's sessions and prompts per active week, averaged across active chat users; the Agent trend pairs total sessions and prompts. Active-user counts stay on the left axis, with the matching volume or rates on the right. The M365 Copilot Habit Formation User Activity table also shows distinct licensed chat **Sessions** in each row's context, alongside its unchanged Users and Prompts per user columns. Other trend, Top-N and scatter series remain unchanged.
 - **Catalog agents are counted by ID, not name.** Different agents can share a name. Agent Leaderboard and Health Check count distinct catalog Title IDs and show agents observed only in activity separately as **Activity-only agents**.
 - **Agent identities reconcile across views.** Activity-only and ambiguous active agents follow the same dates, organization and access scope as Active Agents. In-catalog active, activity-only and ambiguous active counts sum to Active Agents. Duplicate names use short identifier suffixes, never internal match keys.
 - **Agent inventory refresh avoids repeated enrichment.** Activity-only catalog completion uses a narrow distinct-identifier query rather than reprocessing the fully enriched activity table. The counts, matching rules and access controls remain the same.
@@ -741,7 +741,7 @@ The Microsoft Purview audit log is intended to support security and compliance s
 
 ## 📧 Email your admin
 
-Need someone else to run the export? **[📨 Send your IT admin the setup request](mailto:?subject=Request%3A%20data%20export%20for%20the%20AI-in-One%20dashboard%20%28Power%20BI%29&body=Hi%2C%0A%0AI%27d%20like%20to%20set%20up%20the%20AI-in-One%20dashboard%20v2.0.0%2C%20a%20free%20Power%20BI%20report%20from%20the%20Microsoft%20Copilot%20Analytics%20team%20that%20shows%20Microsoft%20365%20Copilot%2C%20Copilot%20Chat%20and%20agent%20adoption%3A%20https%3A//github.com/microsoft/AI-in-One-Dashboard/tree/preview%0A%0ACould%20you%20help%20export%20the%20data%20with%20PAX%2C%20Microsoft%27s%20free%20audit%20exporter%3F%0A%0A1.%20Confirm%20unified%20audit%20logging%20is%20on%3A%20https%3A//purview.microsoft.com/audit/auditsearch%0A%0A2.%20Grant%20these%20Microsoft%20Graph%20permissions%20to%20the%20account%20or%20app%20that%20runs%20PAX%20%28delegated%20or%20application%29%3A%0A-%20AuditLogsQuery.Read.All%20%28Copilot%20and%20agent%20activity%29%0A-%20User.Read.All%20and%20Organization.Read.All%20%28people%20and%20licensing%29%0A-%20CopilotPackages.Read.All%20and%20Application.Read.All%20%28Agent%20365%20catalog%29%0A-%20Sites.Selected%20plus%20a%20one-time%20write%20grant%20to%20the%20target%20site%2C%20only%20if%20saving%20to%20SharePoint%20%28see%20the%20README%29%0A%0A3.%20Install%20PowerShell%207%2B%20and%20Python%203.10%2B%2C%20then%20download%20PAX%3A%20https%3A//aka.ms/PAX%0A%0A4.%20Build%20the%20command%20with%20the%20AI-in-One%20preset%20in%20Mini-Kitchen%20%28runs%20in%20the%20browser%2C%20no%20tenant%20connection%29%3A%20https%3A//PAXcookbook.com/Mini-Kitchen%0A%0A5.%20Run%20one%20seed%20export%2C%20then%20schedule%20a%20watermark%20run%20to%20add%20new%20days.%20Save%20the%20output%20to%3A%20%5BSharePoint%20folder%20/%20local%20or%20network%20folder%5D%0A%0AThe%20README%20has%20the%20exact%20commands%20under%20Step%202.%0A%0AThank%20you%21)** with everything they need: audit logging, Microsoft Graph permissions, the PAX link and the Mini-Kitchen preset.
+Need someone else to run the export? **[📨 Send your IT admin the setup request](mailto:?subject=Request%3A%20data%20export%20for%20the%20AI-in-One%20dashboard%20%28Power%20BI%29&body=Hi%2C%0A%0AI%27d%20like%20to%20set%20up%20the%20AI-in-One%20dashboard%20v2.0.0%2C%20a%20free%20Power%20BI%20report%20from%20the%20Microsoft%20Copilot%20Analytics%20team%20that%20shows%20Microsoft%20365%20Copilot%2C%20Copilot%20Chat%20and%20agent%20adoption.%0A%0ACould%20you%20help%20export%20the%20data%20with%20PAX%2C%20Microsoft%27s%20free%20audit%20exporter%3F%0A%0A1.%20Confirm%20unified%20audit%20logging%20is%20on%3A%20https%3A//purview.microsoft.com/audit/auditsearch%0A%0A2.%20Grant%20these%20Microsoft%20Graph%20permissions%20to%20the%20account%20or%20app%20that%20runs%20PAX%20%28delegated%20or%20application%29%3A%0A-%20AuditLogsQuery.Read.All%20%28Copilot%20and%20agent%20activity%29%0A-%20User.Read.All%20and%20Organization.Read.All%20%28people%20and%20licensing%29%0A-%20CopilotPackages.Read.All%20and%20Application.Read.All%20%28Agent%20365%20catalog%29%0A-%20Sites.Selected%20plus%20a%20one-time%20write%20grant%20to%20the%20target%20site%2C%20only%20if%20saving%20to%20SharePoint%20%28see%20the%20README%29%0A%0A3.%20Install%20PowerShell%207%2B%20and%20Python%203.10%2B%2C%20then%20download%20PAX%20v2.0%20%28prerelease%29%3A%20https%3A//aka.ms/PAX-Prerelease%0A%0A4.%20Build%20the%20command%20with%20the%20AI-in-One%20preset%20in%20Mini-Kitchen%20%28runs%20in%20the%20browser%2C%20no%20tenant%20connection%29%3A%20https%3A//aka.ms/Mini-Kitchen%0A%0A5.%20Run%20one%20seed%20export%2C%20then%20schedule%20a%20watermark%20run%20to%20add%20new%20days.%20Save%20the%20output%20to%3A%20%5BSharePoint%20folder%20/%20local%20or%20network%20folder%5D%0A%0AThe%20README%20has%20the%20exact%20commands%20under%20Step%202.%0A%0AThank%20you%21)** with everything they need: audit logging, Microsoft Graph permissions, the PAX link and the Mini-Kitchen preset. Share the [setup instructions](#-step-2-export-your-data-with-pax) with the request.
 
 ---
 
@@ -749,7 +749,7 @@ Need someone else to run the export? **[📨 Send your IT admin the setup reques
 
 ### 🌐 Explore more free reports at **[aka.ms/Analytics-Hub](https://aka.ms/Analytics-Hub)**
 
-**[PAX](https://aka.ms/PAX)** &nbsp;·&nbsp; **[Mini-Kitchen](https://PAXcookbook.com/Mini-Kitchen)** &nbsp;·&nbsp; **[Screenshot tour](Report%20Screenshots.md)** &nbsp;·&nbsp; **[Interpretation Guide](AI-in-One-v2.0.0-Interpretation-Guide.pdf)** &nbsp;·&nbsp; **[Storyboard](AI-in-One-v2.0.0-Storyboard.pptx)** &nbsp;·&nbsp; **[What's New](AI-in-One-v2.0.0-Whats-New.pdf)** &nbsp;·&nbsp; **[License](LICENSE.md)** &nbsp;·&nbsp; **[Security](SECURITY.md)**
+**[PAX](https://aka.ms/PAX-Prerelease)** &nbsp;·&nbsp; **[Mini-Kitchen](https://aka.ms/Mini-Kitchen)** &nbsp;·&nbsp; **[Screenshot tour](Report%20Screenshots.md)** &nbsp;·&nbsp; **[Interpretation Guide](AI-in-One-v2.0.0-Interpretation-Guide.pdf)** &nbsp;·&nbsp; **[Storyboard](AI-in-One-v2.0.0-Storyboard.pptx)** &nbsp;·&nbsp; **[What's New](AI-in-One-v2.0.0-Whats-New.pdf)** &nbsp;·&nbsp; **[License](LICENSE.md)** &nbsp;·&nbsp; **[Security](SECURITY.md)**
 
 Built and maintained by the **Microsoft Copilot Analytics team**.
 
