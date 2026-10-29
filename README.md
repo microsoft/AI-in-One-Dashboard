@@ -202,6 +202,17 @@ To use it, open the `.pbit` in Power BI Desktop, paste where each PAX file is in
 
 📄 [Interpretation Guide (PDF)](AIO%20Dashboard%20-%20Interpretation%20Guide.pdf) &nbsp;·&nbsp; 🖼️ [Storyboard (PowerPoint)](AIO%20Dashboard%20-%20Storyboard.pptx)
 
+### Does Each Refresh Overwrite or Append Data?
+
+Whether history accumulates depends on your data ingestion setup. The report reflects the data retained in its source; refreshing the report does not automatically archive earlier uploads. The comparison below covers the Classic Edition ingestion setups and the Rollup workflow, not the browser app.
+
+| Setup | How it handles data |
+|---|---|
+| **Single-file / SharePoint File** | **Overwrites:** Replaces the data with the current CSV on refresh. To keep history, the CSV must include the earlier records. |
+| **SharePoint Folder** | **Appends by combining files:** Combines the CSVs retained in the folder, so history builds as new files are added. Export periods should not overlap to avoid duplicate counts. |
+| **Fabric / Lakehouse** | **Overwrites by default; appends when configured:** Can retain history by incrementally loading only new records into the Lakehouse. |
+| **Rollup Edition** | **Overwrites the report input; raw history can be appended upstream:** Accumulate raw audit data, then regenerate the summarized file used by the report. Summarized exports should not be appended directly to older ones. |
+
 <a id="-dashboard-preview"></a>
 
 ![AI-in-One Dashboard animated preview](https://github.com/microsoft/AI-in-One-Dashboard/raw/main/Images/AIO%20v10%20Gif.gif)
