@@ -16,7 +16,9 @@
 
 </div>
 
-<table width="100%">
+<div align="center">
+
+<table align="center">
 <tr>
 <td align="center">
 
@@ -24,9 +26,9 @@
 
 **Downloads. Setup. Report walkthroughs. Documentation. Help. All in one place.**
 
-<p>
+<p align="center">
   <a href="https://aka.ms/AIO-Preview">
-    <img src="https://img.shields.io/badge/Visit_the_AI--in--One_website_%E2%86%92-0078D4?style=for-the-badge&amp;label=&amp;color=0078D4" alt="Visit the AI-in-One website →" width="720">
+    <img src="https://capsule-render.vercel.app/api?type=rect&amp;color=0078D4&amp;height=104&amp;text=Visit%20the%20AI-in-One%20website%20%E2%86%92&amp;fontSize=40&amp;fontColor=FFFFFF&amp;fontAlign=50&amp;fontAlignY=50" alt="Visit the AI-in-One website →" width="720">
   </a>
 </p>
 
@@ -37,6 +39,8 @@ Choose the right edition, get the files, and follow the step-by-step guides to s
 </td>
 </tr>
 </table>
+
+</div>
 
 <div align="center">
 
