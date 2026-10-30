@@ -1,9 +1,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
+import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 
 const root = path.dirname(fileURLToPath(import.meta.url));
+const stylesheet = `assets/styles.css?v=${createHash('sha256').update(fs.readFileSync(path.join(root, 'assets', 'styles.css'))).digest('hex').slice(0, 12)}`;
 const context = { window: {} };
 for (const file of ['content.js', 'catalog.js']) {
   vm.runInNewContext(fs.readFileSync(path.join(root, 'assets', file), 'utf8'), context, { filename: file });
@@ -287,7 +289,7 @@ for (const [file, title, description, render] of pages) {
 <html lang="en" data-page="${file.replace('.html', '')}"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><script src="assets/theme.js"></script>
 <title>${e(title)} | AI-in-One v2.0</title><meta name="description" content="${e(description)}"><meta name="color-scheme" content="light dark"><meta property="og:title" content="${e(title)} | AI-in-One v2.0"><meta property="og:description" content="${e(description)}"><meta property="og:type" content="website">
-<link rel="icon" href="assets/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="assets/styles.css"><script defer src="assets/content.js"></script><script defer src="assets/catalog.js"></script><script defer src="assets/search-index.js"></script><script defer src="assets/app.js"></script>
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="${stylesheet}"><script defer src="assets/content.js"></script><script defer src="assets/catalog.js"></script><script defer src="assets/search-index.js"></script><script defer src="assets/app.js"></script>
 </head><body><a class="skip-link" href="#main">Skip to main content</a>
 <header class="site-header"><div class="header-inner container"><a class="brand" href="index.html" aria-label="AI-in-One home">${brand}<span>AI-in-One<small>MICROSOFT COPILOT ANALYTICS</small></span></a><button class="icon-button menu-toggle" id="menu-toggle" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-nav">${icon('menu')}</button><nav id="primary-nav" class="primary-nav" aria-label="Primary">${nav.map(([href, label]) => `<a href="${href}" ${href === file ? 'aria-current="page"' : ''}>${label}</a>`).join('')}</nav><div class="header-actions">${external('Analytics Hub', 'https://aka.ms/Analytics-Hub', 'hub-button')}<button class="icon-button" id="site-search-toggle" aria-label="Search the whole site" aria-expanded="false" aria-controls="site-search-dialog">${icon('search')}</button><button class="icon-button" id="theme-toggle" aria-label="Switch color theme">${icon('sun')}</button></div></div></header>
 <div class="preview-band"><div class="container"><span class="release-badge">${e(release.channel)}</span><span>AI-in-One v${e(release.version)}</span><a href="whats-new.html">See what is new ${icon('arrow')}</a></div></div>
@@ -304,6 +306,6 @@ for (const item of content.glossary) index.push({ title: item.term, text: `${ite
 for (const item of content.faqs) index.push({ title: item.q, text: `${item.q} ${item.a}`, summary: item.a, href: `help.html#help-${slug(item.q)}`, type: 'Help' });
 for (const item of content.tour) index.push({ title: item.title, text: `${item.title} ${item.question} ${item.summary} ${item.bullets.join(' ')} ${item.tip} ${item.caution}`, summary: item.question, href: `explore.html?page=${item.id}`, type: 'Report view' });
 fs.writeFileSync(path.join(root, 'assets', 'search-index.js'), `window.AIO_SEARCH = ${JSON.stringify(index).replace(/</g, '\\u003c')};\n`);
-fs.writeFileSync(path.join(root, '404.html'), `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Page not found | AI-in-One</title><script src="/AI-in-One-Dashboard/assets/theme.js"></script><link rel="icon" href="/AI-in-One-Dashboard/assets/favicon.svg"><link rel="stylesheet" href="/AI-in-One-Dashboard/assets/styles.css"></head><body><main class="page-head"><div class="container"><p class="eyebrow">A different path</p><h1>This page is not here.</h1><p class="lead">Let's get you back to the report.</p><div class="button-row"><a class="button button-primary" href="/AI-in-One-Dashboard/">Return to AI-in-One</a></div></div></main></body></html>`);
+fs.writeFileSync(path.join(root, '404.html'), `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Page not found | AI-in-One</title><script src="/AI-in-One-Dashboard/assets/theme.js"></script><link rel="icon" href="/AI-in-One-Dashboard/assets/favicon.svg"><link rel="stylesheet" href="/AI-in-One-Dashboard/${stylesheet}"></head><body><main class="page-head"><div class="container"><p class="eyebrow">A different path</p><h1>This page is not here.</h1><p class="lead">Let's get you back to the report.</p><div class="button-row"><a class="button button-primary" href="/AI-in-One-Dashboard/">Return to AI-in-One</a></div></div></main></body></html>`);
 fs.writeFileSync(path.join(root, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${pages.map(([file]) => `<url><loc>https://microsoft.github.io/AI-in-One-Dashboard/${file === 'index.html' ? '' : file}</loc></url>`).join('')}</urlset>`);
 console.log(`Built ${pages.length} pages, 404, sitemap and ${index.length} searchable entries.`);
