@@ -24,9 +24,11 @@
 
 **Downloads. Setup. Report walkthroughs. Documentation. Help. All in one place.**
 
-[![Open the AI-in-One website](https://img.shields.io/badge/AI--in--One-OPEN_THE_WEBSITE-0078D4?style=for-the-badge)](https://aka.ms/AIO-Preview)
-
-### [Visit the AI-in-One website →](https://aka.ms/AIO-Preview)
+<p>
+  <a href="https://aka.ms/AIO-Preview">
+    <img src="https://img.shields.io/badge/Visit_the_AI--in--One_website_%E2%86%92-0078D4?style=for-the-badge&amp;label=&amp;color=0078D4" alt="Visit the AI-in-One website →" width="720">
+  </a>
+</p>
 
 Choose the right edition, get the files, and follow the step-by-step guides to set up and use your report.
 
