@@ -14,11 +14,31 @@
 
 <br>
 
-All reports and guides can be found on the [Analytics Hub](https://aka.ms/Analytics-Hub).
+</div>
 
-**Cowork Billing:** [Consumption, cost and chargeback tools](https://microsoft.github.io/Analytics-Hub/cowork-billing/)
+<table width="100%">
+<tr>
+<td align="center">
 
-**Also see [ValueLens](https://github.com/microsoft/ValueLens-for-Microsoft-Copilot):** task-level activity, efficiency and value analysis.
+## Everything you need for AI-in-One is on the website
+
+**Downloads. Setup. Report walkthroughs. Documentation. Help. All in one place.**
+
+[![Open the AI-in-One website](https://img.shields.io/badge/AI--in--One-OPEN_THE_WEBSITE-0078D4?style=for-the-badge)](https://aka.ms/AIO-Preview)
+
+### [Visit the AI-in-One website →](https://aka.ms/AIO-Preview)
+
+Choose the right edition, get the files, and follow the step-by-step guides to set up and use your report.
+
+**Start there. You do not need to browse this repository to get started.**
+
+</td>
+</tr>
+</table>
+
+<div align="center">
+
+<br>
 
 **Also see [Analytics Hub for Microsoft Copilot](https://github.com/microsoft/AnalyticsHub-Dashboard):** adoption, value, consumption and governance in one place.
 
@@ -27,30 +47,6 @@ All reports and guides can be found on the [Analytics Hub](https://aka.ms/Analyt
 **Found this useful? ⭐ Star this repo to help others discover it!**
 
 <br>
-
-</div>
-
-<table width="100%">
-<tr>
-<td align="center">
-
-### Open the AI-in-One Preview website
-
-**The complete AI-in-One v2.0 experience is on our website.**
-
-[![Open AI-in-One Preview website](https://img.shields.io/badge/AI--in--One_Preview-OPEN_WEBSITE-0078D4?style=for-the-badge)](https://aka.ms/AIO-Preview)
-
-### [aka.ms/AIO-Preview →](https://aka.ms/AIO-Preview)
-
-Visit the site for **downloads, edition selection, setup instructions, report walkthroughs, documentation and help**.
-
-<sub>v2.0 public preview. The website is the starting point; this repository hosts the source and release artifacts.</sub>
-
-</td>
-</tr>
-</table>
-
-<div align="center">
 
 [MIT license](LICENSE.md) &nbsp;·&nbsp; [Security reporting](SECURITY.md) &nbsp;·&nbsp; [Setup and help](https://aka.ms/AIO-Preview)
 
