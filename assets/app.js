@@ -8,6 +8,7 @@
   const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
   const e = value => String(value ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
   const announce = text => { $('#live-status').textContent = text; };
+  const syncDialogLock = () => document.body.classList.toggle('dialog-open', $$('dialog[open]').length > 0);
   document.addEventListener('toggle', event => {
     const panel = event.target;
     if (!(panel instanceof HTMLDetailsElement) || !panel.open) return;
@@ -120,7 +121,7 @@
     const query = normalized(searchInput.value.trim());
     const words = query.split(/\s+/).filter(Boolean);
     if (!words.length) {
-      $('#site-search-results').innerHTML = '<div class="search-suggestions"><p>Popular starting points</p><a href="downloads.html#templates">Report templates</a><a href="get-started.html">Setup guide</a><a href="downloads.html#sample-data">Sample data</a><a href="learn.html#privacy">Privacy and access</a></div>';
+      $('#site-search-results').innerHTML = '<div class="search-suggestions"><p>Popular starting points</p><a href="downloads.html#templates">Report templates</a><a href="get-started.html">Setup Guide</a><a href="user-guide.html">User Guide</a><a href="downloads.html#sample-data">Sample data</a><a href="learn.html#privacy">Privacy and access</a></div>';
       $('#site-search-status').textContent = 'Search everything. Matching downloads appear first.';
       return;
     }
@@ -129,10 +130,11 @@
       .sort((a, b) => Number(b.type === 'Download') - Number(a.type === 'Download') || b.score - a.score || a.title.localeCompare(b.title));
     const shown = matches.slice(0, 30);
     $('#site-search-status').textContent = matches.length ? `${matches.length} result${matches.length === 1 ? '' : 's'}${matches.length > shown.length ? `; showing the first ${shown.length}` : ''}. Downloads first.` : 'No results. Try a shorter word, such as "license", "sample" or "refresh".';
-    $('#site-search-results').innerHTML = shown.map(item => `<a class="site-search-result" href="${e(item.href)}"><span class="search-result-type">${e(item.type)}${item.format ? ` &middot; ${e(item.format)}` : ''}</span><strong>${e(item.title)}</strong><span>${e((item.summary || '').slice(0, 180))}</span></a>`).join('');
+    $('#site-search-results').innerHTML = shown.map(item => `<a class="site-search-result" href="${e(item.href)}"${item.type === 'Definition' ? ` data-open-glossary data-glossary-term="${e(item.href.split('#term-')[1])}"` : ''}><span class="search-result-type">${e(item.type)}${item.format ? ` &middot; ${e(item.format)}` : ''}</span><strong>${e(item.title)}</strong><span>${e((item.summary || '').slice(0, 180))}</span></a>`).join('');
   }
   searchToggle?.addEventListener('click', () => {
     searchDialog.showModal();
+    syncDialogLock();
     searchToggle.setAttribute('aria-expanded', 'true');
     renderSearch();
     searchInput.focus();
@@ -143,7 +145,8 @@
   });
   searchDialog?.addEventListener('close', () => {
     searchToggle.setAttribute('aria-expanded', 'false');
-    searchToggle.focus({ preventScroll: true });
+    syncDialogLock();
+    if (!$('#glossary-dialog')?.open) searchToggle.focus({ preventScroll: true });
   });
   searchDialog?.addEventListener('click', event => {
     if (event.target === searchDialog) searchDialog.close();
@@ -190,16 +193,139 @@
     $('#dialog-image').src = zoom.dataset.zoom;
     $('#dialog-image').alt = `${zoom.dataset.title}, fictional example data`;
     imageDialog.showModal();
-    document.body.classList.add('dialog-open');
+    syncDialogLock();
   });
   $('#close-dialog')?.addEventListener('click', () => imageDialog.close());
   imageDialog?.addEventListener('click', event => { if (event.target === imageDialog) imageDialog.close(); });
-  imageDialog?.addEventListener('close', () => document.body.classList.remove('dialog-open'));
+  imageDialog?.addEventListener('close', syncDialogLock);
+
+  const glossaryDialog = $('#glossary-dialog');
+  const glossaryBody = glossaryDialog ? $('.glossary-dialog-body', glossaryDialog) : null;
+  let glossaryOpener;
+  let glossaryPlaceholder;
+  let glossarySearchPlaceholder;
+  let inlineGlossaryState;
+  let returnScroll = 0;
+  let glossaryScroll = 0;
+  function openGlossary(opener, term) {
+    if (!glossaryDialog) {
+      location.assign(`learn.html#${term ? `term-${term}` : 'glossary'}`);
+      return;
+    }
+    const root = $('#glossary');
+    if (!glossaryDialog.open) {
+      glossaryOpener = opener;
+      returnScroll = scrollY;
+      if (!glossaryDialog.contains(root)) {
+        inlineGlossaryState = glossaryNavigation?.snapshot();
+        glossaryPlaceholder = document.createComment('Inline glossary position');
+        root.before(glossaryPlaceholder);
+        glossaryBody.append(root);
+      }
+      const searchSlot = $('.glossary-dialog-search', glossaryDialog);
+      if (searchSlot) {
+        const searchField = $('#glossary-search').closest('.search-field');
+        glossarySearchPlaceholder = document.createComment('Inline glossary search position');
+        searchField.before(glossarySearchPlaceholder);
+        searchSlot.append(searchField);
+      }
+      if (searchDialog.open) searchDialog.close();
+      glossaryDialog.showModal();
+      syncDialogLock();
+      glossaryNavigation?.refresh();
+      glossaryBody.scrollTop = glossaryScroll;
+    }
+    if (term) {
+      const target = document.getElementById(`term-${term}`);
+      if (!target || !root.contains(target)) throw new Error(`Unknown glossary definition: ${term}`);
+      glossaryNavigation.reveal(target, true);
+    } else $('#glossary-search').focus({ preventScroll: true });
+  }
+  function closeGlossary() {
+    glossaryScroll = glossaryBody.scrollTop;
+    glossaryDialog.close();
+  }
+  $('#close-glossary')?.addEventListener('click', closeGlossary);
+  glossaryDialog?.addEventListener('cancel', event => { event.preventDefault(); closeGlossary(); });
+  glossaryDialog?.addEventListener('click', event => { if (event.target === glossaryDialog) closeGlossary(); });
+  glossaryDialog?.addEventListener('close', () => {
+    if (glossarySearchPlaceholder) {
+      glossarySearchPlaceholder.replaceWith($('#glossary-search').closest('.search-field'));
+      glossarySearchPlaceholder = undefined;
+    }
+    if (glossaryPlaceholder) {
+      glossaryPlaceholder.replaceWith($('#glossary'));
+      glossaryPlaceholder = undefined;
+      if (inlineGlossaryState) glossaryNavigation.restore(inlineGlossaryState);
+      inlineGlossaryState = undefined;
+    }
+    syncDialogLock();
+    glossaryNavigation?.refresh();
+    window.scrollTo({ top: returnScroll, behavior: 'instant' });
+    if (glossaryOpener?.isConnected) glossaryOpener.focus({ preventScroll: true });
+  });
+  document.addEventListener('click', event => {
+    const opener = event.target.closest('[data-open-glossary]');
+    if (!opener || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey || event.button !== 0) return;
+    event.preventDefault();
+    openGlossary(opener, opener.dataset.glossaryTerm);
+  });
+
+  const definitions = new Map(content.glossary.map(item => [item.term.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''), item]));
+  const tooltip = $('#definition-tooltip');
+  let tooltipOwner;
+  let tooltipTimer;
+  const hideDefinition = () => {
+    clearTimeout(tooltipTimer);
+    if (tooltip?.matches(':popover-open')) tooltip.hidePopover();
+    tooltipOwner = undefined;
+  };
+  const showDefinition = owner => {
+    clearTimeout(tooltipTimer);
+    const definition = definitions.get(owner.dataset.definitionTerm);
+    if (!definition) throw new Error(`Unknown inline definition: ${owner.dataset.definitionTerm}`);
+    if (!tooltip) { announce(`${definition.term}: ${definition.definition}`); return; }
+    tooltipOwner = owner;
+    $('strong', tooltip).textContent = definition.term;
+    $('p', tooltip).textContent = definition.definition;
+    if (!tooltip.matches(':popover-open')) tooltip.showPopover();
+    const bounds = owner.getBoundingClientRect();
+    const panel = tooltip.getBoundingClientRect();
+    const left = Math.max(12, Math.min(bounds.left, innerWidth - panel.width - 12));
+    const top = bounds.bottom + panel.height + 16 <= innerHeight ? bounds.bottom + 8 : Math.max(12, bounds.top - panel.height - 8);
+    tooltip.style.left = `${left}px`;
+    tooltip.style.top = `${top}px`;
+  };
+  document.addEventListener('mouseover', event => {
+    const owner = event.target.closest('[data-definition-term]');
+    if (owner && owner !== tooltipOwner) showDefinition(owner);
+  });
+  document.addEventListener('mouseout', event => {
+    if (!event.target.closest('[data-definition-term]') || (event.relatedTarget instanceof Node && tooltip?.contains(event.relatedTarget))) return;
+    tooltipTimer = setTimeout(hideDefinition, 180);
+  });
+  document.addEventListener('focusin', event => {
+    const owner = event.target.closest('[data-definition-term]');
+    if (owner) showDefinition(owner);
+  });
+  document.addEventListener('focusout', event => { if (event.target.closest('[data-definition-term]')) hideDefinition(); });
+  document.addEventListener('click', event => {
+    const owner = event.target.closest('[data-definition-term]');
+    if (owner) showDefinition(owner);
+    else if (!tooltip?.contains(event.target)) hideDefinition();
+  });
+  tooltip?.addEventListener('mouseenter', () => clearTimeout(tooltipTimer));
+  tooltip?.addEventListener('mouseleave', hideDefinition);
+  document.addEventListener('keydown', event => { if (event.key === 'Escape') hideDefinition(); });
+  addEventListener('scroll', hideDefinition, { passive: true, capture: true });
 
   $$('[data-youtube]').forEach(container => {
     $('.video-play', container).addEventListener('click', () => {
       const frame = document.createElement('iframe');
-      frame.src = container.dataset.youtube;
+      const source = new URL(container.dataset.youtube);
+      source.searchParams.set('enablejsapi', '1');
+      source.searchParams.set('origin', location.origin);
+      frame.src = source.href;
       frame.title = 'AI-in-One v2.0 setup walkthrough';
       frame.allow = 'encrypted-media; picture-in-picture';
       frame.allowFullscreen = true;
@@ -238,6 +364,47 @@
     });
   }
 
+  let activateOverview;
+  if ($('[data-overview-panel]')) {
+    const panels = $$('[data-overview-panel]');
+    const tabs = $$('.overview-tabs [role="tab"]');
+    activateOverview = target => {
+      const selected = target?.closest('[data-overview-panel]') || $('#overview-content');
+      panels.forEach(panel => {
+        panel.hidden = panel !== selected;
+        if (panel.hidden) {
+          $$('video', panel).forEach(video => video.pause());
+          $$('.video-facade iframe', panel).forEach(frame => {
+            frame.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'pauseVideo', args: [] }), new URL(frame.src).origin);
+          });
+        }
+      });
+      tabs.forEach(tab => {
+        const active = tab.getAttribute('aria-controls') === selected.id;
+        tab.setAttribute('aria-selected', String(active));
+        tab.tabIndex = active ? 0 : -1;
+      });
+    };
+    tabs.forEach((tab, index) => {
+      tab.addEventListener('click', event => {
+        event.preventDefault();
+        if (location.hash !== tab.hash) history.pushState(null, '', tab.hash);
+        revealAnchor();
+      });
+      tab.addEventListener('keydown', event => {
+        let next;
+        if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') next = 1 - index;
+        if (event.key === 'Home') next = 0;
+        if (event.key === 'End') next = tabs.length - 1;
+        if (next !== undefined) { event.preventDefault(); tabs[next].click(); tabs[next].focus({ preventScroll: true }); }
+      });
+    });
+    if (!location.hash && document.documentElement.dataset.page === 'whats-new') {
+      history.replaceState(null, '', '#whats-new');
+    }
+    activateOverview(document.getElementById(location.hash.slice(1)));
+  }
+
   if ($('#tour-detail')) {
     let active = content.tour[0];
     const requested = () => {
@@ -246,6 +413,7 @@
     };
     const render = (page, focus = false) => {
       active = page;
+      hideDefinition();
       $('#tour-detail').replaceChildren($(`#tour-template-${page.id}`).content.cloneNode(true));
       $$('#tour-nav a').forEach(item => {
         if (item.dataset.tour === page.id) item.setAttribute('aria-current', 'page');
@@ -260,7 +428,7 @@
       }
     };
     const navigate = page => {
-      history.pushState(null, '', `explore.html#${page.id}`);
+      history.pushState(null, '', `user-guide.html#${page.id}`);
       render(page, true);
     };
     $('#tour-nav').addEventListener('click', event => {
@@ -298,7 +466,9 @@
     const input = $('#glossary-search');
     const compact = matchMedia('(max-width:620px)');
     let updateFrame;
-    const headerOffset = () => $('.site-header').getBoundingClientRect().height + 12;
+    const scrollHost = () => glossary.closest('.glossary-dialog-body');
+    const viewportTop = () => scrollHost()?.getBoundingClientRect().top || 0;
+    const headerOffset = () => scrollHost() ? 0 : $('.site-header').getBoundingClientRect().height + 12;
     const readingOffset = () => headerOffset() + (compact.matches ? nav.getBoundingClientRect().height + 12 : 8);
     const markCurrent = id => {
       for (const link of bookmarks) {
@@ -322,14 +492,21 @@
     };
     const updateReadingPosition = () => {
       updateFrame = undefined;
+      if (!glossary.getClientRects().length) return;
       const top = headerOffset();
       const value = `${top}px`;
       if (glossary.style.getPropertyValue('--glossary-header-offset') !== value) {
         glossary.style.setProperty('--glossary-header-offset', value);
       }
-      document.documentElement.style.setProperty('--learn-header-offset', value);
+      if (!scrollHost()) document.documentElement.style.setProperty('--learn-header-offset', value);
       glossary.style.setProperty('--glossary-topic-margin', `${compact.matches ? nav.getBoundingClientRect().height + 12 : 8}px`);
-      const line = readingOffset();
+      const host = scrollHost();
+      const lastGroup = groups.filter(group => !group.hidden).at(-1);
+      if (host) {
+        const bottomSpace = lastGroup ? Math.max(24, host.clientHeight - readingOffset() - lastGroup.getBoundingClientRect().height - 24) : 24;
+        glossary.style.setProperty('--glossary-bottom-space', `${bottomSpace}px`);
+      }
+      const line = viewportTop() + readingOffset();
       const bounds = glossary.getBoundingClientRect();
       let id = bounds.top <= line && bounds.bottom > line ? 'glossary' : '';
       if (id) {
@@ -356,8 +533,19 @@
       scheduleReadingUpdate();
     };
     glossaryNavigation = {
+      refresh: updateReadingPosition,
+      snapshot: () => ({ query: input.value, open: $$('.glossary-item[open]', glossary).map(item => item.id), left: nav.scrollLeft, top: nav.scrollTop }),
+      restore(state) {
+        input.value = state.query;
+        const open = new Set(state.open);
+        $$('.glossary-item', glossary).forEach(item => { item.open = open.has(item.id); });
+        filterGlossary();
+        nav.scrollLeft = state.left;
+        nav.scrollTop = state.top;
+      },
       reveal(target, focus = false) {
         if (!glossary.contains(target)) return false;
+        if (scrollHost() && !glossaryDialog.open) return false;
         if (input.value) {
           input.value = '';
           filterGlossary();
@@ -369,8 +557,9 @@
         }
         updateReadingPosition();
         const offset = target === glossary ? headerOffset() : readingOffset();
-        const top = scrollY + target.getBoundingClientRect().top - offset;
-        window.scrollTo({ top, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
+        const host = scrollHost();
+        const top = (host ? host.scrollTop : scrollY) + target.getBoundingClientRect().top - viewportTop() - offset;
+        (host || window).scrollTo({ top, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
         if (focus) {
           const heading = target.matches('.glossary-group') ? $('h3', target) : target.matches('details') ? $('summary', target) : $('h2', target);
           if (heading) {
@@ -382,7 +571,10 @@
         return true;
       }
     };
-    input.addEventListener('input', filterGlossary);
+    input.addEventListener('input', () => {
+      filterGlossary();
+      scrollHost()?.scrollTo({ top: 0, behavior: 'instant' });
+    });
     document.addEventListener('click', event => {
       if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey || event.button !== 0) return;
       const link = event.target.closest('a[href]');
@@ -391,17 +583,20 @@
       if (url.origin !== location.origin || url.pathname !== location.pathname || url.search !== location.search) return;
       const target = document.getElementById(url.hash.slice(1));
       if (!target || !glossary.contains(target)) return;
+      if (link.hasAttribute('data-open-glossary')) return;
       event.preventDefault();
-      if (location.hash !== url.hash) history.pushState(null, '', url.hash);
+      if (!scrollHost() && location.hash !== url.hash) history.pushState(null, '', url.hash);
       glossaryNavigation.reveal(target, true);
     });
     addEventListener('scroll', scheduleReadingUpdate, { passive: true });
+    glossaryBody?.addEventListener('scroll', scheduleReadingUpdate, { passive: true });
     addEventListener('resize', scheduleReadingUpdate);
     glossary.addEventListener('toggle', scheduleReadingUpdate, true);
     const layoutObserver = new ResizeObserver(scheduleReadingUpdate);
     layoutObserver.observe($('.site-header'));
     layoutObserver.observe(nav);
     layoutObserver.observe($('#glossary-list'));
+    if (glossaryBody) layoutObserver.observe(glossaryBody);
     scheduleReadingUpdate();
   }
   if ($('#download-search')) {
@@ -445,9 +640,15 @@
     let id;
     try { id = decodeURIComponent(location.hash.slice(1)); }
     catch (error) { if (!(error instanceof URIError)) throw error; announce('This section address is invalid. Use the page navigation to find it.'); return; }
-    if (!id) return;
+    if (!id) { activateOverview?.(); return; }
     const target = document.getElementById(id);
     if (!target) return;
+    activateOverview?.(target);
+    if (glossaryDialog?.contains(target) && !glossaryDialog.open) {
+      openGlossary(undefined, id.startsWith('term-') ? id.slice(5) : undefined);
+      if (!id.startsWith('term-')) glossaryNavigation?.reveal(target);
+      return;
+    }
     if (glossaryNavigation?.reveal(target)) return;
     const helpTopic = target.closest('[data-help-topic]');
     if (helpTopic) {
