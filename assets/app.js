@@ -289,29 +289,120 @@
     render(requested());
   }
 
+  let glossaryNavigation;
   if ($('#glossary-search')) {
-    let category = 'All';
+    const glossary = $('#glossary');
+    const nav = $('.topic-nav', glossary);
+    const bookmarks = $$('[data-glossary-bookmark]', nav);
+    const groups = $$('[data-glossary-group]', glossary);
+    const input = $('#glossary-search');
+    const compact = matchMedia('(max-width:620px)');
+    let updateFrame;
+    const headerOffset = () => $('.site-header').getBoundingClientRect().height + 12;
+    const readingOffset = () => headerOffset() + (compact.matches ? nav.getBoundingClientRect().height + 12 : 8);
+    const markCurrent = id => {
+      for (const link of bookmarks) {
+        const selected = link.hash === `#${id}`;
+        const wasCurrent = link.hasAttribute('aria-current');
+        if (selected) link.setAttribute('aria-current', 'location');
+        else link.removeAttribute('aria-current');
+        link.classList.toggle('active', selected);
+        if (selected && !wasCurrent) {
+          const item = link.getBoundingClientRect();
+          const bounds = nav.getBoundingClientRect();
+          if (compact.matches) {
+            if (item.left < bounds.left) nav.scrollLeft -= bounds.left - item.left;
+            else if (item.right > bounds.right) nav.scrollLeft += item.right - bounds.right;
+          } else {
+            if (item.top < bounds.top) nav.scrollTop -= bounds.top - item.top;
+            else if (item.bottom > bounds.bottom) nav.scrollTop += item.bottom - bounds.bottom;
+          }
+        }
+      }
+    };
+    const updateReadingPosition = () => {
+      updateFrame = undefined;
+      const top = headerOffset();
+      const value = `${top}px`;
+      if (glossary.style.getPropertyValue('--glossary-header-offset') !== value) {
+        glossary.style.setProperty('--glossary-header-offset', value);
+      }
+      document.documentElement.style.setProperty('--learn-header-offset', value);
+      glossary.style.setProperty('--glossary-topic-margin', `${compact.matches ? nav.getBoundingClientRect().height + 12 : 8}px`);
+      const line = readingOffset();
+      const bounds = glossary.getBoundingClientRect();
+      let id = bounds.top <= line && bounds.bottom > line ? 'glossary' : '';
+      if (id) {
+        for (const group of groups) {
+          if (!group.hidden && group.getBoundingClientRect().top <= line + 1) id = group.id;
+        }
+      }
+      markCurrent(id);
+    };
+    const scheduleReadingUpdate = () => {
+      if (updateFrame === undefined) updateFrame = requestAnimationFrame(updateReadingPosition);
+    };
     const filterGlossary = () => {
-      const query = $('#glossary-search').value.toLowerCase().trim();
+      const query = input.value.toLowerCase().trim();
       let count = 0;
       $$('.glossary-item').forEach(item => {
-        item.hidden = !item.dataset.search.includes(query) || (category !== 'All' && item.dataset.category !== category);
+        item.hidden = !item.dataset.search.includes(query);
         if (!item.hidden) count++;
       });
-      $$('[data-glossary-group]').forEach(group => { group.hidden = !$('.glossary-item:not([hidden])', group); });
+      groups.forEach(group => { group.hidden = !$('.glossary-item:not([hidden])', group); });
       $('#glossary-empty').hidden = count > 0;
       $('#glossary-count').textContent = `${count} definition${count === 1 ? '' : 's'}`;
       announce(`${count} definitions match.`);
+      scheduleReadingUpdate();
     };
-    $('#glossary-search').addEventListener('input', filterGlossary);
-    $$('[data-glossary-category]').forEach(button => button.addEventListener('click', () => {
-      category = button.dataset.glossaryCategory;
-      $$('[data-glossary-category]').forEach(item => {
-        item.classList.toggle('active', item === button);
-        item.setAttribute('aria-pressed', String(item === button));
-      });
-      filterGlossary();
-    }));
+    glossaryNavigation = {
+      reveal(target, focus = false) {
+        if (!glossary.contains(target)) return false;
+        if (input.value) {
+          input.value = '';
+          filterGlossary();
+          announce('Search cleared. Showing all glossary definitions.');
+        }
+        for (let ancestor = target; ancestor && ancestor !== glossary; ancestor = ancestor.parentElement) {
+          ancestor.hidden = false;
+          if (ancestor.tagName === 'DETAILS') ancestor.open = true;
+        }
+        updateReadingPosition();
+        const offset = target === glossary ? headerOffset() : readingOffset();
+        const top = scrollY + target.getBoundingClientRect().top - offset;
+        window.scrollTo({ top, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
+        if (focus) {
+          const heading = target.matches('.glossary-group') ? $('h3', target) : target.matches('details') ? $('summary', target) : $('h2', target);
+          if (heading) {
+            if (heading.tagName !== 'SUMMARY') heading.tabIndex = -1;
+            heading.focus({ preventScroll: true });
+          }
+        }
+        scheduleReadingUpdate();
+        return true;
+      }
+    };
+    input.addEventListener('input', filterGlossary);
+    document.addEventListener('click', event => {
+      if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey || event.button !== 0) return;
+      const link = event.target.closest('a[href]');
+      if (!link) return;
+      const url = new URL(link.href);
+      if (url.origin !== location.origin || url.pathname !== location.pathname || url.search !== location.search) return;
+      const target = document.getElementById(url.hash.slice(1));
+      if (!target || !glossary.contains(target)) return;
+      event.preventDefault();
+      if (location.hash !== url.hash) history.pushState(null, '', url.hash);
+      glossaryNavigation.reveal(target, true);
+    });
+    addEventListener('scroll', scheduleReadingUpdate, { passive: true });
+    addEventListener('resize', scheduleReadingUpdate);
+    glossary.addEventListener('toggle', scheduleReadingUpdate, true);
+    const layoutObserver = new ResizeObserver(scheduleReadingUpdate);
+    layoutObserver.observe($('.site-header'));
+    layoutObserver.observe(nav);
+    layoutObserver.observe($('#glossary-list'));
+    scheduleReadingUpdate();
   }
   if ($('#download-search')) {
     $('#download-search').addEventListener('input', event => {
@@ -357,6 +448,7 @@
     if (!id) return;
     const target = document.getElementById(id);
     if (!target) return;
+    if (glossaryNavigation?.reveal(target)) return;
     const helpTopic = target.closest('[data-help-topic]');
     if (helpTopic) {
       const categoryButton = $$('[data-help-category]').find(button => button.dataset.helpCategory === helpTopic.dataset.helpTopic);
