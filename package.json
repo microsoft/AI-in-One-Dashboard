@@ -1,0 +1,9 @@
+{
+  "name": "aio-product-site",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Static AI-in-One v2.0 product site",
+  "scripts": {
+    "build": "node build.mjs"
+  }
+}
