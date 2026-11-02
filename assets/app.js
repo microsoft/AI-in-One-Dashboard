@@ -199,6 +199,58 @@
   imageDialog?.addEventListener('click', event => { if (event.target === imageDialog) imageDialog.close(); });
   imageDialog?.addEventListener('close', syncDialogLock);
 
+  const starDialog = $('#repo-star-dialog');
+  const starToggle = $('#repo-star-toggle');
+  let starCountPending = false, starCountUpdated = 0;
+  async function updateStarCount() {
+    if (starCountPending || Date.now() - starCountUpdated < 60000) return;
+    starCountPending = true;
+    const counter = $('#repo-star-count');
+    const status = $('#repo-star-status');
+    counter.textContent = '\u2026';
+    counter.title = 'Loading GitHub star count';
+    counter.setAttribute('aria-label', counter.title);
+    try {
+      const response = await fetch('https://api.github.com/repos/microsoft/AI-in-One-Dashboard/stargazers/count', {
+        credentials: 'omit', referrerPolicy: 'no-referrer',
+        headers: { Accept: 'application/vnd.github+json' }, signal: AbortSignal.timeout(6000)
+      });
+      if (!response.ok) throw new Error(`GitHub returned HTTP ${response.status}`);
+      const data = await response.json();
+      if (!data || !Number.isSafeInteger(data.count) || data.count < 0) throw new Error('GitHub returned an invalid star count');
+      counter.textContent = new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(data.count);
+      counter.title = `${data.count.toLocaleString('en-US')} GitHub stars`;
+      counter.setAttribute('aria-label', counter.title);
+      starToggle.setAttribute('aria-label', `Support AI-in-One: ${counter.title}. See how to star the repository.`);
+      status.textContent = `${data.count.toLocaleString('en-US')} GitHub stars and counting. Every show of support matters.`;
+      starCountUpdated = Date.now();
+    } catch (error) {
+      counter.textContent = '\u2014';
+      counter.title = 'GitHub star count is temporarily unavailable';
+      counter.setAttribute('aria-label', counter.title);
+      starToggle.setAttribute('aria-label', 'Support AI-in-One: star count unavailable. See how to star the repository.');
+      status.textContent = 'The star count is temporarily unavailable. You can still open GitHub and add your star.';
+      console.warn('AI-in-One star count could not load:', error);
+    } finally {
+      starCountPending = false;
+    }
+  }
+  if (starToggle && starDialog) {
+    starToggle.addEventListener('click', event => {
+      event.preventDefault();
+      starDialog.showModal();
+      syncDialogLock();
+      updateStarCount();
+    });
+    $('#repo-star-close').addEventListener('click', () => starDialog.close());
+    starDialog.addEventListener('click', event => { if (event.target === starDialog) starDialog.close(); });
+    starDialog.addEventListener('close', () => {
+      syncDialogLock();
+      starToggle.focus({ preventScroll: true });
+    });
+    updateStarCount();
+  }
+
   const glossaryDialog = $('#glossary-dialog');
   const glossaryBody = glossaryDialog ? $('.glossary-dialog-body', glossaryDialog) : null;
   let glossaryOpener;
@@ -271,7 +323,10 @@
     openGlossary(opener, opener.dataset.glossaryTerm);
   });
 
-  const definitions = new Map(content.glossary.map(item => [item.term.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''), item]));
+  const definitions = new Map([
+    ...content.glossary.map(item => [item.term.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''), item]),
+    ...content.collectionHelp.map(item => [item.id, item])
+  ]);
   const tooltip = $('#definition-tooltip');
   let tooltipOwner;
   let tooltipTimer;
@@ -317,7 +372,10 @@
   tooltip?.addEventListener('mouseenter', () => clearTimeout(tooltipTimer));
   tooltip?.addEventListener('mouseleave', hideDefinition);
   document.addEventListener('keydown', event => { if (event.key === 'Escape') hideDefinition(); });
-  addEventListener('scroll', hideDefinition, { passive: true, capture: true });
+  addEventListener('scroll', event => {
+    if (event.target instanceof Node && tooltip?.contains(event.target)) return;
+    hideDefinition();
+  }, { passive: true, capture: true });
 
   $$('[data-youtube]').forEach(container => {
     $('.video-play', container).addEventListener('click', () => {
@@ -348,6 +406,7 @@
       panel.setAttribute('aria-labelledby', tab.id);
       $('h3', panel).textContent = tab.dataset.title;
       $('p', panel).textContent = tab.dataset.description;
+      window.AIO_INLINE_DEFINITIONS?.enhance($('p', panel));
       $('#showcase-image').src = `assets/screenshots/${tab.dataset.image}`;
       $('#showcase-image').alt = `${tab.dataset.title} Fictional report example.`;
     };
@@ -643,6 +702,7 @@
     if (!id) { activateOverview?.(); return; }
     const target = document.getElementById(id);
     if (!target) return;
+    if (target.closest('[data-setup-flow]')) return;
     activateOverview?.(target);
     if (glossaryDialog?.contains(target) && !glossaryDialog.open) {
       openGlossary(undefined, id.startsWith('term-') ? id.slice(5) : undefined);
@@ -661,7 +721,7 @@
     }
     requestAnimationFrame(() => target.scrollIntoView({ block: 'start' }));
   }
-  if (document.documentElement.dataset.page === 'get-started' && !location.hash) {
+  if (document.documentElement.dataset.page === 'get-started' && !$('[data-setup-flow]') && !location.hash) {
     const edition = new URLSearchParams(location.search).get('edition');
     if (['sample', 'sharepoint', 'local', 'fabric', 'pax-fabric'].includes(edition)) history.replaceState(null, '', `get-started.html#${edition}`);
   }

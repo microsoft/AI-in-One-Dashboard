@@ -1,4 +1,28 @@
 window.AIO_CONTENT = {
+  collectionGuidance: 'Mini-Kitchen prepares the command; you or your IT partner run it to collect the data for your report.',
+  collectionHelp: [
+    {
+      id: 'collection-seed', value: 'initial', term: 'First collection (seed)',
+      description: 'Start a new reporting history with data for the dates you choose.',
+      definition: [
+        'Choose this when you are collecting data for this report for the first time, or deliberately starting a separate reporting history.',
+        'Choose the dates you want to include and a location for the new results. Mini-Kitchen creates the command; you or your IT partner run it to collect the activity and people information for the report.',
+        'Use a new location rather than pointing a first collection at an existing history you want to keep. When the collection has finished successfully, continue to the instructions for opening the report.',
+        'For later collections that should add to the same history, choose Update existing history (append). If a collection was interrupted, use its recovery instructions rather than treating it as a new collection.'
+      ].join('\n\n')
+    },
+    {
+      id: 'collection-append', value: 'update', term: 'Update existing history (append)',
+      description: 'Add new activity to the history you already collected, without starting over.',
+      definition: [
+        'Choose this when you already have a completed reporting history and want to add new activity while keeping the information you collected earlier.',
+        'Point the update at the existing results. Keep the dashboard, people, filters and privacy settings compatible with that history; ask your IT partner to check if those settings have changed.',
+        'Choose the dates for the activity you want to add, then you or your IT partner run the command Mini-Kitchen creates. This updates the existing history, rather than starting a separate report.',
+        'Wait for the update to finish successfully, then refresh the same Power BI report. Choosing append does not run the collection, create a schedule or refresh Power BI for you.',
+        'If you have no completed history yet, choose First collection (seed). To resume an interrupted collection, follow its recovery instructions. Mini-Kitchen cannot build Fabric Tables update commands; you can still connect and refresh the Fabric OneLake: PAX report after your data team completes its supported table-update process.'
+      ].join('\n\n')
+    }
+  ],
   tour: [
     {
       id: 'explorer', number: 1, title: 'Copilot Usage Explorer', area: 'Start here',
@@ -18,17 +42,20 @@ window.AIO_CONTENT = {
     {
       id: 'license-prioritization', number: 2, title: 'License Prioritization', area: 'Overall',
       question: 'Which groups show patterns that could support a licensing conversation?',
-      summary: 'Compare paid and free populations and explore a transparent usage-based prioritization heuristic.',
+      summary: 'Compare licensed Copilot and free Chat use, then use activity patterns as a starting point for a licensing conversation.',
       image: 'assets/screenshots/02-license-prioritization.png',
       bullets: [
         'Separate licensed directory headcount, active licensed users, inactive licensed users and unlicensed Chat users.',
         'Use independent Paid activity and Free Chat activity selections.',
         'Start with Departments. People & chart includes person search only when your organization permits individual reporting and Minimum Group Size is 1.',
+        'Choose Sessions or Prompts to compare how much and how regularly each group uses Copilot.'
+      ],
+      technical: [
         'Sessions is the default score metric; Prompts substitutes prompt units into the same calculation.',
         'The score weights weekly volume / 10 at 60%, active days per week / 5 at 30%, and volume per active day / 5 at 10%.'
       ],
       tip: 'Compare departments first, then discuss job needs, cost and colleagues\' feedback with the licensing owner.',
-      caution: 'Scores are uncapped heuristics, not percentages, validated targets or employee-performance measures. Active licensed includes agent-only and other recorded activity, not just chat.'
+      caution: 'The score is a usage-based guide, not a percentage, a validated target or an employee-performance measure. Active licensed includes agent-only and other recorded activity, not just chat.'
     },
     {
       id: 'combined-trends', number: 3, title: 'Copilot Overall: Combined Trends', area: 'Overall',
@@ -48,7 +75,7 @@ window.AIO_CONTENT = {
     {
       id: 'combined-leaderboard', number: 4, title: 'Copilot Overall: Combined Leaderboard', area: 'Overall',
       question: 'Which departments use each experience, and how many chat users also use agents?',
-      summary: 'Compare departmental chat and agent activity without combining different denominators.',
+      summary: 'Compare departmental chat and agent activity for the people included in each table.',
       image: 'assets/screenshots/04-combined-leaderboard.png',
       bullets: [
         'Read licensed and unlicensed tables separately.',
@@ -125,10 +152,15 @@ window.AIO_CONTENT = {
       summary: 'Explore evidence-based activity labels and an engagement comparison, not a value score.',
       image: 'assets/screenshots/09-agents-use-cases.png',
       bullets: [
+        'Compare the Top 10 agents using repeat use and conversation depth, not a claimed productivity score.',
+        'Ranked agents need at least five users; your Minimum Group Size setting may require more.',
+        'Suggested use cases draw on recorded resources, actions and app context. Check them with the people who use the agent.'
+      ],
+      technical: [
         'Top 10 engagement requires at least MAX(Minimum Group Size, 5) users for each eligible agent.',
         'The comparison equally averages peer percentile ranks for return rate, sessions per user and prompts per session.',
         'Sessions descending, then agent name ascending, break ties.',
-        'Inferred patterns use stored resource, action, context, plugin and app-host evidence, sometimes with agent-name keywords.',
+        'Inferred patterns use stored evidence about resources, actions, context, plugins and app hosts, sometimes with agent-name keywords.',
         'Leading patterns use the most agent sessions, with alphabetical ties.'
       ],
       tip: 'Choose an agent you know and validate its likely activities with the people who use it.',
@@ -152,14 +184,17 @@ window.AIO_CONTENT = {
     {
       id: 'm365-trends', number: 11, title: 'M365 Copilot: Usage Trends', area: 'M365 Copilot',
       question: 'How is licensed Microsoft 365 Copilot use trending?',
-      summary: 'Read licensed chat activity, weekly comparisons and application mix with explicit units.',
+      summary: 'See how licensed Copilot chat use changes over time, across departments and across apps.',
       image: 'assets/screenshots/11-m365-copilot-usage-trends.png',
       bullets: [
         'Headlines include active and inactive licensed people, sessions, weekly measures and month-over-month changes.',
-        'The main trend pairs active people with sessions and prompts per active licensed chat user in the same week/date context.',
-        'Those trend rates are not divided by active weeks a second time.',
+        'Read the main trend as activity per active licensed chat user for the displayed week or dates.',
         'Department comparisons and usage-band bars show their labeled weekly prompt/session measures.',
         'Top apps use friendly names such as M365 Copilot Chat for bizchat.'
+      ],
+      technical: [
+        'The main trend pairs active people with sessions and prompts per active licensed chat user in the same week/date context.',
+        'Those trend rates are not divided by active weeks a second time.'
       ],
       tip: 'Look at people, sessions and app mix together, then ask what changed in the team\'s work.',
       caution: 'Active licensed headlines include all recorded experiences, including agent-only activity. Licensed chat chart populations are narrower; do not assume every number has the same denominator.'
@@ -201,9 +236,12 @@ window.AIO_CONTENT = {
       bullets: [
         'Headlines include Chat users, weekly prompts and sessions, month-over-month changes and weekly active days.',
         'The trend shows active people on the left and sessions/prompts per user per active week on the right.',
-        'Each person\'s volume is divided by their active weeks before averaging across active unlicensed Chat users.',
+        'Use the weekly measures to compare regular use, not just total volume.',
         'Compare weekly measures by department and by dynamic usage rank.',
         'Daily repeat-session share counts active people with more than one Chat session that day.'
+      ],
+      technical: [
+        'Each person\'s volume is divided by their active weeks before averaging across active unlicensed Chat users.'
       ],
       tip: 'Read same-day repeat sessions alongside the weekly pattern rather than treating repeat sessions as value.',
       caution: 'These pages exclude agent, Cowork and unclassified activity. Unknown licensing is not included as unlicensed.'
@@ -253,21 +291,23 @@ window.AIO_CONTENT = {
     }
   ],
   glossary: [
-    { term: 'Prompts', definition: 'Distinct recorded user request messages, not agent responses. Repeated copies of the same request do not add another prompt; identifier quality affects counts.', category: 'Activity', aliases: 'requests messages Message_Id deduplication' },
-    { term: 'Sessions', definition: 'Distinct person-and-thread conversations in the current selection. The same person returning to the same thread on several days can count once for the whole period.', category: 'Activity', aliases: 'conversations ThreadId user thread distinct' },
+    { term: 'Usage', definition: 'Recorded activity within the selected dates, people and experiences. Read the specific metric: prompts, sessions and active users count different things. Usage is not a measure of time saved, answer quality or employee performance.', category: 'Activity', aliases: 'use recorded activity metric scope adoption' },
+    { term: 'Actions', definition: 'Recorded action or operation evidence can help describe an inferred usage pattern. It does not by itself prove a task was completed or a business outcome was achieved.', category: 'Activity', aliases: 'operation action evidence inferred patterns' },
+    { term: 'Prompts', definition: 'Distinct recorded user request messages, not agent responses. Repeated copies of the same request do not add another prompt; identifier quality affects counts.', category: 'Activity', aliases: 'requests messages Message_Id deduplication', inline: ['prompt'] },
+    { term: 'Sessions', definition: 'Distinct person-and-thread conversations in the current selection. The same person returning to the same thread on several days can count once for the whole period.', category: 'Activity', aliases: 'conversations ThreadId user thread distinct', inline: ['session'] },
     { term: 'Prompts per session', definition: 'Recorded prompts divided by distinct sessions in the same scope. Conversation depth is not duration or business value.', category: 'Activity', aliases: 'conversation depth requests intensity' },
     { term: 'Eligible people', definition: 'People belonging to the selected authorized organization, team and license population, including those with no activity. This headcount drives the normal minimum-group check.', category: 'People', aliases: 'directory headcount people in scope denominator minimum group' },
-    { term: 'Active users', definition: 'Distinct people with relevant recorded activity during the selected dates. Multiple recorded license states do not create extra people.', category: 'People', aliases: 'distinct people active population stable identity' },
+    { term: 'Active users', definition: 'Distinct people with relevant recorded activity during the selected dates. Multiple recorded license states do not create extra people.', category: 'People', aliases: 'distinct people active population stable identity', inline: ['active user'] },
     { term: 'Active licensed users', definition: 'Licensed people with any recorded experience in scope, including agent-only, Cowork, other AI or unclassified activity. This is broader than licensed chat users.', category: 'People', aliases: 'paid active licensed all activity' },
     { term: 'Inactive licensed users', definition: 'Licensed people with no recorded activity in the same selected scope. Active plus inactive reconciles to licensed directory headcount in that scope.', category: 'People', aliases: 'paid inactive no activity licensed seats' },
     { term: 'Unlicensed Chat users', definition: 'People recorded without a Microsoft 365 Copilot license who have qualifying Copilot Chat activity. Agents and unknown-license people are not silently included.', category: 'People', aliases: 'free chat unpaid Copilot Chat unlicensed' },
     { term: 'Unknown license', definition: 'License evidence is missing or inconclusive. Unknown is kept separate from licensed and unlicensed; it is not assumed to be free.', category: 'People', aliases: 'missing blank tri-state license status' },
-    { term: 'Observed license history', definition: 'When collection keeps license history, the report remembers the license information recorded for each person. It uses those observations to group their activity. Changes that happened between observations may not be recorded.', category: 'Time', aliases: 'UserHistory On EffectiveDate temporal snapshot state UserKey' },
+    { term: 'Observed license history', definition: 'When collection keeps license history, the report remembers the license information recorded for each person. It uses those observations to group their activity. Changes that happened between observations may not be recorded.', category: 'Time', aliases: 'UserHistory On EffectiveDate temporal snapshot state UserKey', inline: ['license history'] },
     { term: 'First seen', definition: 'The date a license state was observed, not when the license was assigned. Undated evidence remains Unknown; a current snapshot cannot recover earlier transitions.', category: 'Time', aliases: 'EffectiveDate assignment observation timeline' },
     { term: 'Monthly paid/free membership', definition: 'Paid membership includes people with a licensed state at any point in that month. A person can also appear in free membership, so distinct totals can be smaller than the sum.', category: 'Time', aliases: 'overlap monthly comparison cohorts paid free distinct' },
     { term: 'Active days per user', definition: 'Average distinct dates with recorded activity among active users in scope. It is not hours worked or time spent.', category: 'Activity', aliases: 'frequency regularity active dates' },
     { term: 'Per active week', definition: 'A person\'s relevant activity divided by weeks in which that person was active. Read the chart label: some views average these person-level rates; others show totals or per-user rates.', category: 'Time', aliases: 'weekly prompts sessions normalization denominator' },
-    { term: 'Repeat users and return rate', definition: 'The share of active users with at least two sessions in the selected period. For agents, 0% means active users but no repeats; blank can mean no activity or protected scope.', category: 'Activity', aliases: 'repeat visits engagement retention return rate' },
+    { term: 'Repeat users and return rate', definition: 'The share of active users with at least two sessions in the selected period. For agents, 0% means active users but no repeats; blank can mean no activity or protected scope.', category: 'Activity', aliases: 'repeat visits engagement retention return rate', inline: ['repeat users', 'return rate'] },
     { term: 'Daily repeat-session share', definition: 'The share of active unlicensed Chat users with more than one Chat session that day. This daily measure differs from repeat users across the full period.', category: 'Activity', aliases: 'same day returning chat users' },
     { term: 'Habit month and bands', definition: 'The month before the selected end date. Light is 1-5, Moderate 6-10, Frequent 11-15 and Daily 16+ distinct active days; zero-day people are outside these fixed bands.', category: 'Time', aliases: 'previous selected month habit formation fixed ranges' },
     { term: 'Dynamic usage bands', definition: 'Percentile bands use distinct prompts per active week among active peers in each rank family. Dates and authorized population set thresholds; ties share a band. Independent family selections intersect without recalculating each other.', category: 'Comparisons', aliases: 'rank top ten percent bottom quartile 0 No Usage' },
@@ -281,7 +321,7 @@ window.AIO_CONTENT = {
     { term: 'Developer Name', definition: 'The agent developer or publisher, separate from Creator. Missing or generic placeholders say Not stated. A third-party store publisher is not a creator in your tenant.', category: 'Agents', aliases: 'publisher third party developer Not stated' },
     { term: 'Agent type', definition: 'Where an agent was created, such as Copilot Studio or Agent Builder. Catalog labels are used when that information is missing. Type is separate from whether the agent matches the catalog.', category: 'Agents', aliases: 'platform Agent Builder Copilot Studio Microsoft agent in-house' },
     { term: 'Catalog status', definition: 'In catalog, Not in Agent 365 catalog (activity only), or Ambiguous catalog match. Catalog agents count distinct Title IDs, not names; export timing can affect matching.', category: 'Agents', aliases: 'TitleID identity activity-only ambiguous match inventory' },
-    { term: 'Features', definition: 'Catalog-listed supported surfaces and capabilities, such as Teams, Outlook, SharePoint or files. Listed support does not demonstrate recorded use of that feature.', category: 'Agents', aliases: 'capabilities surfaces support catalog metadata' },
+    { term: 'Features', definition: 'Catalog-listed supported surfaces and capabilities, such as Teams, Outlook, SharePoint or files. Listed support does not demonstrate recorded use of that feature.', category: 'Agents', aliases: 'capabilities surfaces support catalog metadata', inline: false },
     { term: 'System-generated agents', definition: 'Special catalog entries excluded by default. Include system agents in Org filters to see them; they are not ordinary builder or action-oriented review targets.', category: 'Agents', aliases: 'system agent Include system agents generated' },
     { term: 'Usage not tracked here', definition: 'Security Copilot catalog entries have activity outside this dashboard\'s tracking scope. This label is not evidence that the agent has never been used.', category: 'Agents', aliases: 'Microsoft Security Copilot excluded coverage untracked' },
     { term: 'Dormant and No usage', definition: 'Dormant means previously used with last activity more than 60 days before the selected end. Never-used agents are No usage, not Dormant; labels follow the selected scope.', category: 'Agents', aliases: 'recency last activity Never Used health check review' },
@@ -295,9 +335,9 @@ window.AIO_CONTENT = {
     { term: 'Audit coverage', definition: 'Purview audit data supports security and compliance. Coverage, timing and calculations can differ from Viva Insights and the Microsoft 365 admin center; prompts do not measure responses, duration, time saved or performance.', category: 'Activity', aliases: 'Viva MAC differences official usage metrics response counts' }
   ],
   faqs: [
-    { q: 'Which edition should I choose?', a: 'Use Fabric OneLake if your team manages data in a Lakehouse: choose the notebook route for notebook collection, or the PAX route for PAX-produced Fabric OneLake tables. The Fabric OneLake PAX template download is coming soon. Use SharePoint for PAX CSV files with cloud refresh. Use Local CSV to try the sample or explore files in Desktop.', category: 'Setup' },
-    { q: 'Can I try the report without an administrator or tenant data?', a: 'Yes. Download Local CSV and the three synthetic sample files. Extract the Interactions CSV from the ZIP, put all three CSVs in a local folder, then paste their full paths into the template. The sample needs Power BI Desktop, not PAX or tenant permissions.', category: 'Setup' },
-    { q: 'What do I need to export my own data?', a: 'Ask IT to confirm audit logging, data access and the required collection permissions. Open PAX Cookbook Mini-Kitchen, choose AI-in-One and your destination, then follow its download and command instructions. PAX uses PowerShell 7 or later and Python 3.10 or later for preparation. Open the report template in Power BI Desktop.', category: 'Setup' },
+    { q: 'Which edition should I choose?', a: 'Use Fabric OneLake if your team manages data in a Lakehouse: choose the notebook route for notebook collection, or the separate PAX template for PAX-produced Fabric OneLake tables. Both Fabric templates are available; use the one matching your prepared data. Use SharePoint for PAX CSV files with cloud refresh. Use Local CSV to try the sample or explore files in Desktop.', category: 'Setup' },
+    { q: 'Can I try the report without an administrator or tenant data?', a: 'Yes. Download the Local CSV template and the three fictional sample files. Extract the Interactions CSV from the ZIP, put all three CSVs in a local folder, then paste their full paths into the template. The sample needs Power BI Desktop, not PAX or tenant permissions.', category: 'Setup' },
+    { q: 'What do I need to export my own data?', a: 'Ask IT to confirm audit logging, data access and the required collection permissions. Open Mini-Kitchen, choose AI-in-One and your destination, then follow its download and command instructions. PAX uses PowerShell 7 or later and Python 3.10 or later for preparation. Open the report template in Power BI Desktop.', category: 'Setup' },
     { q: 'Can I load a raw Purview export directly?', a: 'No. Use the dashboard-ready Users and Interactions from the same PAX AIO seed and its appends. If you already have raw audit and directory CSVs, the optional standalone processor can prepare them; PAX is the simpler route because it also collects and maintains the inputs.', category: 'Data' },
     { q: 'Which SharePoint address should I paste?', a: 'Select the file in its document library, open Details, and copy Path. Use the full HTTPS file path, not a sharing/viewer link or the browser address bar. For Local CSV, use File Explorer Copy as path and remove surrounding quotation marks.', category: 'Setup' },
     { q: 'Is the Agent 365 catalog required?', a: 'It is recommended, not required. Leave the optional Agent 365 file parameter blank for activity-only reporting. In the Fabric OneLake PAX edition, leave Load Agent365 catalog false unless a valid, synchronized Agent365 table is available. Enabling it requires access to that table and the catalog information the template expects.', category: 'Data' },
@@ -318,7 +358,7 @@ window.AIO_CONTENT = {
     { q: 'Can I use PAX-produced Fabric OneLake tables with the notebook template?', a: 'No. Use the separate Fabric OneLake PAX edition for AIO_Users, AIO_CopilotInteractions and optional Agent365 tables. It needs a completed data update, SQL synchronization and no table writes during the full Power BI refresh. The Fabric OneLake notebook edition uses different prepared tables.', category: 'Refresh' },
     { q: 'Why is a newly enabled audit export nearly empty?', a: 'Enabling audit logging does not recover the past. Allow up to 24 hours for records to appear, then collect again. Check available history and collection dates before requesting an older period.', category: 'Troubleshooting' },
     { q: 'Why is a catalog field or agent activity blank?', a: 'Not recorded is missing Creator; Not stated is missing or generic Developer Name. A blank return rate can mean no activity or protected scope; 0% means active users with no repeats. Security Copilot usage is not tracked here, and system-generated agents are excluded by default. Check scope and the field explanation before changing data.', category: 'Troubleshooting' },
-    { q: 'Where should I ask for help?', a: 'Start with your report owner or IT administrator. Tell them which data connection you use, what you were trying to do and the error message, with private details removed. You can also email the Microsoft Copilot Analytics team. Never share real audit exports, prompt content, tenant identifiers, access tokens, secrets or sensitive logs in a public issue.', category: 'Troubleshooting' }
+    { q: 'Where should I ask for help?', a: 'Start with your report owner or IT administrator. Tell them which data connection you use, what you were trying to do and the error message, with private details removed. You can also visit the Microsoft Copilot Analytics Team page. Never share real audit exports, prompt content, tenant identifiers, access tokens, secrets or sensitive logs in a public issue.', category: 'Troubleshooting' }
   ],
   permissions: [
     { when: 'Every PAX activity export', permission: 'AuditLogsQuery.Read.All', note: 'Microsoft Graph permission for audit queries. Audit data must also be enabled and available under the tenant\'s licensing and retention policy.' },
@@ -334,13 +374,13 @@ window.AIO_CONTENT = {
     { when: 'Sharing the report with viewers', permission: 'Report access plus the correct Power BI security role', note: 'Assign the role named Reporting hierarchy, or All data viewers when full access is appropriate under your policies. The roles combine their permissions. Test real viewer accounts; report security does not protect direct source access.' }
   ],
   resources: [
-    { title: 'Power BI Desktop', description: 'Get Microsoft\'s desktop application to open a PBIT template.', kind: 'Microsoft download', href: 'https://aka.ms/powerbidesktop' },
+    { title: 'Power BI Desktop', description: 'Get Microsoft\'s desktop application to open a PBIT template.', kind: 'Microsoft download', href: 'https://www.microsoft.com/en-us/download/details.aspx?id=58494' },
     { title: 'PowerShell', description: 'Install PowerShell 7 or later for the PAX exporter.', kind: 'Microsoft download', href: 'https://aka.ms/PowerShell' },
     { title: 'Audit Copilot activity', description: 'Understand the Purview audit source and its security/compliance purpose.', kind: 'Microsoft Learn', href: 'https://learn.microsoft.com/en-us/purview/audit-copilot' },
     { title: 'Why audit and usage counts differ', description: 'Microsoft explains coverage and timing differences from official Copilot usage reporting.', kind: 'Microsoft Learn', href: 'https://learn.microsoft.com/en-us/microsoft-365/admin/activity-reports/microsoft-365-copilot-usage#whats-the-difference-between-the-user-activity-table-and-audit-log' },
     { title: 'Power BI row-level security', description: 'Configure and test viewer access before sharing your report.', kind: 'Microsoft Learn', href: 'https://learn.microsoft.com/en-us/fabric/security/service-admin-row-level-security' },
     { title: 'On-premises data gateway', description: 'Set up scheduled refresh for files on a PC or network share.', kind: 'Microsoft Learn', href: 'https://learn.microsoft.com/en-us/power-bi/connect-data/service-gateway-onprem' },
     { title: 'Power BI refresh', description: 'Configure credentials, connections and refresh for your source.', kind: 'Microsoft Learn', href: 'https://learn.microsoft.com/en-us/power-bi/connect-data/refresh-data' },
-    { title: 'Fabric OneLake notebook setup guide', description: 'Detailed setup for Fabric OneLake notebook collection and preparation. The Fabric OneLake PAX route uses different tables.', kind: 'Guide download', href: 'https://raw.githubusercontent.com/microsoft/AI-in-One-Dashboard/preview/Fabric%20OneLake/AI-in-One%20-%20v2.0.0%20-%20Fabric%20OneLake%20Template/README.md' }
+    { title: 'Fabric OneLake notebook setup guide', description: 'Detailed setup for Fabric OneLake notebook collection and preparation. The Fabric OneLake PAX route uses different tables.', kind: 'Guide download', href: 'https://raw.githubusercontent.com/microsoft/AI-in-One-Dashboard/main/Fabric%20OneLake/AI-in-One%20-%20v2.0.0%20-%20Fabric%20OneLake%20Template/README.md' }
   ]
 };

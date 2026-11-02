@@ -1,0 +1,22 @@
+{
+  "sharepoint.svg": {
+    "source": "https://res.cdn.office.net/files/fabric-cdn-prod_20230815.002/assets/brand-icons/product/svg/sharepoint_48x1.svg",
+    "description": "Microsoft SharePoint product icon, unmodified."
+  },
+  "csv.svg": {
+    "source": "https://res.cdn.office.net/files/fabric-cdn-prod_20230815.002/assets/item-types/48/csv.svg",
+    "description": "Microsoft CSV file-type icon, unmodified; represents CSV files, not Excel."
+  },
+  "fabric.svg": {
+    "source": "https://github.com/microsoft/fabric-samples/blob/main/docs-samples/Icons.zip",
+    "entry": "v6.1.0/package/dist/svg/fabric_48_color.svg",
+    "terms": "https://learn.microsoft.com/en-us/fabric/fundamentals/icons",
+    "description": "Microsoft Fabric product icon, unmodified."
+  },
+  "power-bi.svg": {
+    "source": "https://github.com/microsoft/fabric-samples/blob/main/docs-samples/Icons.zip",
+    "entry": "v6.1.0/package/dist/svg/power_bi_48_color.svg",
+    "terms": "https://learn.microsoft.com/en-us/fabric/fundamentals/icons",
+    "description": "Microsoft Power BI product icon, unmodified; represents the sample report."
+  }
+}

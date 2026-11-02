@@ -1,14 +1,13 @@
 (() => {
-  const repository = 'https://raw.githubusercontent.com/microsoft/AI-in-One-Dashboard/preview/';
+  const repository = 'https://raw.githubusercontent.com/microsoft/AI-in-One-Dashboard/main/';
   const file = path => repository + path.split('/').map(encodeURIComponent).join('/');
   const notebooks = 'Fabric OneLake/AI-in-One - v2.0.0 - Fabric OneLake Template/';
   const detailPolicy = '3 by default. Use 1 for individual activity only if your organization\'s privacy and employee-reporting policies allow it.';
   window.AIO_RELEASE = {
     version: '2.0',
-    channel: 'Public preview',
     templates: [
       {
-        id: 'fabric', title: 'Fabric OneLake: notebooks',
+        id: 'fabric', title: 'Fabric OneLake: Notebooks',
         subtitle: 'Collect and prepare data inside Fabric OneLake.',
         bestFor: 'Your team wants a notebook-managed collection and refresh process.',
         chooseWhen: 'You already use Fabric OneLake, want to retain more history, and have a team to operate collection notebooks.',
@@ -22,7 +21,7 @@
         parameters: [
           { name: 'Fabric SQL Endpoint', value: 'The SQL analytics endpoint hostname, without https://' },
           { name: 'Fabric Lakehouse', value: 'The Lakehouse database name' },
-          { name: 'Agent 365', value: 'Optional direct SharePoint CSV path, or leave blank' },
+          { name: 'Agent 365 (highly recommended)', value: 'Optional direct SharePoint CSV path, or leave blank' },
           { name: 'Minimum Group Size', value: detailPolicy }
         ],
         note: 'Use the Fabric OneLake notebook instructions and matching notebooks. This template does not connect directly to PAX-produced Fabric OneLake tables.'
@@ -32,11 +31,11 @@
         subtitle: 'Connect to data PAX has prepared in Fabric OneLake.',
         bestFor: 'Your team already uses PAX to maintain processed data in Fabric OneLake.',
         chooseWhen: 'PAX already prepares your data as Fabric OneLake tables. Do not select the notebook edition as a substitute.',
-        effort: 'Existing PAX Lakehouse and SQL access required. Report template coming soon.',
-        automation: 'Schedule PAX updates, wait for SQL synchronization, then refresh Power BI.',
+        effort: 'PAX-prepared Lakehouse tables and read access to the SQL analytics endpoint.',
+        automation: 'Complete your supported PAX table-update process, wait for SQL synchronization, then refresh Power BI.',
         source: 'PAX-produced Fabric OneLake Users and Interactions tables, plus an optional Agent365 table.',
         refresh: 'Let PAX finish the full data update, then wait for SQL synchronization. No table updates may overlap the Power BI refresh.',
-        status: 'pending', href: null,
+        status: 'available', href: file('templates/AI-in-One-v2.0.0-Fabric-OneLake-PAX-Template.pbit'),
         file: 'AI-in-One-v2.0.0-Fabric-OneLake-PAX-Template.pbit',
         parameters: [
           { name: 'Fabric SQL Endpoint', value: 'The SQL analytics endpoint hostname, without https://' },
@@ -45,7 +44,7 @@
           { name: 'Load Agent365 catalog', value: 'Leave false unless the Fabric OneLake Agent365 table is available and synchronized' },
           { name: 'Minimum Group Size', value: detailPolicy }
         ],
-        note: 'Download coming soon. This Fabric OneLake route does not use the notebook edition\'s collectors or preparation tables.'
+        note: 'Use the PAX-produced AIO_Users and AIO_CopilotInteractions tables, plus Agent365 if enabled. This SQL Import connection does not use the notebook edition\'s collectors or preparation tables. Fabric Tables update commands remain unavailable in Mini-Kitchen.'
       },
       {
         id: 'sharepoint', title: 'SharePoint',
@@ -62,7 +61,7 @@
         parameters: [
           { name: 'Copilot Interactions File', value: 'The direct HTTPS path to your processed Interactions CSV' },
           { name: 'Org Data File', value: 'The direct HTTPS path to the matching processed Users CSV' },
-          { name: 'Agent 365', value: 'The direct HTTPS catalog CSV path, or leave blank' },
+          { name: 'Agent 365 (highly recommended)', value: 'The direct HTTPS catalog CSV path, or leave blank' },
           { name: 'Minimum Group Size', value: detailPolicy }
         ],
         note: 'In SharePoint, select the file, open Details and copy Path. Do not use a sharing link or the browser address bar.'
@@ -82,7 +81,7 @@
         parameters: [
           { name: 'Copilot Interactions File', value: 'The full local path to your Interactions CSV' },
           { name: 'Org Data File', value: 'The full local path to the matching Users CSV' },
-          { name: 'Agent 365', value: 'The full local catalog CSV path, or leave blank' },
+          { name: 'Agent 365 (highly recommended)', value: 'The full local catalog CSV path, or leave blank' },
           { name: 'Minimum Group Size', value: detailPolicy }
         ],
         note: 'Paste full paths without surrounding quotation marks. For the sample, extract the Interactions CSV from the ZIP first.'

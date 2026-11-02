@@ -1,0 +1,29 @@
+{
+  "source": "https://github.com/microsoft/AI-in-One-Dashboard",
+  "capturedUtc": "2026-11-02T09:48:11Z",
+  "context": "Public repository, signed out, light mode",
+  "images": [
+    { "file": "github-star-guide.png", "width": 1400, "height": 175 },
+    { "file": "github-star-control.png", "width": 180, "height": 60, "processing": "Pixel-exact crop of github-star-guide.png" },
+    {
+      "file": "github-starred-control.png",
+      "source": "https://github.com/microsoft/AI-in-One-Dashboard",
+      "capturedUtc": "2026-11-02T10:18:43.530Z",
+      "context": "Signed in, light mode; existing starred state; no starring action taken",
+      "state": "starred",
+      "width": 174,
+      "height": 72,
+      "processing": "Genuine screenshot of the icon and Starred label only, cropped before the star count; 2x capture scale; white outer matte made transparent; 22px mirrored left-edge cap appended to round the right corners without changing the icon or label"
+    },
+    {
+      "file": "github-unstarred-control.png",
+      "source": "https://github.com/octocat/Spoon-Knife",
+      "capturedUtc": "2026-11-02T10:18:44.358Z",
+      "context": "Signed in, light mode; existing unstarred state; no starring action taken",
+      "state": "unstarred",
+      "width": 138,
+      "height": 72,
+      "processing": "Genuine screenshot of the icon and Star label only, cropped before the star count; 2x capture scale; white outer matte made transparent; 22px mirrored left-edge cap appended to round the right corners without changing the icon or label"
+    }
+  ]
+}
