@@ -1,0 +1,4 @@
+.github/*
+!.github/workflows/
+_temp/
+_backup/

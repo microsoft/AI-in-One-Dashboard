@@ -1,0 +1,681 @@
+[
+ {
+  "page": "Copilot Overall - Combined Trends",
+  "metric": "Agent Active Users",
+  "description": "Count of users who have used any agent. Target >20% of total users. Low = improve agent promotion strategy.",
+  "pageOrder": 1,
+  "metricOrder": 101
+ },
+ {
+  "page": "Copilot Overall - Combined Trends",
+  "metric": "Unlicensed Chat Active Users",
+  "description": "Unlicensed users with chat activity. Shows organic demand beyond licensed seats — strong pipeline for licence allocation.",
+  "pageOrder": 1,
+  "metricOrder": 102
+ },
+ {
+  "page": "Copilot Overall - Combined Trends",
+  "metric": "M365 Copilot Active Users",
+  "description": "Licensed users with chat activity. Target: Growing MoM. Sustained growth = healthy rollout; flat = engagement gap.",
+  "pageOrder": 1,
+  "metricOrder": 103
+ },
+ {
+  "page": "Copilot Overall - Combined Trends",
+  "metric": "Weekly Agent Sessions Per User",
+  "description": "Avg agent sessions per user across both M365 Copilot and Unlicensed Chat. Trend is more important than absolute value.",
+  "pageOrder": 1,
+  "metricOrder": 104
+ },
+ {
+  "page": "Copilot Overall - Combined Trends",
+  "metric": "Weekly Unlicensed Chat Sessions Per User",
+  "description": "Avg sessions for unlicensed active users. If close to licensed, these users are strong licence candidates.",
+  "pageOrder": 1,
+  "metricOrder": 105
+ },
+ {
+  "page": "Copilot Overall - Combined Trends",
+  "metric": "Weekly M365 Copilot Sessions Per User",
+  "description": "Avg sessions for licensed active users. Target >20/month. Low = poor value realisation from paid licences.",
+  "pageOrder": 1,
+  "metricOrder": 106
+ },
+ {
+  "page": "Copilot Overall - Combined Trends",
+  "metric": "Agent Active Days Per User",
+  "description": "Avg days/month a user interacts with agents. Target >8. Compare to chat days — large gap = agent awareness opportunity.",
+  "pageOrder": 1,
+  "metricOrder": 107
+ },
+ {
+  "page": "Copilot Overall - Combined Trends",
+  "metric": "Chat Active Days Per User",
+  "description": "Avg days/month a user chats with Copilot. <5=casual, 5-10=regular, 10-15=engaged, 16+=power user. Target >10.",
+  "pageOrder": 1,
+  "metricOrder": 108
+ },
+ {
+  "page": "Copilot Overall - Combined Trends",
+  "metric": "M365 Copilot Active Days Per User",
+  "description": "Avg days/month a user interacts with M365 Copilot. <5=casual, 5-10=regular, 10-15=engaged, 16+=power user. Target >10.",
+  "pageOrder": 1,
+  "metricOrder": 109
+ },
+ {
+  "page": "Copilot Overall - Combined Leaderboard",
+  "metric": "Agent Users",
+  "description": "Count of users who have used any agent. Target >20% of total users. Low = improve agent promotion strategy.",
+  "pageOrder": 2,
+  "metricOrder": 201
+ },
+ {
+  "page": "Copilot Overall - Combined Leaderboard",
+  "metric": "Weekly Agent Sessions Per User",
+  "description": "Average number of sessions an active user of agents engaged in a week",
+  "pageOrder": 2,
+  "metricOrder": 202
+ },
+ {
+  "page": "Copilot Overall - Combined Leaderboard",
+  "metric": "Unlicensed Chat Users",
+  "description": "Unlicensed users actively using Copilot Chat. Target: Growing MoM. Shows organic demand beyond paid seats — strong pipeline for licence allocation.",
+  "pageOrder": 2,
+  "metricOrder": 203
+ },
+ {
+  "page": "Copilot Overall - Combined Leaderboard",
+  "metric": "Weekly Unlicensed Chat User Sessions",
+  "description": "Average weekly chat sessions per unlicensed active user. If approaching licensed user levels, these are strong licence upgrade candidates.",
+  "pageOrder": 2,
+  "metricOrder": 204
+ },
+ {
+  "page": "Copilot Overall - Combined Leaderboard",
+  "metric": "M365 Copilot Users",
+  "description": "Total users with Copilot licence enabled. Compare to active count — large gap = activation problem.",
+  "pageOrder": 2,
+  "metricOrder": 205
+ },
+ {
+  "page": "Copilot Overall - Combined Leaderboard",
+  "metric": "Weekly Copilot Sessions Per User",
+  "description": "Average weekly sessions per licensed M365 Copilot user. Target >5/week. Low = underutilised licences — investigate adoption blockers.",
+  "pageOrder": 2,
+  "metricOrder": 206
+ },
+ {
+  "page": "Copilot Overall - Combined Leaderboard",
+  "metric": "% Copilot Users Using Agents (Licensed)",
+  "description": "% of licensed users also using agents. Target >30%. <15% = improve agent discoverability.",
+  "pageOrder": 2,
+  "metricOrder": 207
+ },
+ {
+  "page": "Copilot Overall - Combined Leaderboard",
+  "metric": "% Chat Users Using Agents (Unlicensed)",
+  "description": "% of unlicensed users also using agents. Target >20%. High = agents solving real problems.",
+  "pageOrder": 2,
+  "metricOrder": 208
+ },
+ {
+  "page": "Copilot Overall - Combined Leaderboard",
+  "metric": "% Active Users",
+  "description": "% of enabled users actively using Copilot. Target >60%. <40% = many licences unused.",
+  "pageOrder": 2,
+  "metricOrder": 209
+ },
+ {
+  "page": "Copilot Overall - Combined Leaderboard",
+  "metric": "% Power Users",
+  "description": "% in highest engagement tier. Target: growing over time, aim for 15-25%.",
+  "pageOrder": 2,
+  "metricOrder": 210
+ },
+ {
+  "page": "Copilot Overall - Combined Leaderboard",
+  "metric": "% Non Users",
+  "description": "% of enabled users with no activity. Target: decreasing. High % = wasted licences.",
+  "pageOrder": 2,
+  "metricOrder": 211
+ },
+ {
+  "page": "Copilot Overall - Combined Leaderboard",
+  "metric": "Average Copilot Active Days",
+  "description": "Avg active days across all Copilot users. Target >10. Compare across departments.",
+  "pageOrder": 2,
+  "metricOrder": 212
+ },
+ {
+  "page": "Agents - Usage Trends",
+  "metric": "Most Popular Agent",
+  "description": "Agent with highest session count. Study its design and use case for replication patterns.",
+  "pageOrder": 3,
+  "metricOrder": 301
+ },
+ {
+  "page": "Agents - Usage Trends",
+  "metric": "Most Versatile Agent",
+  "description": "Agent used by most number of unique users. Reflects broad applicability",
+  "pageOrder": 3,
+  "metricOrder": 302
+ },
+ {
+  "page": "Agents - Usage Trends",
+  "metric": "Users",
+  "description": "Count of users who have used any agent. Target >20% of active users. Track growth MoM.",
+  "pageOrder": 3,
+  "metricOrder": 303
+ },
+ {
+  "page": "Agents - Usage Trends",
+  "metric": "Users Adopt Agents",
+  "description": "% of all active users also using agents. <15% = awareness problem. >40% = excellent adoption.",
+  "pageOrder": 3,
+  "metricOrder": 304
+ },
+ {
+  "page": "Agents - Usage Trends",
+  "metric": "Agent Sessions MoM %",
+  "description": "Month-over-month % change in agent sessions. Should outpace chat growth. 2+ months decline = investigate.",
+  "pageOrder": 3,
+  "metricOrder": 305
+ },
+ {
+  "page": "Agents - Usage Trends",
+  "metric": "Agent Return Rate",
+  "description": "% of users who return to an agent 2+ times. Target >50%. Low = agents not solving real problems.",
+  "pageOrder": 3,
+  "metricOrder": 306
+ },
+ {
+  "page": "Agents - Usage Trends",
+  "metric": "Total Agent Sessions",
+  "description": "Total sessions involving agent interactions. Target: growing share of total sessions over time.",
+  "pageOrder": 3,
+  "metricOrder": 307
+ },
+ {
+  "page": "Agents - Usage Trends",
+  "metric": "Agent Active Users",
+  "description": "Weekly count of users who interacted with any agent. Target: growing MoM. Flat or declining = revisit agent discoverability and promotion.",
+  "pageOrder": 3,
+  "metricOrder": 308
+ },
+ {
+  "page": "Agents - Usage Trends",
+  "metric": "Sessions",
+  "description": "Weekly total agent sessions. Tracks overall engagement volume. Rising sessions with stable users = deeper habit formation.",
+  "pageOrder": 3,
+  "metricOrder": 309
+ },
+ {
+  "page": "Agents - Usage Trends",
+  "metric": "Number of Sessions by Agent",
+  "description": "Total sessions per agent for the selected time period. Only agents with 3 or more users are included to ensure statistical reliability and protect user privacy.",
+  "pageOrder": 3,
+  "metricOrder": 310
+ },
+ {
+  "page": "Agents - Habit Formation",
+  "metric": "1-5 Active Days (Agent)",
+  "description": "Users active 1-5 days/month with agents. Target: decrease over time. Casual users — target with agent training.",
+  "pageOrder": 4,
+  "metricOrder": 401
+ },
+ {
+  "page": "Agents - Habit Formation",
+  "metric": "6-10 Active Days (Agent)",
+  "description": "Users active 6-10 days/month with agents. Target: growing. Push towards 11+ with advanced use cases.",
+  "pageOrder": 4,
+  "metricOrder": 402
+ },
+ {
+  "page": "Agents - Habit Formation",
+  "metric": "11-15 Active Days (Agent)",
+  "description": "Users active 11-15 days/month with agents. Strong engagement. Study their workflows for best practices.",
+  "pageOrder": 4,
+  "metricOrder": 403
+ },
+ {
+  "page": "Agents - Habit Formation",
+  "metric": "16+ Active Days (Agent)",
+  "description": "Power agent users with daily habit (16+ days). Champions. Leverage as mentors and advocates.",
+  "pageOrder": 4,
+  "metricOrder": 404
+ },
+ {
+  "page": "Agents - Habit Formation",
+  "metric": "Total Agent Sessions",
+  "description": "Total sessions involving agents. Target: growing MoM. Combine with active days for full picture.",
+  "pageOrder": 4,
+  "metricOrder": 405
+ },
+ {
+  "page": "Agents - Leaderboard",
+  "metric": "Top Builder",
+  "description": "Creator with the highest unique user count. Identify top builders who have the widest user reach.",
+  "pageOrder": 5,
+  "metricOrder": 501
+ },
+ {
+  "page": "Agents - Leaderboard",
+  "metric": "High Impact Agents",
+  "description": "An agent that is active and widely adopted (many users, many orgs). Key thresholds: for 1P agents, 100 users or 10 orgs, Agent Builder, 30 users or 3 orgs, others 50 users or 5 orgs ",
+  "pageOrder": 5,
+  "metricOrder": 502
+ },
+ {
+  "page": "Agents - Leaderboard",
+  "metric": "Dormant Agents",
+  "description": "Agents with minimal usage after 90+ days. Minimise count. Archive candidates — consult creator before removing. For 1P agent the thresholds would be inactive for 2–3 months and has fewer than 10 users",
+  "pageOrder": 5,
+  "metricOrder": 503
+ },
+ {
+  "page": "Agents - Leaderboard",
+  "metric": "Agent Return Rate",
+  "description": "% of users who return to an agent 2+ times. Target >50%. Quality signal for agent portfolio.",
+  "pageOrder": 5,
+  "metricOrder": 504
+ },
+ {
+  "page": "Agents - Health Check",
+  "metric": "Most Popular Agent",
+  "description": "Agent with highest session count. Study its design, prompts, and use case for replication.",
+  "pageOrder": 6,
+  "metricOrder": 601
+ },
+ {
+  "page": "Agents - Health Check",
+  "metric": "Most Versatile Agent",
+  "description": "Agent used by most number of unique users. Reflects broad applicability.",
+  "pageOrder": 6,
+  "metricOrder": 602
+ },
+ {
+  "page": "Agents - Health Check",
+  "metric": "High Impact Agents",
+  "description": "An agent that is active and widely adopted (many users, many orgs). Key thresholds: for 1P agents, 100 users or 10 orgs, Agent Builder, 30 users or 3 orgs, others 50 users or 5 orgs",
+  "pageOrder": 6,
+  "metricOrder": 603
+ },
+ {
+  "page": "Agents - Health Check",
+  "metric": "Dormant Agents",
+  "description": "Agents with minimal usage after 90+ days. Minimise count. Archive candidates — consult creator before removing. For 1P agent the thresholds would be inactive for 2–3 months and has fewer than 10 users",
+  "pageOrder": 6,
+  "metricOrder": 604
+ },
+ {
+  "page": "Agents - Health Check",
+  "metric": "Agent Return Rate",
+  "description": "% of users returning to agents 2+ times. Overall portfolio quality signal. Target >50%.",
+  "pageOrder": 6,
+  "metricOrder": 605
+ },
+ {
+  "page": "Agents - Use Cases",
+  "metric": "Total Agent Sessions",
+  "description": "Total sessions involving agents across all use cases. Target: growing MoM.",
+  "pageOrder": 7,
+  "metricOrder": 701
+ },
+ {
+  "page": "Agents - Use Cases",
+  "metric": "Users",
+  "description": "Users who have used any agent. Breadth of agent adoption across the organisation.",
+  "pageOrder": 7,
+  "metricOrder": 702
+ },
+ {
+  "page": "License Prioritisation",
+  "metric": "Unlicensed Active Users",
+  "description": "Unlicensed active user count. Total addressable market for new licence allocation.",
+  "pageOrder": 8,
+  "metricOrder": 801
+ },
+ {
+  "page": "License Prioritisation",
+  "metric": "Licensed Active Users",
+  "description": "Licensed active user count. Context for licence allocation — how many current licences are active.",
+  "pageOrder": 8,
+  "metricOrder": 802
+ },
+ {
+  "page": "License Prioritisation",
+  "metric": "License Priority Rank",
+  "description": "Dynamic ranking of unlicensed users for licence candidacy. Based on usage volume + consistency. Filter by dept for best candidates.",
+  "pageOrder": 8,
+  "metricOrder": 803
+ },
+ {
+  "page": "License Prioritisation",
+  "metric": "Median Sessions Per User (Weekly)",
+  "description": "Median weekly sessions for unlicensed users.",
+  "pageOrder": 8,
+  "metricOrder": 804
+ },
+ {
+  "page": "License Prioritisation",
+  "metric": "Median Active Days (Weekly)",
+  "description": "Avg active days for unlicensed users. Compare to licensed — if close, strong ROI case for licensing.",
+  "pageOrder": 8,
+  "metricOrder": 805
+ },
+ {
+  "page": "Chat (Web) - Leaderboard",
+  "metric": "Sessions (Weekly - Per User)",
+  "description": "Weekly avg sessions per unlicensed user. Engagement depth for top users. Target >3/week.",
+  "pageOrder": 9,
+  "metricOrder": 901
+ },
+ {
+  "page": "Chat (Web) - Leaderboard",
+  "metric": "MoM % Change (Sessions)",
+  "description": "MoM % change in unlicensed sessions. Growth momentum for unlicensed segment.",
+  "pageOrder": 9,
+  "metricOrder": 902
+ },
+ {
+  "page": "Chat (Web) - Leaderboard",
+  "metric": "Total Sessions",
+  "description": "Total unlicensed chat sessions. Volume context for leaderboard rankings.",
+  "pageOrder": 9,
+  "metricOrder": 903
+ },
+ {
+  "page": "Chat (Web) - Usage Trends",
+  "metric": "Active Users",
+  "description": "Active unlicensed chat users. Breadth of organic adoption without paid licences. Target: growing MoM.",
+  "pageOrder": 10,
+  "metricOrder": 1001
+ },
+ {
+  "page": "Chat (Web) - Usage Trends",
+  "metric": "Sessions (Weekly - Per User)",
+  "description": "Weekly avg sessions per unlicensed user. <1/week = at-risk. >5/week = strong engagement.",
+  "pageOrder": 10,
+  "metricOrder": 1002
+ },
+ {
+  "page": "Chat (Web) - Usage Trends",
+  "metric": "MoM % Change (Sessions)",
+  "description": "MoM % change in unlicensed sessions. Organic growth rate. 2+ months decline = investigate.",
+  "pageOrder": 10,
+  "metricOrder": 1003
+ },
+ {
+  "page": "Chat (Web) - Usage Trends",
+  "metric": "Active Days (Weekly - Per User)",
+  "description": "Weekly avg active days for unlicensed chat users. Higher = building habit. Target >2 days/week.",
+  "pageOrder": 10,
+  "metricOrder": 1004
+ },
+ {
+  "page": "Chat (Web) - Usage Trends",
+  "metric": "Total Sessions",
+  "description": "Total chat sessions from unlicensed users. Organic demand volume. Strong growth = expand licensing.",
+  "pageOrder": 10,
+  "metricOrder": 1005
+ },
+ {
+  "page": "Chat (Web) - Usage Trends",
+  "metric": "Unlicensed Copilot - Sessions by Application",
+  "description": "Total chat sessions from unlicensed users split by various apps in which interactions occurred. Look for high traffic surfaces to see platforms or apps with natural gravity",
+  "pageOrder": 10,
+  "metricOrder": 1006
+ },
+ {
+  "page": "Chat (Web) - Habit Formation",
+  "metric": "1-5 Active Days (Chat)",
+  "description": "Users active 1-5 days/month chatting. Target: decrease over time. Casual users — onboarding campaigns.",
+  "pageOrder": 11,
+  "metricOrder": 1101
+ },
+ {
+  "page": "Chat (Web) - Habit Formation",
+  "metric": "6-10 Active Days (Chat)",
+  "description": "Users active 6-10 days/month chatting. Target: growing. Push towards 11+ with use-case workshops.",
+  "pageOrder": 11,
+  "metricOrder": 1102
+ },
+ {
+  "page": "Chat (Web) - Habit Formation",
+  "metric": "11-15 Active Days (Chat)",
+  "description": "Users active 11-15 days/month chatting. Strong engagement — core user base.",
+  "pageOrder": 11,
+  "metricOrder": 1103
+ },
+ {
+  "page": "Chat (Web) - Habit Formation",
+  "metric": "16+ Active Days (Chat)",
+  "description": "Power chat users with daily habit (16+ days). Champions. Leverage as advocates and mentors.",
+  "pageOrder": 11,
+  "metricOrder": 1104
+ },
+ {
+  "page": "M365 Copilot - Usage Trends",
+  "metric": "Active Users",
+  "description": "Active licensed users. Gap vs total licences = activation opportunity.",
+  "pageOrder": 12,
+  "metricOrder": 1201
+ },
+ {
+  "page": "M365 Copilot - Usage Trends",
+  "metric": "Total Sessions (excl. Agents)",
+  "description": "Total sessions from licensed M365 Copilot users excluding agent interactions. Target: growing MoM.",
+  "pageOrder": 12,
+  "metricOrder": 1202
+ },
+ {
+  "page": "M365 Copilot - Usage Trends",
+  "metric": "Sessions (Weekly - Per User)",
+  "description": "Weekly avg sessions per licensed user. <2/week = underutilised. >5/week = strong ROI.",
+  "pageOrder": 12,
+  "metricOrder": 1203
+ },
+ {
+  "page": "M365 Copilot - Usage Trends",
+  "metric": "MoM % Change (Sessions)",
+  "description": "MoM % change in licensed sessions. Watch for 2+ months decline — may signal adoption fatigue.",
+  "pageOrder": 12,
+  "metricOrder": 1204
+ },
+ {
+  "page": "M365 Copilot - Usage Trends",
+  "metric": "Active Days (Weekly - Per User)",
+  "description": "Weekly avg active days for licensed users. Higher = habitual usage. Target >3 days/week.",
+  "pageOrder": 12,
+  "metricOrder": 1205
+ },
+ {
+  "page": "M365 Copilot - Leaderboard",
+  "metric": "Active Users",
+  "description": "Total users with Copilot licence. Denominator for activation rate. Large gap vs active = onboarding issue.",
+  "pageOrder": 13,
+  "metricOrder": 1301
+ },
+ {
+  "page": "M365 Copilot - Leaderboard",
+  "metric": "MoM % Change (Sessions)",
+  "description": "MoM % change in licensed sessions. Momentum indicator for the licensed user base.",
+  "pageOrder": 13,
+  "metricOrder": 1302
+ },
+ {
+  "page": "M365 Copilot - Leaderboard",
+  "metric": "% Active Users",
+  "description": "% of licensed users actively using Copilot. Target >60%. <40% = many licences unused.",
+  "pageOrder": 13,
+  "metricOrder": 1303
+ },
+ {
+  "page": "M365 Copilot - Leaderboard",
+  "metric": "Average Copilot Active Days",
+  "description": "Avg active days for licensed users. Target >10. Org-wide engagement health metric.",
+  "pageOrder": 13,
+  "metricOrder": 1305
+ },
+ {
+  "page": "M365 Copilot - Habit Formation",
+  "metric": "M365 Copilot Actions Per User",
+  "description": "Avg M365 actions per licensed user. Target 50+/month. Key ROI metric combining all M365 app actions.",
+  "pageOrder": 14,
+  "metricOrder": 1401
+ },
+ {
+  "page": "M365 Copilot - Habit Formation",
+  "metric": "1-5 Active Days (Licensed)",
+  "description": "Licensed users active 1-5 days/month. Target: decrease. Casual users = highest risk of licence waste.",
+  "pageOrder": 14,
+  "metricOrder": 1402
+ },
+ {
+  "page": "M365 Copilot - Habit Formation",
+  "metric": "6-10 Active Days (Licensed)",
+  "description": "Licensed users active 6-10 days/month. Building habits. Push towards 11+ with training.",
+  "pageOrder": 14,
+  "metricOrder": 1403
+ },
+ {
+  "page": "M365 Copilot - Habit Formation",
+  "metric": "11-15 Active Days (Licensed)",
+  "description": "Licensed users active 11-15 days/month. Strong engagement — core licensed user base.",
+  "pageOrder": 14,
+  "metricOrder": 1404
+ },
+ {
+  "page": "M365 Copilot - Habit Formation",
+  "metric": "16+ Active Days (Licensed)",
+  "description": "Licensed power users (16+ days). Highest ROI users. Daily habit formed.",
+  "pageOrder": 14,
+  "metricOrder": 1405
+ },
+ {
+  "page": "Frontier Firm Assessment",
+  "metric": "FF Composite Score",
+  "description": "Weighted maturity score (0-100) combining Reach (30%), Habit (40%), and Skill (30%). Tracks overall progress towards Frontier Firm status.",
+  "pageOrder": 15,
+  "metricOrder": 1501
+ },
+ {
+  "page": "Frontier Firm Assessment",
+  "metric": "FF Pattern",
+  "description": "Frontier Firm pattern classification: P1 Foundation (AI assists individuals), P2 Expansion (humans orchestrate, agents execute), P3 Frontier (agents handle whole workflows).",
+  "pageOrder": 15,
+  "metricOrder": 1502
+ },
+ {
+  "page": "Frontier Firm Assessment",
+  "metric": "FF Reach Score",
+  "description": "Reach dimension (0-100): 60% weighted on licence activation rate + 40% on usage concentration outside top 3 orgs. Measures breadth of AI deployment.",
+  "pageOrder": 15,
+  "metricOrder": 1503
+ },
+ {
+  "page": "Frontier Firm Assessment",
+  "metric": "FF Habit Score",
+  "description": "Habit dimension (0-100): Licensed habitual rate (40%), agent habitual rate (30%), licensed MoM retention (30%). Measures depth of routine use.",
+  "pageOrder": 15,
+  "metricOrder": 1504
+ },
+ {
+  "page": "Frontier Firm Assessment",
+  "metric": "FF Skill Score",
+  "description": "Skill dimension (0-100): App surface breadth (35%), agent adoption rate (35%), deep interactions rate (30%). Measures proficiency and delegation maturity.",
+  "pageOrder": 15,
+  "metricOrder": 1505
+ },
+ {
+  "page": "Frontier Firm Assessment",
+  "metric": "App Surface Breadth",
+  "description": "Average number of distinct M365 app surfaces (Teams, Word, Outlook, etc.) used per active user. Target: 4+. Low = users stuck in one app.",
+  "pageOrder": 15,
+  "metricOrder": 1506
+ },
+ {
+  "page": "Frontier Firm Assessment",
+  "metric": "Agent Breadth",
+  "description": "Average number of distinct agents used per agent user. Higher = users exploring the agent ecosystem, not just one agent.",
+  "pageOrder": 15,
+  "metricOrder": 1507
+ },
+ {
+  "page": "Frontier Firm Assessment",
+  "metric": "Deep Interactions Rate",
+  "description": "Percentage of conversation threads with 5+ prompts. Measures engagement depth vs. shallow single-prompt use. Target: >15%.",
+  "pageOrder": 15,
+  "metricOrder": 1508
+ },
+ {
+  "page": "Frontier Firm Assessment",
+  "metric": "Average Prompts per Session",
+  "description": "Average number of prompts per conversation thread. Higher = more substantive interactions. Benchmark: 2-3 is typical.",
+  "pageOrder": 15,
+  "metricOrder": 1509
+ },
+ {
+  "page": "Frontier Firm Assessment",
+  "metric": "Usage Concentration (Outside Top 3)",
+  "description": "Percentage of total activity occurring outside the top 3 organisations. Higher = more even distribution. Target: >80%.",
+  "pageOrder": 15,
+  "metricOrder": 1510
+ },
+ {
+  "page": "Frontier Firm Assessment",
+  "metric": "Org Penetration (Copilot + Agents)",
+  "description": "Percentage of organisations where users engage with both Copilot chat AND agents. Measures cross-product adoption at org level.",
+  "pageOrder": 15,
+  "metricOrder": 1511
+ },
+ {
+  "page": "Frontier Firm Assessment",
+  "metric": "Licensed User Return Rate (MoM)",
+  "description": "Percentage of licensed users active in both current and previous month. Measures month-over-month user retention. Target: >90%.",
+  "pageOrder": 15,
+  "metricOrder": 1512
+ },
+ {
+  "page": "Frontier Firm Assessment",
+  "metric": "Agent Habitual Rate",
+  "description": "Percentage of agent users with 6+ active days in the last complete month. Measures habitual agent use. Target: >20% for P3.",
+  "pageOrder": 15,
+  "metricOrder": 1513
+ },
+ {
+  "page": "Frontier Firm Assessment",
+  "metric": "Licensed Habitual Rate",
+  "description": "Percentage of licensed users with 11+ active days last month. Measures habitual Copilot use. Target: >30% for P2 gate.",
+  "pageOrder": 15,
+  "metricOrder": 1514
+ },
+ {
+  "page": "Frontier Firm Assessment",
+  "metric": "Agent Sessions per User",
+  "description": "Average sessions per user per agent. Measures agent stickiness — higher = users returning to the same agent repeatedly.",
+  "pageOrder": 15,
+  "metricOrder": 1515
+ },
+ {
+  "page": "Frontier Firm Assessment",
+  "metric": "Meaningful AI Users %",
+  "description": "HERO REACH: Percentage of all active users with meaningful AI use (>=5 sessions in any week across M365 Copilot, Agents, or Copilot Chat). Denominator = all active users.",
+  "pageOrder": 15,
+  "metricOrder": 1516
+ },
+ {
+  "page": "Frontier Firm Assessment",
+  "metric": "Habitual Rate (12-Week)",
+  "description": "HERO HABIT: Percentage of users active in >=9 of the past 12 rolling weeks. A user counts as active in a week if they have >=5 sessions. Measures sustained routine use.",
+  "pageOrder": 15,
+  "metricOrder": 1517
+ },
+ {
+  "page": "Frontier Firm Assessment",
+  "metric": "Complex Sessions Rate",
+  "description": "HERO SKILL: Percentage of sessions classified as complex. Complex = >=2 of: multi-turn (>=3 prompts), agent/tool invoked. Proxy for prompt sophistication and delegation maturity.",
+  "pageOrder": 15,
+  "metricOrder": 1518
+ }
+]

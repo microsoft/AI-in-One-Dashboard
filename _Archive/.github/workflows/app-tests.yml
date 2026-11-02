@@ -1,0 +1,37 @@
+name: app-tests
+
+# Tests, lints and builds the AI in One app. installer-exe also builds it into the installer's payload.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'app/**'
+      - '.github/workflows/app-tests.yml'
+  pull_request:
+    paths:
+      - 'app/**'
+      - '.github/workflows/app-tests.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  app:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: 'app'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+      # The lock file may resolve through Microsoft's internal mirror of npm, which runners can't reach.
+      - name: Use the public npm registry
+        run: node ../installer/packaging/public-registry.js package-lock.json
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm test
+      - run: npm run lint
+      - run: npm run build

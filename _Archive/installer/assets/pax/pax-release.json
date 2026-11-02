@@ -1,0 +1,9 @@
+{
+  "version": "1.11.15",
+  "tag": "purview-v1.11.15",
+  "file": "PAX_Purview_Audit_Log_Processor_v1.11.15.ps1",
+  "url": "https://github.com/microsoft/PAX/releases/download/purview-v1.11.15/PAX_Purview_Audit_Log_Processor_v1.11.15.ps1",
+  "sha256": "13a8d41a70c462650207e452eb0ccab274729eb65b0d640bc0a52d6a40ad46c9",
+  "size": 2590436,
+  "releaseUrl": "https://github.com/microsoft/PAX/releases/tag/purview-v1.11.15"
+}

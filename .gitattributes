@@ -3,3 +3,6 @@ sample-data/*.csv text eol=lf
 
 # Built single-file app download: generated, so hide it from diffs and language stats
 app/download/*.html -diff linguist-generated
+
+# Preserve Power BI templates as binary files, including historical copies.
+*.pbit binary
