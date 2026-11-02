@@ -23,7 +23,7 @@
     "typecheck": "tsc -p jsconfig.json"
   },
   "dependencies": {
-    "@azure/identity": "^4.13.3",
+    "@azure/identity": "^4.14.1",
     "@inquirer/prompts": "^8.7.2"
   },
   "devDependencies": {
