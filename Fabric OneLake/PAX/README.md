@@ -50,6 +50,6 @@ The adapter reverses only explicit known PAX column-name encodings. It preserves
 
 Observed `EffectiveDate` is **First seen**, not license-assignment time. Users' manager state keys continue to resolve to manager people through the shared model. No SKU-based licensing reconstruction or new key family is introduced.
 
-## Release scope and limitations
+## Preview scope
 
-This release supports the documented processed-table contract and SQL Import configuration. Full-release branding does not establish a SQL-provider load-time or regression guarantee, customer-specific authentication or scheduled-execution qualification, or certification of a complete customer PAX-script-to-Fabric-to-AIO pipeline. Customer-specific Local CSV UserKey cases and SQL synchronization/common-generation limits are not erased by release packaging. Use the normal PAX completion and SQL synchronization cadence; no recurring row-count parameters or manual approval mechanism is introduced.
+This consumer preview supports the documented processed-table contract and SQL Import configuration. It does not provide a SQL-provider load-time or regression guarantee, production acceptance, or certification of a complete customer PAX-script-to-Fabric-to-AIO pipeline. Use the normal PAX completion and SQL synchronization cadence; no recurring row-count parameters or manual approval mechanism is introduced.
