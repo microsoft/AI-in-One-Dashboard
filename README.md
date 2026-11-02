@@ -6,7 +6,7 @@
 
 ### One dashboard for Microsoft 365 Copilot, Copilot Chat and agent adoption.
 
-[![Public preview](https://img.shields.io/badge/v2.0-public_preview-0078D4?style=for-the-badge)](https://aka.ms/AIO-Preview)
+[![General Availability](https://img.shields.io/badge/v2.0-General_Availability-0078D4?style=for-the-badge)](https://aka.ms/AIO-Preview)
 [![Power BI](https://img.shields.io/badge/Power_BI-report-F2C811?style=for-the-badge&logo=powerbi&logoColor=black)](https://aka.ms/AIO-Preview)
 [![License](https://img.shields.io/badge/license-MIT-107C10?style=for-the-badge)](LICENSE.md)
 

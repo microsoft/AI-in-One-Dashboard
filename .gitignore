@@ -8,3 +8,19 @@ scripts/__pycache__/
 docs/
 docs/*
 AGENTS.md
+
+# Preserve only these already-public historical paths after the Archive rename.
+!/Archive/.github/
+/Archive/.github/*
+!/Archive/.github/workflows/
+/Archive/.github/workflows/*
+!/Archive/.github/workflows/app-tests.yml
+!/Archive/.github/workflows/installer-exe.yml
+!/Archive/.github/workflows/installer-tests.yml
+!/Archive/docs/
+/Archive/docs/*
+!/Archive/docs/AI-in-One-Dashboard-Video-Guide.docx
+!/Archive/docs/Video-Guide.md
+!/Archive/docs/get-your-data.md
+!/Archive/docs/power-bi-report.md
+!/Archive/docs/standalone-processor.md
