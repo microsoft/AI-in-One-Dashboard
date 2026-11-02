@@ -1,4 +1,17 @@
-# AI-in-One dashboard: Fabric OneLake edition (v2.0.0)
+# AI-in-One dashboard: Fabric source editions (v2.0.0)
+
+Choose the source contract before downloading a template:
+
+| Edition | Inputs | Setup |
+|---|---|---|
+| **Fabric OneLake** | Existing dashboard-specific notebooks and `aio_v2_users`, `aio_v2_interactions`, `aio_v2_publication`; optional SharePoint Agent 365 CSV | [Notebook-backed guide](AI-in-One%20-%20v2.0.0%20-%20Fabric%20OneLake%20Template/README.md) |
+| **Fabric OneLake PAX** | PAX PowerShell's `AIO_Users`, `AIO_CopilotInteractions` and optional `Agent365` Tables, read through SQL Import | [PAX SQL setup and unattended refresh](PAX/README.md) |
+
+The PAX template is [AI-in-One-v2.0.0-Fabric-OneLake-PAX-Template.pbit](../templates/AI-in-One-v2.0.0-Fabric-OneLake-PAX-Template.pbit). It does not require the notebook collectors/preparation or a duplicate SharePoint catalog. Neither edition uses storage autodetection or Direct Lake.
+
+The additional option is **the PAX-script-backed Fabric OneLake edition of AI-in-One**: it reads processed tables produced by the PAX PowerShell script through SQL Import. The separate Fabric-native **PAX Fabric** product is not integrated here. The notebook-backed edition remains available and is not an alias for that product.
+
+## Existing notebook-backed Fabric OneLake solution
 
 The Fabric edition is derived from the current SharePoint v2.0.0 template, with the same **17 visible report pages**, **541 calculation expressions**, relationships and security roles. **Copilot Usage Explorer** is the first page. v2.0.0 includes the enhanced License Prioritization controls, monthly comparison on Combined Trends and person license timelines, alongside friendly app names, separate platform/catalog-status labels and system-agent controls. Minimum Group Size remains **3** by default; catalog Creator and Developer Name are visible within the viewer's access while individual usage remains protected.
 
@@ -18,7 +31,7 @@ The template reads the prepared `aio_v2_users`, `aio_v2_interactions` and `aio_v
 
 The v2 notebooks write separate `aio_v2_` tables. They don't overwrite or delete any other Fabric or PAX tables. Keep the old solution available until the new report has been configured and its counts and access have been checked.
 
-This edition is an interim Fabric option ahead of the separate PAX Fabric solution. It does not change the architecture to Direct Lake or require migration of existing PAX workloads.
+This notebook-backed edition remains separate from the direct PAX Tables edition. It does not change the architecture to Direct Lake or require migration of existing PAX workloads.
 
 ### Observed license history
 

@@ -6,7 +6,7 @@
 
 ### A picture tour of all 17 report pages, in order
 
-**[⬅️ Back to README](README.md)** &nbsp;·&nbsp; **[📘 Interpretation Guide](AI-in-One-v2.0.0-Interpretation-Guide.pdf)** &nbsp;·&nbsp; **[🎞️ Storyboard](AI-in-One-v2.0.0-Storyboard.pptx)** &nbsp;·&nbsp; **[⬇️ Download the dashboard](README.md#-choose-your-edition)**
+**[⬅️ Back to README](README.md)** &nbsp;·&nbsp; **[📘 Interpretation Guide](AI-in-One-v2.0.0-Interpretation-Guide.pdf)** &nbsp;·&nbsp; **[🎞️ Storyboard](AI-in-One-v2.0.0-Storyboard.pptx)** &nbsp;·&nbsp; **[⬇️ Download the dashboard](https://aka.ms/AIO-Preview)**
 
 </div>
 
@@ -14,6 +14,8 @@
 > Every screenshot uses **made-up example data**. The numbers show how the pages work; they aren't benchmarks or targets for your organization.
 
 Download the **PBIT template** for your edition. These screenshots use the made-up sample files with **Minimum Group Size 1** so the optional detail and navigation can be illustrated. The templates still default to **3** for team-level reporting; use **1** for real data only with approval.
+
+The shared report is available with SharePoint, Local CSV and [both Fabric source editions](Fabric%20OneLake/README.md). The additional PAX-script-backed Fabric OneLake edition of AI-in-One does not integrate the separate Fabric-native PAX Fabric product.
 
 This tour shows what each page looks like and what it's for, so you know where to go for each question. For deeper guidance on reading the numbers, use the **[Interpretation Guide](AI-in-One-v2.0.0-Interpretation-Guide.pdf)**. To present the dashboard to leaders, use the **[Storyboard](AI-in-One-v2.0.0-Storyboard.pptx)**.
 

@@ -33,7 +33,7 @@ The full file names are `AIO_Realistic_Interactions.zip` (it contains `AIO_Reali
 - 🟦 **SharePoint edition:** upload them to a SharePoint document library. For each file, select it, choose **⋮ → Details**, then copy **Path**.
 
 > [!NOTE]
-> **Exploring the Fabric OneLake edition?** Use these files with the **Local CSV** edition. It has the same 17 pages, metrics and privacy controls and needs nothing but Power BI Desktop. The Fabric OneLake template reads only Lakehouse tables built by its preparation notebook, which adds snapshot and publication checks that plain CSV files don't have, so loading these files straight into Lakehouse tables won't work.
+> **Exploring either Fabric edition?** Use these files with **Local CSV** for a quick visual review. The notebook-backed **Fabric OneLake** template requires its prepared `aio_v2_*` tables and publication gate. **Fabric OneLake PAX** reads [processed PAX SQL tables](../Fabric%20OneLake/PAX/README.md) with schema, type and key validation; it does not use that preparation notebook. Renaming or uploading the CSVs alone does not establish either edition's source contract or qualify SQL/Service refresh.
 
 **3. Open the template** for your edition in Power BI Desktop and paste the three paths. Keep **Minimum Group Size** at **3** for team-level views, or set it to **1** to explore the individual views too. Every name is made up.
 

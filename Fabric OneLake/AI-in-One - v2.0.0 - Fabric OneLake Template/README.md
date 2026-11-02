@@ -1,5 +1,7 @@
 # AI-in-One v2.0.0 - Fabric OneLake setup
 
+This guide covers the **notebook-backed** edition and its `aio_v2_*` table contract. The additional [PAX-script-backed Fabric OneLake edition of AI-in-One](../PAX/README.md) reads processed PAX PowerShell tables directly through SQL Import and does not use these notebooks. Both editions remain available; the separate Fabric-native PAX Fabric product is not integrated here.
+
 ## Architecture
 
 ```text
@@ -19,7 +21,7 @@ Graph licensing report -----> aio_v2_licenses_raw
 
 Delta tables are stored in **OneLake**. The report imports them through `Sql.Database`; it is **not Direct Lake**. The report retains the SharePoint edition's calculations, report pages, filters, bookmarks and two security roles. Only its required activity/directory source layer changes. The optional agent inventory remains a SharePoint-hosted Agent 365 CSV.
 
-All three editions have **17 visible pages**, with **Copilot Usage Explorer** first, **541 calculation expressions** and Minimum Group Size **3** by default. License Prioritization includes paid/free counts, independent activity filters, a Sessions/Prompts score selector, department prioritization and a protected searchable person list. Sessions is the default; either score is an uncapped prioritization heuristic, not a percentage or proof of productivity. Monthly comparison stays on Combined Trends and uses observed monthly license populations when history is available. Person license timelines use the existing privacy and access controls.
+All four editions have **17 visible pages**, with **Copilot Usage Explorer** first, **541 calculation expressions** and Minimum Group Size **3** by default. License Prioritization includes paid/free counts, independent activity filters, a Sessions/Prompts score selector, department prioritization and a protected searchable person list. Sessions is the default; either score is an uncapped prioritization heuristic, not a percentage or proof of productivity. Monthly comparison stays on Combined Trends and uses observed monthly license populations when history is available. Person license timelines use the existing privacy and access controls.
 
 ## 1. Prerequisites and permissions
 
@@ -166,6 +168,8 @@ Minimum Group Size is configured during initial template load. To change it late
 Publishing and role membership are administrator actions; the notebooks and pipeline do not publish reports or assign members.
 
 After publishing, configure the semantic model's SQL cloud connection/credentials and the optional SharePoint connection. An ordinary reachable Fabric SQL endpoint does not require an on-premises gateway; private networking and tenant policies can require additional connection configuration.
+
+For scheduled refresh, the SQL connector receives the existing **Fabric SQL Endpoint** and **Fabric Lakehouse** parameters directly, without target construction or rewriting. Enter both values without surrounding whitespace. Optional Agent 365 uses its existing SharePoint file parameter directly. Verify **Refresh now** and **Scheduled refresh** in your workspace after configuring credentials.
 
 Assign authorized viewers to the appropriate role in Power BI Service:
 

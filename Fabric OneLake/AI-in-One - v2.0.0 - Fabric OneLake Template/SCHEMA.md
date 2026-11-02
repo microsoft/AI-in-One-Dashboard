@@ -1,5 +1,7 @@
 # Fabric v2.0.0 source and identity contract
 
+This is the **notebook-backed** edition's contract. The additional [PAX-script-backed Fabric OneLake edition of AI-in-One](../PAX/SCHEMA.md) reads the PAX PowerShell script's processed SQL tables without these preparation tables or this publication gate. Neither edition integrates the separate Fabric-native PAX Fabric product.
+
 All tables below are managed Delta tables in the attached Lakehouse's default location. The report reads final tables in SQL schema `dbo`. The v2 package refuses write targets outside `aio_v2_` or explicitly chosen `aio_test_` names.
 
 ## Collection tables

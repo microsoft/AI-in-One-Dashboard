@@ -165,7 +165,10 @@ def build(notebooks_only=False):
                  "Bare table names resolve in the default Lakehouse (dbo on schema-enabled Lakehouses). "
                  "This package writes only `aio_v2_` (or explicit `aio_test_`) tables. "
                  "Power BI remains Import through the SQL analytics endpoint. Tables outside these permitted prefixes are never overwritten.\n\n"
-                 "Configure the parameter cell before running. Keep notebook outputs free of credentials and personal data." +
+                 "Configure the parameter cell before running. Keep notebook outputs free of credentials and personal data.\n\n"
+                 "These notebooks belong to the notebook-backed Fabric OneLake edition. "
+                 "The additional PAX-script-backed Fabric OneLake edition of AI-in-One reads processed PAX PowerShell "
+                 "SQL tables directly and does not use these notebooks. Keep their source contracts separate." +
                  ("\n\nLeave both `PAX_USERS_CSV` and `PAX_INTERACTIONS_CSV` blank for current snapshots. "
                   "Set both to matching already-processed AIO CSV files under Lakehouse Files to preserve PAX "
                   "license-state keys and observation history. Run preparation directly for this alternative; "

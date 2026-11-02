@@ -1,5 +1,7 @@
 # v2 collection and preparation pipeline
 
+This pipeline belongs to the **notebook-backed Fabric OneLake edition**. It is not required by the additional [PAX-script-backed Fabric OneLake edition of AI-in-One](../../PAX/README.md), which reads the PAX PowerShell script's processed SQL tables directly. Keep each edition's table contract and refresh sequence separate.
+
 [pipeline-content.json](CopilotAdoptionPipeline.DataPipeline/pipeline-content.json) is a Fabric Data Pipeline definition with placeholders for your workspace and notebook IDs.
 
 Its structure follows the [Fabric DataPipeline definition reference](https://learn.microsoft.com/rest/api/fabric/articles/item-management/definitions/datapipeline-definition). There is no dependency on an unpublished JSON-schema URL.
