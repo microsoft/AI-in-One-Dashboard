@@ -1,0 +1,8 @@
+AI-in-One Dashboard historical archive
+
+Original source commit: 9c6725f784a4ad1d49a52ca7c9f5260f39613340
+Initial archive commit: 0bcd7ee43289bd3fdaf5f416fc507ef01f1665f8
+
+This folder contains the prior main-branch product preserved during the v2.0
+transition. Subsequent archived-file revisions are recorded in Git history.
+The current product and setup guidance are available at the repository root.
