@@ -150,10 +150,10 @@ Set:
 |---|---|
 | **Fabric SQL Endpoint** | SQL analytics endpoint hostname from the Lakehouse connection details, without `https://` |
 | **Fabric Lakehouse** | The Lakehouse name shown in Fabric; its SQL endpoint uses this as the database name |
-| **Agent 365 (highly recommended)** | Optional full SharePoint HTTPS file path for the agent inventory CSV; leave blank if unavailable |
+| **Agent 365 (highly recommended)** | Optional direct SharePoint or approved company/vanity HTTPS CSV path for the agent inventory; leave blank if unavailable |
 | **Minimum Group Size** | Default **3**; set according to organizational privacy policy |
 
-Sign in to the SQL source with the appropriate organizational account. If using the agent inventory, configure its SharePoint organizational credentials separately. Keep normal Power Query privacy protections enabled. A OneLake file URL is **not** a SQL endpoint.
+Sign in to the SQL source with the appropriate organizational account. If using the agent inventory, configure the file host's supported credentials separately. Company/vanity addresses are passed unchanged to the native Web connector; the provider must support its authentication and unattended access. Browser-only sign-in or a different OAuth audience can require provider configuration or a custom connector; see [Power Query authentication](https://learn.microsoft.com/en-us/power-query/connector-authentication). Keep normal Power Query privacy protections enabled. A OneLake file URL is **not** a SQL endpoint.
 
 After loading, compare directory headcount, distinct prompts, sessions, active users and agent activity with the prepared data. Verify representative department, license and reporting-team selections.
 
@@ -169,7 +169,7 @@ Publishing and role membership are administrator actions; the notebooks and pipe
 
 After publishing, configure the semantic model's SQL cloud connection/credentials and the optional SharePoint connection. An ordinary reachable Fabric SQL endpoint does not require an on-premises gateway; private networking and tenant policies can require additional connection configuration.
 
-For scheduled refresh, the SQL connector receives the existing **Fabric SQL Endpoint** and **Fabric Lakehouse** parameters directly, without target construction or rewriting. Enter both values without surrounding whitespace. Optional Agent 365 uses its existing SharePoint file parameter directly. Verify **Refresh now** and **Scheduled refresh** in your workspace after configuring credentials.
+For scheduled refresh, the SQL connector receives the existing **Fabric SQL Endpoint** and **Fabric Lakehouse** parameters directly, without target construction or rewriting. Enter both values without surrounding whitespace. Optional Agent 365 uses its existing file parameter directly, including when its value is a company/vanity URL; there is no runtime hostname resolver. Verify **Refresh now** and **Scheduled refresh** in your workspace after configuring credentials for the exact sources.
 
 Assign authorized viewers to the appropriate role in Power BI Service:
 

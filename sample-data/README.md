@@ -32,6 +32,10 @@ The full file names are `AIO_Realistic_Interactions.zip` (it contains `AIO_Reali
 - 💻 **Local CSV edition:** put them in any folder on your PC. In File Explorer, select each file, choose **Copy as path**, paste it and remove the quotation marks, for example `C:\AI-in-One sample\AIO_Realistic_Users.csv`.
 - 🟦 **SharePoint edition:** upload them to a SharePoint document library. For each file, select it, choose **⋮ → Details**, then copy **Path**.
 
+Direct HTTPS CSV paths on approved company/vanity hostnames are also accepted, without changing the address. The file host must support Power BI's native Web connector authentication and unattended access. Browser-only sign-in and an OAuth audience that differs from the file hostname can require provider configuration or a custom connector; see [Power Query authentication](https://learn.microsoft.com/en-us/power-query/connector-authentication). The template does not resolve or replace hostnames.
+
+For Power BI Service refresh, configure credentials/cloud connections for the exact file targets. The existing managed parameters are passed directly to `Web.Contents`, with no runtime target construction. Verify **Refresh now** and **Scheduled refresh** after configuration; private-network sources can require an approved gateway. Do not weaken privacy or authentication settings to make a source work.
+
 > [!NOTE]
 > **Exploring either Fabric edition?** Use these files with **Local CSV** for a quick visual review. The notebook-backed **Fabric OneLake** template requires its prepared `aio_v2_*` tables and publication gate. **Fabric OneLake PAX** reads [processed PAX SQL tables](../Fabric%20OneLake/PAX/README.md) with schema, type and key validation; it does not use that preparation notebook. Renaming or uploading the CSVs alone does not establish either edition's source contract or qualify SQL/Service refresh.
 
