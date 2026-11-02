@@ -1,94 +1,121 @@
-# 🧪 Synthetic sample data — Rollup Edition
+<div align="center">
 
-This folder contains **fully synthetic, fictional demo data** in the exact format the
-**AI-in-One Dashboard — Rollup Edition** consumes, so you can open the template and
-explore every page **without a tenant, without Purview access, and without PAX**.
+# 🧪 Sample data
 
-> ⚠️ **No real data.** Every user, agent, document, interaction and timestamp here is
-> invented for the fictional *Contoso Ltd* tenant. Nothing in this folder originates
-> from, or represents, any real Microsoft 365 tenant, customer, or person.
-> Use it for demos, training, UI walkthroughs, and template testing only — never as a
-> benchmark or as a basis for real adoption or licensing decisions.
+### Try the AI-in-One dashboard v2.0.0 in minutes, before you export your own data
 
----
+**[⬅️ Back to README](../README.md)** &nbsp;·&nbsp; **[⬇️ Download the dashboard](../README.md#-choose-your-edition)** &nbsp;·&nbsp; **[🖼️ Screenshot tour](../Report%20Screenshots.md)**
 
-## 📦 What's in here
+</div>
 
-| File | PBIT parameter it feeds | Contents |
+This folder holds made-up data for a fictional organization of **10,050 people** across two companies, **Contoso** and **Fabrikam**. The current [screenshot tour](../Report%20Screenshots.md) uses these files; the What's New video may show an earlier report layout. Load the files into the dashboard to click through all 17 pages. You don't need a Microsoft 365 tenant, admin permissions or PAX.
+
+> [!WARNING]
+> **Everything here is made up.** Every person, manager, agent, conversation and date is invented. Use it to learn, demo and test the dashboard, never as a benchmark or as a basis for real adoption or licensing decisions.
+
+## 📦 What's in the folder
+
+| Template parameter | File | What's inside |
 |---|---|---|
-| `Purview_Audit_Synthetic_<timestamp>_Interactions.csv` | **Copilot Interactions File** | ~18k rolled-up Copilot / Agent interaction rows over a 90-day window |
-| `EntraUsers_MAClicensing_Synthetic_<timestamp>_Users.csv` | **Org Data File** | 150 users with organization, job title, location and licence flags |
-| `Agent365_Synthetic_<timestamp>.csv` | **Agent 365 (highly recommended)** | 18-agent registry snapshot that joins to the interactions on `Title ID` |
+| **Copilot Interactions File** | 📦 [Interactions (zip)](AIO_Realistic_Interactions.zip) <sub>(26 MB; 469 MB unzipped)</sub> | 1,202,114 rows of Copilot and agent activity from June 22 to September 18, 2026 |
+| **Org Data File** | 📄 [Users](AIO_Realistic_Users.csv) <sub>(2.4 MB)</sub> | 10,050 people in 2 companies, 5 divisions, 11 departments and 9 countries, with a full reporting hierarchy: 6,499 with a Microsoft 365 Copilot license and 3,551 without |
+| **Agent 365** | 📄 [Agents](AIO_Realistic_Agents.csv) <sub>(669 KB)</sub> | A catalog of 1,206 agents |
 
-All three are produced by [`../scripts/Generate_Synthetic_Rollup_Data.ps1`](../scripts/Generate_Synthetic_Rollup_Data.ps1).
+The full file names are `AIO_Realistic_Interactions.zip` (it contains `AIO_Realistic_Interactions.csv`), `AIO_Realistic_Users.csv` and `AIO_Realistic_Agents.csv`.
 
----
+## ▶️ Try it in four steps
 
-## ▶️ How to use it
+**1. Download the files and unzip the activity file.** Select each file in the table above, then select **⬇️ Download raw file** on the right of the file's toolbar. Extract `AIO_Realistic_Interactions.csv` from the zip; the dashboard reads the `.csv`, not the zip. To get everything at once, go to the [repository home page](../) and select **Code → Download ZIP**.
 
-1. Download the [Rollup Edition template](../docs/power-bi-report.md#which-edition) and open the `.pbit` in Power BI Desktop.
-2. When prompted for parameters, paste the **full local path** to each file above.
-   *(Use the 3-in-1 auto-detect edition — the PBI-SharePoint edition only accepts SharePoint URLs.)*
-3. Click **Load**. Every page populates.
+**2. Put the three `.csv` files where your edition can read them.**
 
-To load these files in the **PBI-SharePoint** edition instead, upload all three to the same
-SharePoint document library and pass the Details-pane **Path** URLs.
+- 💻 **Local CSV edition:** put them in any folder on your PC. In File Explorer, select each file, choose **Copy as path**, paste it and remove the quotation marks, for example `C:\AI-in-One sample\AIO_Realistic_Users.csv`.
+- 🟦 **SharePoint edition:** upload them to a SharePoint document library. For each file, select it, choose **⋮ → Details**, then copy **Path**.
 
----
+Direct HTTPS CSV paths on approved company/vanity hostnames are also accepted, without changing the address. The file host must support Power BI's native Web connector authentication and unattended access. Browser-only sign-in and an OAuth audience that differs from the file hostname can require provider configuration or a custom connector; see [Power Query authentication](https://learn.microsoft.com/en-us/power-query/connector-authentication). The template does not resolve or replace hostnames.
 
-## 🔁 Regenerating / resizing the data
+For Power BI Service refresh, configure credentials/cloud connections for the exact file targets. The existing managed parameters are passed directly to `Web.Contents`, with no runtime target construction. Verify **Refresh now** and **Scheduled refresh** after configuration; private-network sources can require an approved gateway. Do not weaken privacy or authentication settings to make a source work.
 
-The generator is a single self-contained PowerShell script — no modules, no Python required.
+> [!NOTE]
+> **Exploring either Fabric edition?** Use these files with **Local CSV** for a quick visual review. The notebook-backed **Fabric OneLake** template requires its prepared `aio_v2_*` tables and publication gate. **Fabric OneLake PAX** reads [processed PAX SQL tables](../Fabric%20OneLake/PAX/README.md) with schema, type and key validation; it does not use that preparation notebook. Renaming or uploading the CSVs alone does not establish either edition's source contract or qualify SQL/Service refresh.
+
+**3. Open the template** for your edition in Power BI Desktop and paste the three paths. Keep **Minimum Group Size** at **3** for team-level views, or set it to **1** to explore the individual views too. Every name is made up.
+
+**4. Select Load.** The report opens on **🧭 Copilot Usage Explorer**. These unchanged sample files show snapshot behavior across the existing report pages.
+
+## 👀 What you'll see
+
+- **A realistic adoption story.** 9,246 of the 10,050 people show activity, with use growing across the 89 recorded days, busy weekdays, quiet weekends and a mix of power, regular, occasional and inactive users.
+- **A complete organization chart.** Everyone except the top leader has a manager, so **Org filters → Reporting team** works just as it would with your own data: search for a manager and see their whole organization. **Company** and **Division** are filled in too.
+- **A mixed license rollout.** About two-thirds of people have a Microsoft 365 Copilot license, so **License Prioritization** and the **Copilot Chat (Unlicensed)** pages have plenty to compare. Licensed directory headcount remains distinct from recorded activity.
+- **Every Copilot experience.** Activity covers licensed Microsoft 365 Copilot, Copilot Chat, agents, autonomous agents and Cowork.
+- **Agents to review.** 1,005 of the 1,206 catalog agents are used and 201 are registered but never used, so **Agents: Health Check** has agents to flag.
+- **Explicit catalog metadata.** All 1,206 sample agents have a legacy creator value; Creator is visible at Minimum Group Size 3 and 1. This sample does not provide Developer Name, so that column displays **Not stated** rather than inventing a developer. All activity agents match the catalog, so **Activity-only agents** is 0.
+- **Meaningful return-rate blanks.** Three active sample agents have no repeat users and show **0%**. The 201 unused catalog agents retain blank Return Rate. The 469 agents whose only listed Copilot surface is M365 Copilot Chat include 67 unused agents; Features identifies that supported surface.
+- **Current agent-platform names.** The retired Copilot Studio Lite source label has been replaced with **Microsoft 365 Copilot Agent Builder**. The dashboard displays **Agent Builder**. This field-only correction does not change identities, creators, activity, sessions, prompts or the Users file.
+- **Friendly app names.** App labels use recognizable products, such as **M365 Copilot Chat** for bizchat. The raw AppHost remains available for support.
+- **Clearer trends and units.** Explorer's month-start dots sit on its bold 7-day session and prompt trends; **Activity by experience** switches between the two metrics. Weekly usage-rank charts pair prompts and sessions, and License Prioritization's median and vertical scale follow its selected weekly metric.
+- **Agent engagement and navigation.** Use Cases compares eligible agents using equal-weight percentile ranks of return rate, sessions per user and prompts per session, with at least **MAX(Minimum Group Size, 5)** users. The Leaderboard adds scoped **Most used agent** and **Agents used** columns. Selected-agent drillthrough now explains its scope and offers **Open Agent Details** for the full agent list.
+- **Interpretable blanks.** Dormant means previously used, never-used agents remain **No usage**, and **Not enough activity to infer** avoids inventing a use case. Creator filtering includes matching no-usage catalog entries without disclosing protected usage.
+
+The [screenshot tour](../Report%20Screenshots.md) uses these synthetic files at **Minimum Group Size 1** to illustrate optional detail. Templates still default to **3**; real-data individual views require approval. Prompts and sessions share consistent table color formatting, and prompt-count footers explain coverage differences.
+
+**Reporting hierarchy:** a blank PAX **Manager_UserKey** means top of chain. A manager outside the users file also makes that person a root, rather than hiding their descendants' reporting levels. Any unresolved-manager status applies only to the affected person; the unmodified sample hierarchy is unchanged.
+
+## Large-organization licensing assumptions
+
+The sample represents an organization with more than 2,000 paid seats. From **April 15, 2026**, its unlicensed people do not generate non-agent activity inside Word, Excel, PowerPoint or OneNote. They can use supported Copilot Chat surfaces and agents. Licensed users' in-app activity is preserved.
+
+The current June 22-September 18 window contains **zero** unsupported unlicensed non-agent rows. The sample preserves all **10,050 people**, **1,202,114 prompts** and **399,856 user/thread sessions**, including unlicensed agent activity. It is a deterministic illustration of the large-organization scenario, not a statement about a particular tenant's rollout date.
+
+| AppHost | Unlicensed activity rows |
+|---|---:|
+| `bizchat` | 247,632 |
+| `teams` | 55,878 |
+| `autonomous` | 5,561 |
+| `logic app` | 2,747 |
+| `copilot studio` | 2,211 |
+
+Agent and other-AI activity is retained and classified separately from chat. With the SharePoint template's existing chat-host list, **zero unlicensed rows remain Unclassified activity** in this sample.
+
+### Reproduce the surface-policy update
+
+The [synthetic generator](../scripts/Generate_Synthetic_Rollup_Data.ps1) retains its deterministic seed and applies the date/license/agent rule to newly generated sessions. Its existing-sample mode preserves the accepted realistic names, hierarchy, IDs, dates and totals:
 
 ```powershell
-# Defaults: 150 users, 90 days, ending today, writes to .\sample-data
-powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Generate_Synthetic_Rollup_Data.ps1
-
-# Bigger tenant, longer history, different random draw
-powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Generate_Synthetic_Rollup_Data.ps1 `
-    -UserCount 2000 -Days 180 -Seed 42 -OutDir "C:\Data\Synthetic"
+.\scripts\Generate_Synthetic_Rollup_Data.ps1 `
+  -ExistingSampleDirectory .\sample-data `
+  -OutDir .\_temp\sample-candidate
 ```
 
-| Parameter | Default | Notes |
-|---|---|---|
-| `-OutDir` | `.\sample-data` | Output folder (created if missing) |
-| `-UserCount` | `150` | Size of the synthetic Entra population |
-| `-Days` | `90` | Length of the activity window |
-| `-EndDate` | today | Last day of the window |
-| `-Seed` | `20260918` | Change for a different — but still reproducible — dataset |
-| `-LicensedShare` | `0.55` | Baseline share of users with an M365 Copilot licence (varied per department) |
-| `-Domain` | `contoso.com` | UPN / email domain |
-| `-Quiet` | off | Suppress the summary output |
+Use a new output directory. This mode never overwrites the input exports. It writes the three CSVs with LF line endings and a zip with fixed archive metadata. Repeating it on the corrected sample produces identical CSV and zip bytes. The Users and Agents files are unchanged by this surface-only update.
 
-The same seed always produces the same files.
+## Prioritization and monthly comparisons
 
----
+**License Prioritization** separates paid/free directory and activity counts, with independent **Paid activity** and **Free Chat activity** selections. Use **Departments** for ranked department comparisons, or **People & chart** for the existing view and protected person search. **Clear filters** resets the new selectors and person selection too.
 
-## 🧬 How faithful is it?
+**Sessions** remains the default priority-score metric. Choosing **Prompts** substitutes prompt units into the same 10/5/5 benchmarks and 60/30/10 weights: 60% weekly volume / 10, 30% active days per week / 5 and 10% volume per active day / 5. The score is uncapped, not a percentage, a productivity measure or an automatic licensing decision. Individual ranks remain employee-only; blank manager/department ranks have no rank background.
 
-The generator emits the rollup format **directly**, and every classification /
-derived column is a verbatim port of the logic in
-[`../scripts/Rollup_Processor_v3.0.0.py`](../scripts/Rollup_Processor_v3.0.0.py):
+On **Combined Trends**, switch to **Monthly comparison** for paid/free totals, distinct active people and per-active-person ratios in each temporal month/cohort population, not today's directory cohort applied to every month. It respects the dates, organization, license, access and eligible-headcount rules. Weekly-only rank controls do not change monthly totals. With observed license history, cohort membership can overlap; a distinct total can be smaller than the sum of paid and free counts.
 
-- `FACT_HEADER` column set and ordering (36 columns, grain keys → `Message_Id` → non-grain attributes)
-- `License Status`, `Environment`, `Autonomy_Pattern`, `AI_Model`, `Is_Sensitive`
-- `Behavior_Category` (resource-first, then Enterprise Search plugin, then context/app-host fallback)
-- `Behavior_Enriched`, `Behavior_Source`, `Value_Outcome`
-- `CreationDate` / `WeekStart` (Monday-based) / `MonthStart` / `ActivityDate` / `UserMonthKey`
-- INT surrogate keys for `UserKey`, `ThreadId` and `Message_Id`, with `UserKey` shared between the fact and Users files
+**Keep the interpretation consistent:**
 
-The Users file reproduces the processor's renames and injected columns
-(`PersonId`, `Organization`, `JobTitle`, `Has license` canonicalised to `TRUE`/`FALSE`,
-plus `UserKey`, `PersonId_Normalized`, `License Status`, `TotalEmployees`).
-The Agent 365 file matches the column set the template expects and is written
-**without quoting or embedded commas**, because the template reads it with
-`QuoteStyle.None`.
+- Responses per prompt is unavailable: current PAX messages are prompt-only. Responses would need an explicit producer contract, response identity and parent-prompt linkage; no response metric is implied.
+- Habit bands stay fixed at **1–5 / 6–10 / 11–15 / 16+** distinct active days in the displayed month. Zero-day users are outside these bands.
+- Inferred activities use stored PAX behavior labels from resource/action/context/plugin/app-host evidence and sometimes agent-name keywords. Leading patterns use the most agent sessions, with alphabetical ties. They do not analyze prompt text, apply AI inference or measure outcomes.
+- Other AI examples include non-agent **autonomous** and **logic app** hosts, with blank identity labels. The unchanged sample has no Unclassified rows; unfamiliar-host/unknown-license rule examples are hypothetical.
+- The unchanged sample's **7,973** agent users are **5,829 paid + 2,144 free**, with no overlap in that sample. That is not a universal rule once observed history is present. “Most organizations” means departments reached: the sample maximum is **11**, with **Access Help Center** first alphabetically among **134** tied agents.
 
-### Shape of the synthetic tenant
+## Observation history in the sample
 
-- **Engagement archetypes** — power / regular / occasional / trialist / dormant users, so active-user and frequency visuals show a realistic long tail
-- **Adoption ramp** — usage grows across the window, with weekday peaks and weekend troughs
-- **Uneven licence rollout** — Sales, Executive and Engineering skew licensed; Operations and Legal skew unlicensed
-- **Surface mix** — Outlook, Word, Excel, PowerPoint, Teams, BizChat, SharePoint, Stream, Designer, OneNote, Loop, Planner, Forms, Power BI, Copilot Studio, Cowork
-- **Agents** — 15 declarative agents plus 3 autonomous agents, whose names intentionally exercise every agent-classification rule (coaching, research, sales, HR, compliance, service desk, content, data, knowledge base, ideation)
-- **Multi-prompt threads**, a minority of sensitivity-labelled interactions, and a handful of registered-but-unused agents so the agent review visuals have something to flag
+The shipped sample is unchanged and contains no observed license transitions. It illustrates snapshot/one-state behavior across the existing report pages. Matching append runs with `-UserHistory On` can collect prospective observations: counts use stable people rather than state `UserKey` rows, organization follows each person's latest record, and activity follows the event-time license. **First seen** is an observation, not an assignment date. The source files and generator remain unchanged.
+
+## 🚀 Ready for your own data?
+
+Follow the **[four setup steps in the README](../README.md#-quick-start)**: prepare, export with PAX, open the template and publish.
+
+<div align="center">
+
+Built and maintained by the **Microsoft Copilot Analytics team** &nbsp;·&nbsp; More free reports at **[aka.ms/Analytics-Hub](https://aka.ms/Analytics-Hub)**
+
+</div>

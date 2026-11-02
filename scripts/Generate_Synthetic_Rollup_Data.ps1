@@ -4,15 +4,15 @@
     Rollup Edition input format.
 
 .DESCRIPTION
-    Produces the three CSV files the Rollup Edition PBIT consumes:
+    New-data generation produces the three CSV files the Rollup Edition PBIT consumes:
 
-        <Prefix>_Interactions_<timestamp>.csv   -> "Copilot Interactions File" parameter
-        <Prefix>_Users_<timestamp>.csv          -> "Org Data File" parameter
-        Agent365_<timestamp>.csv                -> "Agent 365 (highly recommended)" parameter
+        <Prefix>_<timestamp>_Interactions.csv      -> "Copilot Interactions File" parameter
+        <UsersPrefix>_<timestamp>_Users.csv        -> "Org Data File" parameter
+        Agent365_Synthetic_<timestamp>.csv         -> "Agent 365 (highly recommended)" parameter
 
-    Column names, ordering, value domains and all derived/classification
-    columns are ported verbatim from scripts/Rollup_Processor_v3.0.0.py so the
-    output is a drop-in substitute for real PAX rollup output.
+    Generates synthetic AIO input fields rather than collecting tenant data.
+    For production CSV processing, use PAX or
+    scripts/Purview_CopilotInteraction_Processor_v4.2.3.py.
 
     NO REAL TENANT DATA IS USED OR REQUIRED. Every user, agent, document and
     interaction is invented for the fictional "Contoso Ltd" tenant.
@@ -22,6 +22,12 @@
 
 .EXAMPLE
     .\Generate_Synthetic_Rollup_Data.ps1 -UserCount 800 -Days 180 -Seed 7
+
+.EXAMPLE
+    .\Generate_Synthetic_Rollup_Data.ps1 -ExistingSampleDirectory .\sample-data -OutDir .\_temp\sample-candidate
+
+    Preserves the current realistic population and activity IDs while applying
+    the large-tenant unlicensed surface policy. Writes LF CSVs and a deterministic zip.
 #>
 [CmdletBinding()]
 param(
@@ -34,6 +40,7 @@ param(
     [string] $Domain = 'contoso.com',
     [string] $Prefix = 'Purview_Audit_Synthetic',
     [string] $UsersPrefix = 'EntraUsers_MAClicensing_Synthetic',
+    [string] $ExistingSampleDirectory = '',
     [switch] $Quiet
 )
 
@@ -68,7 +75,7 @@ function Get-WeightedItem($picker) {
 }
 
 # ---------------------------------------------------------------------------
-# Classification logic — verbatim ports of Rollup_Processor_v3.0.0.py
+# Classification logic for the synthetic AIO input fields
 # ---------------------------------------------------------------------------
 
 $LicenseTruthy = @('YES', 'TRUE', 'Y', '1')
@@ -76,6 +83,20 @@ $ActiveResActionTokens = @('send', 'draft', 'create', 'post', 'invoke', 'write',
 
 function Get-LicenseStatus([string]$hasLicenseRaw) {
     if ($LicenseTruthy -contains $hasLicenseRaw.Trim().ToUpperInvariant()) { 'M365 Copilot Licensed' } else { 'Unlicensed' }
+}
+
+function Get-LargeTenantChatHost(
+    [string]$AppHost, [string]$LicenseStatus, [string]$AgentId, [string]$AgentName, [datetime]$Date
+) {
+    if ($LicenseStatus -ne 'Unlicensed' -or $AgentId.Trim() -or $AgentName.Trim() -or
+        $Date.Date -lt [datetime]'2026-04-15') { return $AppHost }
+    switch ($AppHost.ToLowerInvariant()) {
+        'word' { return 'bizchat' }
+        'excel' { return 'teams' }
+        'powerpoint' { return 'outlook' }
+        'onenote' { return 'edge' }
+        default { return $AppHost }
+    }
 }
 
 function Get-Environment([string]$hasLicenseRaw, [string]$agentName, [string]$agentId, [string]$appHost) {
@@ -281,6 +302,105 @@ function Get-ValueOutcome([string]$behaviorEnriched, [string]$environment, [stri
     if ($b -eq 'Agent: HR & People') { return 'HR Expertise' }
     if ($VoDomain -contains $b) { return 'Specialist Expertise' }
     return 'General AI Productivity'
+}
+
+if ($ExistingSampleDirectory) {
+    Add-Type -AssemblyName Microsoft.VisualBasic
+    Add-Type -AssemblyName System.IO.Compression
+    $sourceDirectory = (Resolve-Path -LiteralPath $ExistingSampleDirectory).Path
+    $destination = [System.IO.Path]::GetFullPath($OutDir)
+    if ($destination -eq $sourceDirectory) { throw 'Generate into a separate working directory; never overwrite the source exports.' }
+    $names = @('AIO_Realistic_Users.csv', 'AIO_Realistic_Agents.csv', 'AIO_Realistic_Interactions.csv', 'AIO_Realistic_Interactions.zip')
+    foreach ($name in $names) {
+        if (Test-Path -LiteralPath (Join-Path $destination $name)) { throw "Output already exists: $name" }
+    }
+    [void][System.IO.Directory]::CreateDirectory($destination)
+    $utf8 = [System.Text.UTF8Encoding]::new($false, $true)
+    $users = @{}
+    Import-Csv -LiteralPath (Join-Path $sourceDirectory $names[0]) | ForEach-Object {
+        if (-not $_.UserKey -or $users.ContainsKey($_.UserKey)) { throw 'Users must have unique nonblank UserKey values.' }
+        $users[$_.UserKey] = $_.'License Status'
+    }
+    foreach ($name in $names[0..1]) {
+        $bytes = [System.IO.File]::ReadAllBytes((Join-Path $sourceDirectory $name))
+        if ($utf8.GetString($bytes).Contains("`r")) { throw "Source CSV is not LF-pinned: $name" }
+        [System.IO.File]::WriteAllBytes((Join-Path $destination $name), $bytes)
+    }
+    $inputZip = [System.IO.Compression.ZipFile]::OpenRead((Join-Path $sourceDirectory $names[3]))
+    $reader = $null
+    $writer = $null
+    $rows = 0
+    $changed = 0
+    try {
+        $entry = $inputZip.GetEntry($names[2])
+        if ($inputZip.Entries.Count -ne 1 -or -not $entry) { throw 'Expected only AIO_Realistic_Interactions.csv inside the source zip.' }
+        $reader = [System.IO.StreamReader]::new($entry.Open(), $utf8)
+        $writer = [System.IO.StreamWriter]::new((Join-Path $destination $names[2]), $false, $utf8)
+        $writer.NewLine = "`n"
+        $headerLine = $reader.ReadLine()
+        $header = $headerLine.Split(',')
+        $index = @{}
+        for ($i = 0; $i -lt $header.Count; $i++) { $index[$header[$i]] = $i }
+        if (($header[0..6] -join ',') -ne 'UserKey,InteractionDate,AgentId,AgentName,AppHost,Environment,License Status') {
+            throw 'Unexpected realistic fact column order.'
+        }
+        foreach ($field in @('Behavior_Category', 'Behavior_Enriched', 'Behavior_Source', 'Value_Outcome',
+                             'Context_Type', 'AccessedResource_Type', 'AccessedResource_Action',
+                             'AccessedResource_SiteUrl', 'AISystemPlugin_Id', 'AISystemPlugin_Name', 'Is_Sensitive')) {
+            if (-not $index.ContainsKey($field)) { throw "Missing fact column: $field" }
+        }
+        $writer.WriteLine($headerLine)
+        while (-not $reader.EndOfStream) {
+            $line = $reader.ReadLine()
+            $rows++
+            if ($line -notmatch '^([^,]+),([^,]+),,,(word|excel|powerpoint|onenote),[^,]*,Unlicensed,') {
+                $writer.WriteLine($line)
+                continue
+            }
+            $userKey = $Matches[1]
+            if (-not $users.ContainsKey($userKey)) { throw "Interaction user is absent from Users: $userKey" }
+            $parser = [Microsoft.VisualBasic.FileIO.TextFieldParser]::new([System.IO.StringReader]::new($line))
+            try {
+                $parser.SetDelimiters(',')
+                $parser.HasFieldsEnclosedInQuotes = $true
+                $parser.TrimWhiteSpace = $false
+                $fields = $parser.ReadFields()
+            } finally { $parser.Dispose() }
+            if ($fields.Count -ne $header.Count) { throw "Malformed fact row $rows." }
+            $day = [datetime]::ParseExact($fields[1], 'yyyy-MM-dd', [System.Globalization.CultureInfo]::InvariantCulture)
+            $hostName = Get-LargeTenantChatHost $fields[4] $users[$userKey] $fields[2] $fields[3] $day
+            if ($hostName -eq $fields[4]) { $writer.WriteLine($line); continue }
+            $fields[4] = $hostName
+            $behavior = Get-BehaviorCategory $hostName $fields[$index.Context_Type] $fields[$index.AccessedResource_Type] `
+                $fields[$index.AccessedResource_Action] $fields[$index.AccessedResource_SiteUrl] $fields[$index.AISystemPlugin_Id]
+            $enriched = Get-BehaviorEnriched $behavior $fields[3] $fields[5]
+            $fields[$index.Behavior_Category] = $behavior
+            $fields[$index.Behavior_Enriched] = $enriched
+            $fields[$index.Behavior_Source] = Get-BehaviorSource $behavior $fields[5] $fields[3] $fields[$index.AISystemPlugin_Name] $hostName
+            $fields[$index.Value_Outcome] = Get-ValueOutcome $enriched $fields[5] $fields[$index.Is_Sensitive]
+            $encoded = foreach ($field in $fields) {
+                if ($field.IndexOfAny([char[]]@(',', '"', "`n", "`r")) -ge 0) { '"' + $field.Replace('"', '""') + '"' }
+                else { $field }
+            }
+            $writer.WriteLine(($encoded -join ','))
+            $changed++
+        }
+    } finally {
+        if ($writer) { $writer.Dispose() }
+        if ($reader) { $reader.Dispose() }
+        $inputZip.Dispose()
+    }
+    $zip = [System.IO.Compression.ZipFile]::Open((Join-Path $destination $names[3]), [System.IO.Compression.ZipArchiveMode]::Create)
+    try {
+        $entry = $zip.CreateEntry($names[2], [System.IO.Compression.CompressionLevel]::Optimal)
+        $entry.LastWriteTime = [datetimeoffset]'2026-09-18T00:00:00+00:00'
+        $entry.ExternalAttributes = 0
+        $input = [System.IO.File]::OpenRead((Join-Path $destination $names[2]))
+        $output = $entry.Open()
+        try { $input.CopyTo($output) } finally { $input.Dispose(); $output.Dispose() }
+    } finally { $zip.Dispose() }
+    [pscustomobject]@{ Users = $users.Count; Interactions = $rows; Remapped = $changed; Output = $destination }
+    return
 }
 
 # ---------------------------------------------------------------------------
@@ -645,6 +765,7 @@ foreach ($u in $users) {
                 $appIdentityDisplay = $agent.Name
                 if ($null -eq $agent.LastUsed -or $day -gt $agent.LastUsed) { $agent.LastUsed = $day }
             }
+            $appHost = Get-LargeTenantChatHost $appHost $licenseStatus $agentId $agentName $day
 
             $modelName = [string](Get-WeightedItem $ModelPicker).Name
             if ($isAutonomous) { $modelName = 'gpt-41-2025-04-14' }
@@ -762,7 +883,7 @@ $a365Header = @('Agent name', 'Supported in', 'Date created', 'Agent creator', '
     'Contains uploaded files', 'Uploaded files')
 
 $SupportedIn = @('Microsoft 365 Copilot Chat', 'Microsoft Teams; Microsoft 365 Copilot Chat', 'Microsoft Teams', 'Microsoft 365 Copilot Chat; Word; Outlook')
-$CreatedIn = @('Copilot Studio', 'Agent Builder', 'Copilot Studio Lite')
+$CreatedIn = @('Copilot Studio', 'Agent Builder', 'Microsoft 365 Copilot Agent Builder')
 $Availability = @('Everyone in the organization', 'Specific users and groups', 'Only me')
 $Sensitivity = @('General', 'Confidential', 'Highly Confidential', 'Public')
 

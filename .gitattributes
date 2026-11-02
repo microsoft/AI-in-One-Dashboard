@@ -1,8 +1,9 @@
 # Keep the synthetic rollup CSVs byte-stable across platforms.
 sample-data/*.csv text eol=lf
 
-# Built single-file app download: generated, so hide it from diffs and language stats
-app/download/*.html -diff linguist-generated
-
-# Preserve Power BI templates as binary files, including historical copies.
+# Preserve binary deliverables without text conversion or text merges.
 *.pbit binary
+*.png binary
+*.pdf binary
+*.pptx binary
+*.zip binary
