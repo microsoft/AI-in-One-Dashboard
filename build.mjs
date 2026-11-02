@@ -202,9 +202,8 @@ function miniKitchenPanel({ choices, prepare, open, share, editionMatrix }) {
     </dialog>
     <dialog id="kitchen-discard" class="kitchen-discard" aria-labelledby="kitchen-discard-title" aria-describedby="kitchen-discard-message" data-no-auto-link>
       ${productLogo('mini-kitchen')}<h2 id="kitchen-discard-title">Keep your setup?</h2><p id="kitchen-discard-message">Closing clears your choices and any command. A copied command stays on your clipboard.</p>
-      <button type="button" class="button button-primary" id="kitchen-keep-building">Keep working here ${icon('arrow')}</button>
+      <div class="kitchen-discard-actions"><button type="button" class="button button-primary" id="kitchen-keep-building">Keep working here ${icon('arrow')}</button><button type="button" class="text-button kitchen-discard-button" id="kitchen-confirm-discard">Discard and close</button></div>
       <div class="kitchen-discard-save"><h3>Save for later</h3><p id="kitchen-save-reason">Open your current choices—finished or unfinished—in full Mini-Kitchen, then save a recipe there.</p><button type="button" class="button button-secondary" id="kitchen-save-before-close" aria-describedby="kitchen-save-reason" hidden>${productLogo('mini-kitchen')}Continue in Mini-Kitchen ${icon('external')}</button><p id="kitchen-discard-connection" role="status" hidden></p><button type="button" class="text-button" id="kitchen-discard-retry" hidden>Retry connection</button></div><p id="kitchen-discard-status" role="status"></p>
-      <button type="button" class="text-button kitchen-discard-button" id="kitchen-confirm-discard">Discard and close</button>
     </dialog>
     <dialog id="kitchen-finish" class="kitchen-finish" aria-labelledby="kitchen-finish-title" aria-describedby="kitchen-finish-message" closedby="none" data-no-auto-link>
       <header class="kitchen-finish-header"><h2 id="kitchen-finish-title">Keep your PAX command</h2><button type="button" class="icon-button" id="kitchen-finish-x" aria-label="Close completed setup">&times;</button></header>

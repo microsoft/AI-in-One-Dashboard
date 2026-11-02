@@ -106,7 +106,11 @@
     discardConnection.textContent = message;
     discardConnection.hidden = !message;
     discardRetry.hidden = !retry;
-    discard.querySelector('.kitchen-discard-save').hidden = !relevant;
+    discard.querySelector('.kitchen-discard-save').hidden = changePending || !relevant;
+    discard.toggleAttribute('data-choice-change', changePending);
+    $('#kitchen-keep-building').classList.toggle('button-primary', !changePending);
+    $('#kitchen-keep-building').classList.toggle('button-secondary', changePending);
+    $('#kitchen-confirm-discard').className = changePending ? 'button button-primary' : 'text-button kitchen-discard-button';
   }
   function renderCommandControls() {
     quickCopy.hidden = !hasReviewedCommand();
@@ -470,13 +474,15 @@
   }
   function requestChangedChoices() {
     changePending = true;
-    $('#kitchen-discard-title').textContent = 'Start again with these choices?';
-    $('#kitchen-discard-message').textContent = 'Changing your edition or collection type starts a new command. Your current builder entries will be cleared only if you choose Start again.';
-    $('#kitchen-keep-building').textContent = 'Keep my current command';
-    $('#kitchen-confirm-discard').textContent = 'Start again';
+    const collection = collectionType() === 'initial' ? 'first collection (seed)' : 'update existing history (append)';
+    $('#kitchen-discard-title').textContent = 'Apply your new setup choices?';
+    $('#kitchen-discard-message').textContent = `You selected ${guide.getRoute(selectedEdition()).label}: ${collection}. Applying these changes starts a new command and clears your current builder entries. Keep your current setup to leave it unchanged. A copied command stays on your clipboard.`;
+    $('#kitchen-keep-building').textContent = 'Keep my current setup';
+    $('#kitchen-confirm-discard').textContent = 'Apply changes and start again';
     renderHandoffControls();
-    discardStatus.textContent = 'The full-site option saves your current command, not the new edition choices.';
+    discardStatus.textContent = '';
     discard.showModal();
+    discard.scrollTop = 0;
     lock();
     $('#kitchen-keep-building').focus({ preventScroll: true });
   }
@@ -567,6 +573,7 @@
     enterChild();
   });
   $('#kitchen-keep-building').addEventListener('click', () => {
+    const keepCurrentSetup = changePending;
     if (changePending) {
       changePending = false;
       if (retainedVisited) visitedSteps = retainedVisited;
@@ -580,7 +587,8 @@
     }
     discard.close();
     lock();
-    if (mode !== 'child') $(`#kitchen-${mode}-title`).focus({ preventScroll: true });
+    if (keepCurrentSetup) enterChild();
+    else if (mode !== 'child') $(`#kitchen-${mode}-title`).focus({ preventScroll: true });
     else iframe?.focus({ preventScroll: true });
   });
   dialog.addEventListener('cancel', event => { event.preventDefault(); requestClose(); });

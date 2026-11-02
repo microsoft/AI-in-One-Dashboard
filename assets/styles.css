@@ -1043,7 +1043,8 @@ html[data-page="setup-reference"] { scroll-padding-top: 0; overflow-anchor: none
 .kitchen-discard > .product-logo { margin-bottom: 16px; }
 .kitchen-discard h2 { font-size: 1.65rem; margin-bottom: 12px; }
 .kitchen-discard p { color: var(--cp-text-muted); font-size: .9rem; }
-.kitchen-discard > .button-primary { margin-top: 20px; width: 100%; }
+.kitchen-discard-actions { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
+.kitchen-discard[data-choice-change] #kitchen-confirm-discard { order: -1; }
 #kitchen-keep-reason { margin-top: 8px; text-align: center; font-size: .8rem; }
 .kitchen-discard-save { margin-top: 24px; padding: 18px; border: 1px solid var(--cp-border); border-radius: 12px; background: var(--cp-surface-soft); }
 .kitchen-discard-save h3 { font-size: .95rem; margin-bottom: 8px; }
@@ -1053,7 +1054,7 @@ html[data-page="setup-reference"] { scroll-padding-top: 0; overflow-anchor: none
 #kitchen-discard-status { margin-top: 12px; font-size: .8rem; }
 #kitchen-discard-status:empty { display: none; }
 .kitchen-discard button:disabled { cursor: not-allowed; transform: none; }
-.kitchen-discard .kitchen-discard-button { display: block; margin: 20px auto 0; color: var(--cp-danger); font-size: .83rem; }
+.kitchen-discard .kitchen-discard-button { align-self: center; color: var(--cp-danger); font-size: .83rem; }
 @keyframes kitchen-arrive { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes kitchen-backdrop { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .kitchen-modal[open], .kitchen-modal::backdrop, .kitchen-discard[open] { animation: none; } }
