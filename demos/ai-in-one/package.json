@@ -1,0 +1,41 @@
+{
+  "name": "ai-in-one-static-demo",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "prebuild": "node scripts/generate-sample.mjs && python scripts/extract-report.py",
+    "build": "tsc -b && vite build",
+    "test": "vitest run",
+    "test:browser": "playwright test",
+    "package": "npm run build && node scripts/package-bundles.mjs",
+    "check:bundles": "node scripts/check-bundles.mjs",
+    "test:packaged": "node scripts/test-packaged.mjs",
+    "lint": "eslint .",
+    "preview": "vite preview --host 127.0.0.1"
+  },
+  "engines": { "node": ">=22.12.0" },
+  "dependencies": {
+    "papaparse": "^5.7.0",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58.0",
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^24.12.3",
+    "@types/papaparse": "^5.5.2",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.1",
+    "eslint": "^10.3.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.2",
+    "globals": "^17.6.0",
+    "typescript": "~6.0.2",
+    "typescript-eslint": "^8.59.2",
+    "vite": "^8.0.12",
+    "vitest": "^5.0.5"
+  }
+}

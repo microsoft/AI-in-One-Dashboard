@@ -1,0 +1,17 @@
+Agent name,Supported in,Date created,Agent creator,Agent type (A365),Agent description,Created in,Title ID,Can read Sharepoint sites and files,Can read OneDrive files,Can extend to Graph connector,Contains uploaded files
+Research helper 1,Copilot; Teams,2026-01-01,Demo Person 001,Shared,Invented assistant for exploring the synthetic dashboard.,Microsoft 365 Copilot Agent Builder,demo-agent-1,FALSE,FALSE,TRUE,TRUE
+Drafting helper 2,Copilot; Teams,2026-02-01,Demo Person 002,LOB,Invented assistant for exploring the synthetic dashboard.,Copilot Studio,demo-agent-2,TRUE,TRUE,FALSE,FALSE
+Planning helper 3,Copilot; Teams,2026-03-01,Demo Person 003,Shared,Invented assistant for exploring the synthetic dashboard.,SharePoint,demo-agent-3,FALSE,TRUE,FALSE,FALSE
+Knowledge helper 4,Copilot; Teams,2026-04-01,Demo Person 004,ThirdParty,Invented assistant for exploring the synthetic dashboard.,Marketplace,demo-agent-4,TRUE,FALSE,FALSE,FALSE
+Research helper 5,Copilot; Teams,2026-05-01,Demo Person 005,Shared,Invented assistant for exploring the synthetic dashboard.,Microsoft 365 Copilot Agent Builder,demo-agent-5,FALSE,TRUE,TRUE,FALSE
+Drafting helper 6,Copilot; Teams,2026-01-01,Demo Person 006,LOB,Invented assistant for exploring the synthetic dashboard.,Copilot Studio,demo-agent-6,TRUE,TRUE,FALSE,TRUE
+Planning helper 7,Copilot; Teams,2026-02-01,Demo Person 007,Shared,Invented assistant for exploring the synthetic dashboard.,SharePoint,demo-agent-7,FALSE,FALSE,FALSE,FALSE
+Knowledge helper 8,Copilot; Teams,2026-03-01,Demo Person 008,ThirdParty,Invented assistant for exploring the synthetic dashboard.,Marketplace,demo-agent-8,TRUE,TRUE,FALSE,FALSE
+Research helper 9,Copilot; Teams,2026-04-01,Demo Person 009,Shared,Invented assistant for exploring the synthetic dashboard.,Microsoft 365 Copilot Agent Builder,demo-agent-9,FALSE,TRUE,TRUE,FALSE
+Drafting helper 10,Copilot; Teams,2026-05-01,Demo Person 010,LOB,Invented assistant for exploring the synthetic dashboard.,Copilot Studio,demo-agent-10,TRUE,FALSE,FALSE,FALSE
+Planning helper 11,Copilot; Teams,2026-01-01,Demo Person 011,Shared,Invented assistant for exploring the synthetic dashboard.,SharePoint,demo-agent-11,FALSE,TRUE,FALSE,TRUE
+Knowledge helper 12,Copilot; Teams,2026-02-01,Demo Person 012,ThirdParty,Invented assistant for exploring the synthetic dashboard.,Marketplace,demo-agent-12,TRUE,TRUE,FALSE,FALSE
+Research helper 13,Copilot; Teams,2026-03-01,Demo Person 013,Shared,Invented assistant for exploring the synthetic dashboard.,Microsoft 365 Copilot Agent Builder,demo-agent-13,FALSE,FALSE,TRUE,FALSE
+Drafting helper 14,Copilot; Teams,2026-04-01,Demo Person 014,LOB,Invented assistant for exploring the synthetic dashboard.,Copilot Studio,demo-agent-14,TRUE,TRUE,FALSE,FALSE
+Planning helper 15,Copilot; Teams,2026-05-01,Demo Person 015,Shared,Invented assistant for exploring the synthetic dashboard.,SharePoint,demo-agent-15,FALSE,TRUE,FALSE,FALSE
+Knowledge helper 16,Copilot; Teams,2026-01-01,Demo Person 016,ThirdParty,Invented assistant for exploring the synthetic dashboard.,Marketplace,demo-agent-16,TRUE,FALSE,FALSE,TRUE
