@@ -41,6 +41,7 @@ for (const [slug, entry] of [['ai-in-one', 'index.html'], ['ai-in-one-report', '
   writeFileSync(join(destination, 'THIRD-PARTY-NOTICES.txt'), notices)
   const provenance = {
     repository: 'https://github.com/microsoft/AI-in-One-Dashboard',
+    demoSourceRepository: 'https://github.com/Keithland89/AI-in-One-Dashboard',
     baseRevision: 'e0a77c2c4cb1f3723c656acfe825fa640c7d31ab',
     baseAppDirectory: 'Archive/app',
     reportTemplate: `templates/${layout.source}`,

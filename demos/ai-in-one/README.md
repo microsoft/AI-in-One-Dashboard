@@ -11,6 +11,10 @@ administrator operation is available. Production sources are unchanged.
 ## Provenance
 
 Repository: `https://github.com/microsoft/AI-in-One-Dashboard`.
+The adapted demo source is published on the
+`keithmcgrane-microsoft-shareable-dashboard-demos` branch of
+`https://github.com/Keithland89/AI-in-One-Dashboard`, an existing fork of that
+upstream repository. Each bundle records this separately as `demoSourceRepository`.
 Source/base revision: `e0a77c2c4cb1f3723c656acfe825fa640c7d31ab`.
 The app snapshot comes from `Archive/app`. The report presentation comes from
 `templates/AI-in-One-v2.0.0-Local-CSV-Template.pbit`.
