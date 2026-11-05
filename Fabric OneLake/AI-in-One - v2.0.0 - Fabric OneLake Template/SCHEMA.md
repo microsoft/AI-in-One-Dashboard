@@ -112,6 +112,25 @@ The fact-to-agent relationship uses the **resolved `Agent_TitleID`**, not the ra
 
 Security Copilot, non-human identities and records without prompt messages are excluded consistently with the existing AIO processor. A qualifying prompt without a stable message/thread ID or valid timestamp blocks preparation instead of being silently collapsed or assigned an invented session.
 
+Before expansion, current-snapshot preparation checks the existing audit table for
+missing prompt identifiers. Its preflight reports only aggregate counts:
+`qualifying_records`, `affected_records`, `missing_message_id_only`,
+`missing_thread_id_only` and `missing_both_ids`. These count audit records, not
+individual prompts, users or sessions. The three missing-ID categories are
+mutually exclusive and sum to `affected_records`; a record with any prompt
+missing its `Messages[].Id` is affected even when another prompt has an ID.
+Only messages whose `isPrompt` value is Boolean `true` qualify. Missing response
+IDs do not trigger this check.
+
+`AIO_PROMPT_IDENTIFIERS_MISSING` stops preparation before this attempt changes
+the report tables or publication marker. Existing raw audit data is read only.
+Keep that data unchanged and inspect its structure privately; do not manufacture
+identifiers, drop records or recollect data merely to bypass the check. The
+counts do not establish whether source fields are absent or represented in an
+unsupported structure. The diagnostic does not expose audit records, identities,
+message/thread IDs or payload values. Invalid JSON, event structures and
+timestamps remain errors rather than being included in a successful ID summary.
+
 ### `aio_v2_publication`
 
 Exactly one row: `SnapshotId`, `State`, `TenantId`, `Users`, `Facts`, `Prompts`, `Sessions`, `CompletedAt`.

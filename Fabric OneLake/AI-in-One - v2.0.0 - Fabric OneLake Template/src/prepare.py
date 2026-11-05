@@ -1,7 +1,14 @@
 """Build the v2 model contract from independent collection snapshots."""
 
 
-def expand_audit_row(row):
+PROMPT_IDENTIFIER_GUIDANCE = (
+    "Inspect the existing audit data privately to determine whether the identifiers are absent "
+    "or use an unsupported structure. Keep the source records unchanged; do not invent IDs, "
+    "drop records or recollect data just to retry preparation."
+)
+
+
+def audit_prompt_context(row):
     data = json.loads(row["AuditData"])
     identity = normalize_user_id(data.get("UserId"))
     ced = data.get("CopilotEventData")
@@ -14,8 +21,63 @@ def expand_audit_row(row):
         return []
     if not parse_creation_time(data.get("CreationTime")):
         raise ValueError("A prompt record has an invalid CreationTime.")
-    if not to_text(ced.get("ThreadId")).strip() or any(not to_text(p.get("Id")).strip() for p in prompts):
-        raise ValueError("A prompt record is missing Message Id or ThreadId. Repair source IDs before publishing.")
+    return data, identity, ced, prompts
+
+
+def missing_prompt_identifiers(ced, prompts):
+    return (any(not to_text(prompt.get("Id")).strip() for prompt in prompts),
+            not to_text(ced.get("ThreadId")).strip())
+
+
+def prompt_identifier_counts(records):
+    # One fixed-size tuple per partition; no audit values leave the workers.
+    counts = [0, 0, 0, 0]
+    for row in records:
+        context = audit_prompt_context(row.asDict())
+        if not context:
+            continue
+        _, _, ced, prompts = context
+        counts[0] += 1
+        missing_message, missing_thread = missing_prompt_identifiers(ced, prompts)
+        if missing_message and missing_thread:
+            counts[3] += 1
+        elif missing_message:
+            counts[1] += 1
+        elif missing_thread:
+            counts[2] += 1
+    yield tuple(counts)
+
+
+def sum_prompt_identifier_counts(left, right):
+    return tuple(a + b for a, b in zip(left, right))
+
+
+def validate_prompt_identifiers(raw):
+    counts = (raw.select("AuditData").rdd.mapPartitions(prompt_identifier_counts)
+              .fold((0, 0, 0, 0), sum_prompt_identifier_counts))
+    qualifying, message_only, thread_only, both = counts
+    affected = message_only + thread_only + both
+    summary = (f"qualifying_records={qualifying}, affected_records={affected}, "
+               f"missing_message_id_only={message_only}, missing_thread_id_only={thread_only}, "
+               f"missing_both_ids={both}")
+    LOG.info("Prompt identifier preflight: %s", summary)
+    if affected:
+        raise ValueError(
+            f"AIO_PROMPT_IDENTIFIERS_MISSING: {summary}. {PROMPT_IDENTIFIER_GUIDANCE} "
+            "This preparation attempt has not changed the report tables or publication marker."
+        )
+    return counts
+
+
+def expand_audit_row(row):
+    context = audit_prompt_context(row)
+    if not context:
+        return []
+    data, identity, ced, prompts = context
+    if any(missing_prompt_identifiers(ced, prompts)):
+        raise ValueError(
+            "A prompt record is missing Message Id or ThreadId. " + PROMPT_IDENTIFIER_GUIDANCE
+        )
     key = stable_key("user", identity)
     thread = to_text(ced["ThreadId"])
     license_value = row.get("Has_license") or "Unknown"
@@ -82,6 +144,7 @@ def run_preparation(spark, config):
         raise ValueError("Audit completion table must have exactly one row.")
     if raw.filter(F.col("TenantId").isNull() | (F.col("TenantId") != tenant)).take(1):
         raise ValueError("Audit data contains another tenant.")
+    validate_prompt_identifiers(raw)
     for column in ("GivenName", "Surname", "Email", "Company", "Division", "JobTitle", "Country", "City", "Office", "ManagerName"):
         if column not in org.columns:
             org = org.withColumn(column, F.lit(None).cast("string"))

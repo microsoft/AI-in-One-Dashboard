@@ -194,6 +194,7 @@ Validate the published report with an individual contributor, a manager, a cross
 | Licensing identities do not match | Confirm identifiable UPNs, source tenant and report privacy settings |
 | Missing/blank Assigned Products | Missing column fails collection; blank value remains Unknown |
 | Audit query succeeded but is truncated | Reduce the query window; see resilience notes |
+| `AIO_PROMPT_IDENTIFIERS_MISSING` in preparation | Read the aggregate missing-message, missing-thread and missing-both record counts. This attempt stops before report-table or publication-marker changes. Keep the existing raw audit data unchanged and inspect the affected structure privately; do not invent IDs, drop rows or repeat collection just to bypass the check. Do not post raw audit payloads or identifiers in public issues. These diagnostics do not establish whether fields are absent or represented differently. |
 | Snapshot state is Publishing | Fix the failed preparation and rerun it before refresh |
 | SQL snapshot/count mismatch | Wait for SQL endpoint synchronization; ensure no overlapping notebook/refresh runs |
 | Requested manager absent from Users | A nonblank Manager_UserKey becomes an unresolved root; valid descendants remain visible within authorized access |
