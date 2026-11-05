@@ -218,13 +218,14 @@ function validateDownload(target, sample) {
   } else if (extension === '.pdf') {
     checkMime(type, ['application/pdf', octet]);
     requireCheck(body.subarray(0, 5).toString('ascii') === '%PDF-', 'Expected a PDF file signature.');
-  } else if (['.csv', '.md', '.ipynb', '.json', '.py'].includes(extension)) {
+  } else if (['.csv', '.md', '.ipynb', '.json', '.py', '.ps1'].includes(extension)) {
     const additional = {
       '.csv': ['text/csv', 'application/csv', 'application/vnd.ms-excel'],
       '.md': ['text/markdown', 'text/x-markdown'],
       '.ipynb': ['application/json', 'application/x-ipynb+json'],
       '.json': ['application/json', 'text/json'],
-      '.py': ['text/x-python', 'application/x-python', 'text/x-script.python']
+      '.py': ['text/x-python', 'application/x-python', 'text/x-script.python'],
+      '.ps1': ['text/x-powershell', 'application/x-powershell']
     };
     checkMime(type, ['text/plain', octet, ...additional[extension]]);
     requireCheck(!text.includes('\u0000') && (text.match(/\uFFFD/g) || []).length < Math.max(2, text.length / 100),
@@ -239,6 +240,9 @@ function validateDownload(target, sample) {
     } else if (extension === '.py') {
       requireCheck(/^(?:from\s+[\w.]+\s+import\b|import\s+\w|(?:async\s+)?def\s+\w|class\s+\w|#!.*python)/m.test(text),
         'Expected recognizable Python source.');
+    } else if (extension === '.ps1') {
+      requireCheck(/^\s*(?:\.SYNOPSIS\b|\[CmdletBinding\s*\(|param\s*\(|function\s+[\w-]+)/mi.test(text),
+        'Expected recognizable PowerShell source.');
     } else if (complete) {
       const data = parseJson(text);
       requireCheck(data && typeof data === 'object' && !data.error && !data.errors,

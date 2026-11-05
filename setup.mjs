@@ -2,6 +2,8 @@ export function renderSetup(h, currentStep = 'prepare') {
   const { e, icon, productLogo, editionLogo, eyebrow, external, dl, note, release, policy, miniKitchenPanel, collectionOptions, reference, navigation } = h;
   if (!navigation.pages.some(page => page.step === currentStep)) throw new Error('Unsupported setup page.');
   const templates = new Map(release.templates.map(item => [item.id, item]));
+  const paxScript = release.downloads.find(item => item.id === 'pax-script');
+  if (!paxScript?.href || !paxScript.file) throw new Error('The PAX script download is required.');
   const routes = [
     {
       id: 'sharepoint', title: 'SharePoint', tag: 'A shared cloud report', symbol: 'people', color: 'blue',
@@ -74,7 +76,7 @@ export function renderSetup(h, currentStep = 'prepare') {
     route.pending = template.status !== 'available';
   }
   const scoped = (ids, html) => `<div data-setup-editions="${ids}" hidden>${html}</div>`;
-  const inNewTab = html => html.replace(/<a\b(?![^>]*\btarget=)([^>]*)>/g, '<a$1 target="_blank" rel="noopener noreferrer">');
+  const inNewTab = html => html.replace(/<a\b(?![^>]*\b(?:target|download)=)([^>]*)>/g, '<a$1 target="_blank" rel="noopener noreferrer">');
   const intro = (id, title, why) => `<header class="kitchen-screen-heading"><h3 id="${id}-title" tabindex="-1">${title}</h3><p>${why}</p></header>`;
   const flow = route => `<ol class="edition-journey" aria-label="${e(route.journeyLabel || 'How this edition works')}">${route.journey.map((label, index) => `<li><span class="edition-journey-icon">${icon(route.journeyIcons?.[index] || (index === 0 ? route.symbol : index === 1 ? 'layers' : 'chart'))}</span><span>${e(label)}</span>${index < 2 ? icon('arrow') : ''}</li>`).join('')}</ol>`;
   const overview = (route, showDetail = true) => `<div class="edition-overview" data-edition-color="${route.color}">
@@ -144,7 +146,7 @@ export function renderSetup(h, currentStep = 'prepare') {
     ]
   };
   const paxOverview = () => `<div class="edition-overview pax-overview" data-edition-color="blue">
-    <div class="edition-hero">${productLogo('pax')}<div>${eyebrow('PAX v2.0 · Collect. Connect. Keep current.')}<h3>More of the story. Less data preparation.</h3><p>PAX brings Copilot, agent and Microsoft 365 activity together with people and licensing information, then prepares it for meaningful reporting. It is the data-preparation engine behind the PAX-supported AI-in-One editions—and can serve several dashboards from one collection.</p></div><a class="edition-badge pax-product-link" href="https://aka.ms/PAX-Prerelease" target="_blank" rel="noopener noreferrer" data-pax-repository>Portable Audit eXporter ${icon('external')}<span class="sr-only"> (opens the PAX repository in a new tab)</span></a></div>
+    <div class="edition-hero">${productLogo('pax')}<div>${eyebrow('PAX v2.0 · Collect. Connect. Keep current.')}<h3>More of the story. Less data preparation.</h3><p>PAX brings Copilot, agent and Microsoft 365 activity together with people and licensing information, then prepares it for meaningful reporting. It is the data-preparation engine behind the PAX-supported AI-in-One editions—and can serve several dashboards from one collection.</p></div><a class="edition-badge pax-product-link" href="${e(paxScript.href)}" download="${e(paxScript.file)}">Download PAX v2.0 script ${icon('download')}</a></div>
     <section class="setup-route-feature pax-kitchen-intro" aria-labelledby="pax-kitchen-title">${productLogo('mini-kitchen')}<div>${eyebrow('Your easier starting point')}<h3 id="pax-kitchen-title">Mini-Kitchen makes the setup yours.</h3><p>This popup is tailored to AI-in-One. Choose its edition, dates, people and destination through guided choices. Mini-Kitchen builds a copy-ready PAX command—no need to write the command from scratch.</p><p>Return to the same setup popup to choose an edition and prepare data, then open or refresh the report and arrange sharing. Copy the command before closing. You or your IT partner run the downloaded PAX script in your own environment; Mini-Kitchen does not sign in to your organization or collect its data.</p></div></section>
     ${flow(pax)}
     <section class="pax-feature-section" aria-labelledby="pax-features-title">${eyebrow('What PAX v2.0 brings to the table')}<h3 id="pax-features-title">A broader picture. A repeatable process.</h3><div class="edition-story-grid pax-feature-grid">${pax.features.map(feature => `<article>${icon(feature.symbol)}<h4>${e(feature.title)}</h4><p>${e(feature.text)}</p></article>`).join('')}</div></section>

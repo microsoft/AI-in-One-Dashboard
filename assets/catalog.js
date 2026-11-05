@@ -2,6 +2,7 @@
   const repository = 'https://raw.githubusercontent.com/microsoft/AI-in-One-Dashboard/main/';
   const file = path => repository + path.split('/').map(encodeURIComponent).join('/');
   const notebooks = 'Fabric OneLake/AI-in-One - v2.0.0 - Fabric OneLake Template/';
+  const paxScriptFile = 'PAX_Purview_Audit_Log_Processor_v2.0.0-prerelease-20261101-14.ps1';
   const detailPolicy = '3 by default. Use 1 for individual activity only if your organization\'s privacy and employee-reporting policies allow it.';
   window.AIO_RELEASE = {
     version: '2.0',
@@ -88,6 +89,13 @@
       }
     ],
     downloads: [
+      {
+        id: 'pax-script', title: 'PAX v2.0 script',
+        description: 'Download the current PAX v2.0 build, then run your Mini-Kitchen command on the collection computer. Keep the downloaded filename.',
+        kind: 'PowerShell', file: paxScriptFile,
+        href: `https://raw.githubusercontent.com/microsoft/PAX/purview-v2.0.0-prerelease-20261101-14/${paxScriptFile}`,
+        group: 'PAX PowerShell script'
+      },
       {
         id: 'interpretation', title: 'Interpretation guide',
         description: 'Understand the numbers, privacy settings and reporting limitations.',
