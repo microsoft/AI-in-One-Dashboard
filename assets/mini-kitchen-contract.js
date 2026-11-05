@@ -2,14 +2,12 @@
   'use strict';
   const prefix = 'pax-mini-kitchen.aio.';
   const version = 3;
-  const capabilities = ['guided-screens', 'ephemeral-state', 'full-site-handoff', 'step-navigation'];
+  const capabilities = ['guided-screens', 'ephemeral-state', 'full-site-handoff', 'step-navigation', 'live-preview'];
   const optionalCapabilities = ['command-export'];
   const maxCommandBytes = 65536;
   const screens = [
-    { id: 'overview', title: 'Your collection' },
     { id: 'collection', title: 'Dates and people' },
     { id: 'output', title: 'Storage and sign-in' },
-    { id: 'advanced', title: 'Additional settings' },
     { id: 'review', title: 'Your PAX command' }
   ];
   const record = value => value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -39,6 +37,12 @@
         break;
       case prefix + 'screen-changed':
         if (!keys(payload, ['screen']) || !screen(payload.screen)) return null;
+        break;
+      case prefix + 'command-preview':
+        if (!keys(payload, ['command', 'ready']) || typeof payload.ready !== 'boolean' ||
+          typeof payload.command !== 'string' || (payload.ready && !payload.command.trim()) ||
+          payload.command.length > maxCommandBytes || /\0/.test(payload.command) ||
+          new TextEncoder().encode(payload.command).length > maxCommandBytes) return null;
         break;
       case prefix + 'error':
         if (!keys(payload, ['code']) || !['unsupported-context', 'invalid-message', 'screen-blocked', 'handoff-failed'].includes(payload.code)) return null;

@@ -45,7 +45,7 @@
           { name: 'Load Agent365 catalog', value: 'Leave false unless the Fabric OneLake Agent365 table is available and synchronized' },
           { name: 'Minimum Group Size', value: detailPolicy }
         ],
-        note: 'Use the PAX-produced AIO_Users and AIO_CopilotInteractions tables, plus Agent365 if enabled. This SQL Import connection does not use the notebook edition\'s collectors or preparation tables. Fabric Tables update commands remain unavailable in Mini-Kitchen.'
+        note: 'Use the PAX-produced AIO_Users and AIO_CopilotInteractions tables, plus Agent365 if enabled. This SQL Import connection does not use the notebook edition\'s collectors or preparation tables. The command builder targets PAX v2.0 seed and incremental-update workflows.'
       },
       {
         id: 'sharepoint', title: 'SharePoint',

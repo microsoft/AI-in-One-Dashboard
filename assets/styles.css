@@ -404,6 +404,11 @@ details img { margin-top: 22px; border-radius: 6px; }
 .tiny-label { display: block; font-size: .63rem; color: var(--cp-purple); letter-spacing: .08em; text-transform: uppercase; font-weight: 650; margin-bottom: 12px; }
 .glossary-item h3 { font-size: 1rem; }
 .glossary-item p { color: var(--cp-text-muted); font-size: .83rem; margin-top: 12px; }
+.metric-method { display: grid; gap: 14px; margin-top: 18px; }
+.metric-method > div { padding-top: 12px; border-top: 1px solid var(--cp-border); }
+.metric-method dt { color: var(--cp-text); font-size: .82rem; font-weight: 700; }
+.metric-method dd { margin: 6px 0 0; color: var(--cp-text-muted); font-size: .84rem; line-height: 1.65; overflow-wrap: anywhere; }
+.metric-measures code { overflow-wrap: anywhere; white-space: normal; }
 .result-count { font-size: .76rem; color: var(--cp-text-muted); margin-bottom: 18px; }
 .empty-state { padding: 30px 12px; font-size: .9rem; color: var(--cp-text-muted); }
 .release-strip { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; padding: 20px 24px; border: 1px solid var(--cp-border); border-radius: 10px; background: var(--cp-purple-soft); font-size: .8rem; box-shadow: var(--cp-shadow-sm); }
@@ -1012,7 +1017,21 @@ html[data-page="setup-reference"] { scroll-padding-top: 0; overflow-anchor: none
 .kitchen-modal .kitchen-native-screen .notice p { margin-top: 8px; }
 .kitchen-modal-viewport { height: 100%; }
 .kitchen-modal-viewport iframe { display: block; height: 100%; width: 100%; border: 0; background: var(--cp-bg); }
-.kitchen-modal-footer { padding: 14px 28px; border-top: 1px solid var(--cp-border); background: var(--cp-surface); }
+.kitchen-modal-footer { min-width: 0; padding: 14px 28px; border-top: 1px solid var(--cp-border); background: var(--cp-surface); }
+.kitchen-command-preview { min-width: 0; margin: -14px -28px 14px; padding: 12px 28px; background: var(--cp-accent-soft); border-block: 1px solid var(--cp-accent); color: var(--cp-text); }
+.kitchen-preview-heading { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 16px; }
+.kitchen-preview-heading strong { font-size: .82rem; }
+.kitchen-preview-heading span { font-size: .72rem; color: var(--cp-text-muted); }
+.kitchen-command-preview pre { display: block; min-width: 0; width: 100%; margin: 8px 0 0; padding: 0; border: 0; border-radius: 0; background: none; color: var(--cp-text); font-size: .73rem; line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; overflow: visible; max-height: none; tab-size: 2; }
+.kitchen-command-preview pre:empty { display: none; }
+.setup-sharing-details { margin-top: 24px; padding: 18px; border: 1px solid var(--cp-border); border-radius: 12px; background: var(--cp-surface); }
+.setup-sharing-details > summary { cursor: pointer; font-weight: 700; color: var(--cp-text); }
+.setup-sharing-details .kitchen-screen-heading { margin-top: 18px; }
+.kitchen-choice-guidance { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 12px; margin-block: 18px; }
+.kitchen-choice-guidance article { padding: 16px; border: 1px solid var(--cp-border); border-radius: 10px; background: var(--cp-surface); }
+.kitchen-choice-guidance h4 { margin: 0 0 8px; }
+.kitchen-native-screen .kitchen-choice-guidance p { font-size: .82rem; margin: 0; }
+.guide-decision-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 20px; }
 .kitchen-next-messages { display: grid; gap: 6px; min-width: 0; text-align: right; }
 .kitchen-next-messages p { font-size: .78rem; line-height: 1.4; }
 #kitchen-modal-status:empty, #kitchen-next-reason:empty { display: none; }
@@ -1067,6 +1086,8 @@ html[data-page="setup-reference"] { scroll-padding-top: 0; overflow-anchor: none
 @media (max-width: 760px) {
   .kitchen-modal { width: calc(100vw - 16px); height: calc(100dvh - 16px); max-width: none; max-height: none; }
   .kitchen-modal-header, .kitchen-modal-toolbar, .kitchen-modal-footer { padding: 12px 16px; }
+  .kitchen-command-preview { margin: -12px -16px 12px; padding: 10px 16px; }
+  .kitchen-command-preview pre { font-size: .66rem; line-height: 1.35; }
   .kitchen-modal-brand { gap: 10px; }
   .kitchen-modal-brand .icon-tile { display: none; }
   .kitchen-modal-header h2 { font-size: 1.7rem; }

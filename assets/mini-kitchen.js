@@ -37,6 +37,9 @@
   const saveBeforeClose = $('#kitchen-save-before-close');
   const discardStatus = $('#kitchen-discard-status');
   const commandWarning = $('#kitchen-command-warning');
+  const commandPreview = $('#kitchen-command-preview');
+  const commandPreviewText = $('#kitchen-command-preview-text');
+  const commandPreviewStatus = $('#kitchen-command-preview-status');
   const readyShortcut = $('#kitchen-ready-shortcut');
   const readyData = $('#kitchen-ready-data');
   const editions = { local: 'local', sharepoint: 'sharepoint', 'fabric-tables': 'pax-fabric' };
@@ -53,8 +56,9 @@
   let mode = 'choices', childVisited = false, changePending = false, buildIncluded = true;
   let visitedSteps = new Set(['choices']), retainedVisited = null, pendingStep = null;
   let childCapabilities = new Set(), commandReviewReached = false, commandRequest = null, commandAction = null;
+  let previewReceived = false;
   const context = () => ({
-    destination: destination.value, run: collectionType(),
+    destination: destination.value, run: collectionType() || 'initial',
     theme: document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light'
   });
   const sameContext = value => activeContext && value.destination === activeContext.destination &&
@@ -62,8 +66,7 @@
   const sameChoices = () => activeContext && paxSelected() &&
     activeContext.destination === context().destination && activeContext.run === context().run;
   const validChoices = () => Boolean(selectedEdition());
-  const validCollection = () => paxSelected() ? contract.context(context()) : validChoices();
-  const tableUpdate = () => selectedEdition() === 'pax-fabric' && collectionType() === 'update';
+  const validCollection = () => paxSelected() ? Boolean(collectionType()) && contract.context(context()) : validChoices();
   const canConnectReadyData = () => paxSelected() && guide.getRoute(selectedEdition()).available;
   const canTransfer = () => initialized && !handoff && sameChoices();
   const hasReviewedCommand = () => commandReviewReached && initialized && buildIncluded && sameChoices();
@@ -90,7 +93,7 @@
   }
   function renderHandoffControls() {
     const transferable = canTransfer() || (changePending && initialized && !handoff);
-    const relevant = paxSelected() && (initialized || (validCollection() && !tableUpdate() && buildIncluded));
+    const relevant = paxSelected() && (initialized || (validCollection() && buildIncluded));
     const retry = relevant && navigationFailed && !initialized;
     saveOption.hidden = mode === 'choices' || !relevant;
     full.hidden = !transferable && !handoff;
@@ -117,6 +120,17 @@
     quickCopy.disabled = Boolean(commandAction || navigationTimer || handoff);
     finishCopy.disabled = finishSave.disabled = Boolean(commandAction) || !hasReviewedCommand() ||
       !childCapabilities.has('command-export');
+  }
+  function renderCommandPreview() {
+    commandPreview.hidden = mode === 'choices' || !paxSelected() || !buildIncluded;
+    if (!commandPreview.hidden && activeContext && !sameChoices()) {
+      commandPreviewText.textContent = '';
+      commandPreviewStatus.textContent = 'Apply your changed edition or collection choice to build its command.';
+      return;
+    }
+    if (!commandPreview.hidden && !commandPreviewText.textContent && !previewReceived) {
+      commandPreviewStatus.textContent = 'Preparing your storage-specific command preview…';
+    }
   }
   function requestCommand() {
     if (!hasReviewedCommand()) return Promise.reject(new Error('Complete your PAX command before copying or saving it.'));
@@ -218,7 +232,7 @@
     dialog.dataset.kitchenStage = mode;
     const native = mode !== 'child';
     const sequence = journey();
-    const currentId = mode !== 'child' ? mode : screen?.id || 'overview';
+    const currentId = mode !== 'child' ? mode : screen?.id || contract.screens[0].id;
     const index = sequence.findIndex(item => item.id === currentId);
     if (dialog.open && (native || screen)) visitedSteps.add(currentId);
     const firstUnvisited = sequence.find(item => !visitedSteps.has(item.id))?.id;
@@ -233,14 +247,15 @@
     viewport.hidden = native || !initialized || !screen;
     loading.hidden = native || Boolean(initialized && screen);
     back.disabled = mode === 'choices' || Boolean(commandAction || navigationTimer) || (mode === 'child' && !initialized && !navigationFailed);
-    next.disabled = Boolean(commandAction) || (mode === 'choices' ? !validChoices() : mode === 'prepare' ? !validCollection() || tableUpdate() :
+    next.disabled = Boolean(commandAction) || (mode === 'choices' ? !validChoices() : mode === 'prepare' ? !validCollection() :
       mode === 'open' || mode === 'share' ? !guide.getRoute(selectedEdition()).available :
         !initialized || !screen || (screen.id === 'review' ? !screen.commandReady : !screen.canNext) || screenValidationBlocked || Boolean(navigationTimer) || navigationFailed);
-    next.textContent = mode === 'share' ? 'Finish setup' : 'Next';
+    next.textContent = mode === 'open' ? 'Finish setup' : 'Next';
     readyShortcut.hidden = mode !== 'prepare' || !paxSelected() || !guide.getRoute(selectedEdition()).available;
     readyData.disabled = !canConnectReadyData();
     renderHandoffControls();
     renderCommandControls();
+    renderCommandPreview();
     $('#kitchen-screen-title').textContent = sequence[index]?.title || 'Opening your builder';
     $('#kitchen-progress').textContent = `Step ${index + 1} of ${sequence.length} · ${sequence[index].title}`;
     $('#kitchen-steps').replaceChildren(...sequence.map((item, itemIndex) => {
@@ -261,7 +276,7 @@
     }));
     nextReason.textContent = mode === 'choices'
       ? validChoices() ? guide.getRoute(selectedEdition()).label : 'Choose an edition.'
-      : mode === 'prepare' ? tableUpdate() ? 'Table-update commands are unavailable. You can connect prepared data.' : paxSelected() && !validCollection() ? 'Choose a collection type, or connect prepared data.' : ''
+      : mode === 'prepare' ? paxSelected() && !validCollection() ? 'Choose a collection type, or connect prepared data.' : ''
       : mode === 'open' || mode === 'share' ? ''
       : !screen ? 'Connecting the guided screens for your collection.' :
       screen.id === 'review' ? screen.commandReady
@@ -271,11 +286,10 @@
     if (mode === 'child' && screenValidationBlocked) {
       nextReason.textContent = 'Check the highlighted fields on this screen before continuing.';
     }
-    const informational = mode === 'open' || mode === 'share' ||
-      (mode === 'prepare' && !paxSelected()) || (mode === 'child' && screen?.id === 'overview');
+    const informational = mode === 'open' || (mode === 'prepare' && !paxSelected());
     nextReason.toggleAttribute('data-informational', informational && !next.disabled);
     if (informational && !next.disabled) {
-      nextReason.textContent = mode === 'share'
+      nextReason.textContent = mode === 'open'
         ? 'Information only. Click Finish setup when you are done.'
         : 'Information only. Click Next to continue.';
     }
@@ -283,7 +297,7 @@
     $('#kitchen-modal-context').textContent = selectedEdition()
       ? `${guide.getRoute(selectedEdition()).label}${paxSelected() && collectionType() ? ` · ${collectionType() === 'initial' ? 'First collection (seed)' : 'Update existing history (append)'}` : ''}`
       : '';
-    $('#kitchen-open-title').textContent = collectionType() === 'update' && paxSelected() ? 'Refresh your report' : 'Connect your report';
+    $('#kitchen-open-title').textContent = collectionType() === 'update' && paxSelected() ? 'Refresh and share' : 'Connect and share';
     root.querySelectorAll('a[href*="setup-reference.html#it-request"], a[data-it-request-link]').forEach(link => {
       link.dataset.itRequestLink = '';
       link.href = `setup-reference.html${selectedEdition() && selectedEdition() !== 'sample' ? `?edition=${encodeURIComponent(selectedEdition())}` : ''}#it-request`;
@@ -291,10 +305,9 @@
   }
   function journey() {
     return [
-      { id: 'choices', title: 'Choose your edition' }, { id: 'prepare', title: 'Prepare data' },
+      { id: 'choices', title: 'Choose your edition' }, { id: 'prepare', title: paxSelected() ? 'First collection or update' : 'Prepare data' },
       ...(paxSelected() && buildIncluded ? contract.screens : []),
-      { id: 'open', title: collectionType() === 'update' ? 'Refresh your report' : 'Open your report' },
-      { id: 'share', title: 'Share and keep it current' }
+      { id: 'open', title: collectionType() === 'update' ? 'Refresh and share' : 'Connect and share' }
     ];
   }
   function invalidateJourney() {
@@ -305,7 +318,7 @@
   function goToStep(target) {
     if (navigationTimer) return;
     const sequence = journey();
-    const current = mode === 'child' ? screen?.id || 'overview' : mode;
+    const current = mode === 'child' ? screen?.id || contract.screens[0].id : mode;
     const currentIndex = sequence.findIndex(item => item.id === current);
     const targetIndex = sequence.findIndex(item => item.id === target);
     const firstUnvisited = sequence.find(item => !visitedSteps.has(item.id))?.id;
@@ -315,9 +328,9 @@
     if (!validChoices()) { modalStatus.textContent = 'Choose an edition first.'; return; }
     if (target === 'prepare') { commitChoices(); showNative(target); return; }
     if (contract.screens.some(item => item.id === target)) {
-      if (!validCollection() || tableUpdate()) {
+      if (!validCollection()) {
         showNative('prepare');
-        modalStatus.textContent = tableUpdate() ? 'Fabric table-update commands are unavailable. You can connect prepared data.' : 'Choose a collection type first.';
+        modalStatus.textContent = 'Choose a collection type first.';
         return;
       }
       if (childVisited && !sameChoices()) { requestChangedChoices(); return; }
@@ -363,6 +376,9 @@
     commandRequest?.cancel(new Error('Setup closed or changed. The command request was cancelled.'));
     commandAction = null;
     childCapabilities = new Set();
+    commandPreviewText.textContent = '';
+    commandPreviewStatus.textContent = '';
+    previewReceived = false;
     commandReviewReached = false;
     clearTimeout(connectionTimer);
     clearTimeout(navigationTimer);
@@ -393,7 +409,7 @@
   function requestClose() {
     if (!dialog.open || discard.open || finish.open) return;
     changePending = false;
-    const finished = mode === 'share';
+    const finished = mode === 'open';
     $('#kitchen-confirm-discard').textContent = finished ? 'Finish and close' : 'Discard and close';
     const ready = mode === 'child' && Boolean(screen?.commandReady);
     $('#kitchen-discard-title').textContent = finished ? 'Finish setup?' : ready ? 'Have you copied your command?' : 'Keep your setup?';
@@ -454,7 +470,7 @@
     const node = nativeScreens.get(id);
     node.scrollTop = 0;
     $(`#kitchen-${id}-title`).focus({ preventScroll: true });
-    if (id === 'prepare' && validCollection() && paxSelected() && !tableUpdate() && !iframe) startChild();
+    if (id === 'prepare' && paxSelected() && !iframe) startChild();
   }
   function commitChoices() {
     guide.setBuilderSelection(selectedEdition(), paxSelected() ? collectionType() : null);
@@ -508,8 +524,7 @@
         renderScreen();
         iframe?.focus({ preventScroll: true });
       } else showNative('prepare');
-    } else if (mode === 'share') showNative('open');
-    else if (mode === 'child' && (screen?.id === 'overview' || navigationFailed)) showNative('prepare');
+    } else if (mode === 'child' && (screen?.id === contract.screens[0].id || navigationFailed)) showNative('prepare');
     else if (mode === 'child') navigate('back');
   });
   next.addEventListener('click', () => {
@@ -518,7 +533,7 @@
       commitChoices();
       showNative('prepare');
     } else if (mode === 'prepare') {
-      if (!validCollection() || tableUpdate()) return;
+      if (!validCollection()) return;
       if (paxSelected()) {
         if (childVisited && !sameChoices()) requestChangedChoices();
         else enterChild();
@@ -526,8 +541,7 @@
     } else if (mode === 'child' && screen?.id === 'review') {
       if (screen.commandReady) showNative('open');
     } else if (mode === 'child') navigate('next');
-    else if (mode === 'open' && guide.getRoute(selectedEdition()).available) showNative('share');
-    else if (mode === 'share') finishSetup();
+    else if (mode === 'open') finishSetup();
   });
   quickCopy.addEventListener('click', () => commandActionFromClick('copy', true));
   finishCopy.addEventListener('click', () => commandActionFromClick('copy'));
@@ -631,7 +645,7 @@
   full.addEventListener('click', openFullKitchen);
   saveBeforeClose.addEventListener('click', openFullKitchen);
   for (const button of [retryConnection, discardRetry]) button.addEventListener('click', () => {
-    if (!validCollection() || tableUpdate() || initialized) return;
+    if (!paxSelected() || initialized) return;
     startChild();
   });
   window.addEventListener('message', event => {
@@ -659,7 +673,8 @@
       if (event.data?.type === contract.prefix + 'ready' && [1, 2].includes(event.data.version)) {
         unavailable('This Mini-Kitchen version still uses the old stacked builder. The guided-screen update is required; the old interface will not be shown here.');
       } else if (event.data?.type === contract.prefix + 'ready' && event.data.version === contract.version &&
-        Array.isArray(event.data.payload?.capabilities) && !event.data.payload.capabilities.includes('step-navigation')) {
+        Array.isArray(event.data.payload?.capabilities) &&
+        !contract.capabilities.every(name => event.data.payload.capabilities.includes(name))) {
         unavailable('Mini-Kitchen needs an update to support this guide. Refresh the pages or retry after it is updated.');
       }
       return;
@@ -668,7 +683,7 @@
       if (initialized || !sameContext(data.payload.context) || sessionId) return;
       childCapabilities = new Set(data.payload.capabilities);
       sessionId = data.sessionId;
-      send('initialize', { context: activeContext });
+      send('initialize', { context: activeContext, compact: true });
       return;
     }
     if (data.sessionId !== sessionId) return;
@@ -690,6 +705,15 @@
         pendingStep = null;
         if (screen.id !== target) navigateTo(target);
       }
+    } else if (data.type === contract.prefix + 'command-preview' && initialized && sameChoices()) {
+      previewReceived = true;
+      commandPreviewText.textContent = data.payload.command;
+      commandPreviewStatus.textContent = !data.payload.command.trim()
+        ? 'Preview unavailable. Correct the flagged fields before continuing.'
+        : data.payload.ready
+        ? 'Complete command · review before running'
+        : 'Live preview · replace placeholders and complete the remaining details';
+      renderCommandPreview();
     } else if (data.type === contract.prefix + 'close-request') requestClose();
     else if (data.type === contract.prefix + 'error') {
       if (data.payload.code === 'screen-blocked') {
@@ -727,7 +751,7 @@
     destination.value = Object.keys(editions).find(key => editions[key] === selectedEdition()) || '';
     buildIncluded = paxSelected();
     if (!childVisited) {
-      if (!contract.context(context()) || tableUpdate()) {
+      if (!contract.context(context())) {
         if (iframe) resetChild();
       } else if (!sameChoices() && dialog.open && mode !== 'choices') startChild();
     }
