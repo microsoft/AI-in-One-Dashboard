@@ -1,61 +1,13 @@
-<div align="center">
+# AI-in-One v2.0.1-preview
 
-<br>
+**Preview for the notebook-backed Fabric OneLake edition only.**
 
-# AI-in-One Dashboard
+This update addresses [issue #85](https://github.com/microsoft/AI-in-One-Dashboard/issues/85): valid prompts with genuinely missing conversation IDs remain counted, while session-dependent metrics stay blank where conversation attribution is incomplete. Missing or invalid prompt message IDs and invalid nonblank keys remain validation errors.
 
-### One dashboard for Microsoft 365 Copilot, Copilot Chat and agent adoption.
+**[Download the preview ZIP](https://github.com/microsoft/AI-in-One-Dashboard/releases/download/v2.0.1-preview/AI-in-One-v2.0.1-preview-Fabric-OneLake.zip)**
 
-[![General Availability](https://img.shields.io/badge/v2.0-General_Availability-0078D4?style=for-the-badge)](https://aka.ms/AIO-Preview)
-[![Power BI](https://img.shields.io/badge/Power_BI-report-F2C811?style=for-the-badge&logo=powerbi&logoColor=black)](https://aka.ms/AIO-Preview)
-[![License](https://img.shields.io/badge/license-MIT-107C10?style=for-the-badge)](https://github.com/microsoft/AI-in-One-Dashboard/blob/main/LICENSE.md)
+The ZIP contains the preparation notebook and matching Power BI template. Keep the previous pair for rollback and update **both files together**. Use your existing notebook parameters and default Lakehouse, run preparation with valid inputs, then load the matching template after SQL synchronization.
 
-**Built and maintained by the Microsoft Copilot Analytics team** · Free · Open source
+Production and the other editions remain at v2.0.0. This is not the direct Fabric-PAX edition.
 
-<br>
-
-</div>
-
-<div align="center">
-
-<table align="center">
-<tr>
-<td align="center">
-
-## Everything you need for AI-in-One is on the website
-
-**Downloads. Setup. Report walkthroughs. Documentation. Help. All in one place.**
-
-**There is no current preview at this time. Visit the website below for the current release.**
-
-<p align="center">
-  <a href="https://aka.ms/AIO-Preview">
-    <img src="https://capsule-render.vercel.app/api?type=rect&amp;color=0078D4&amp;height=104&amp;text=Visit%20the%20AI-in-One%20website%20%E2%86%92&amp;fontSize=40&amp;fontColor=FFFFFF&amp;fontAlign=50&amp;fontAlignY=50" alt="Visit the AI-in-One website →" width="720">
-  </a>
-</p>
-
-Choose the right edition, get the files, and follow the step-by-step guides to set up and use your report.
-
-**Start there. You do not need to browse this repository to get started.**
-
-</td>
-</tr>
-</table>
-
-</div>
-
-<div align="center">
-
-<br>
-
-**Also see [Analytics Hub for Microsoft Copilot](https://github.com/microsoft/AnalyticsHub-Dashboard):** adoption, value, consumption and governance in one place.
-
-<br>
-
-**Found this useful? ⭐ Star this repo to help others discover it!**
-
-<br>
-
-[MIT license](https://github.com/microsoft/AI-in-One-Dashboard/blob/main/LICENSE.md) &nbsp;·&nbsp; [Security reporting](https://github.com/microsoft/AI-in-One-Dashboard/blob/main/SECURITY.md) &nbsp;·&nbsp; [Setup and help](https://aka.ms/AIO-Preview)
-
-</div>
+[Production downloads and setup](https://aka.ms/AI-in-One) | [Feedback on issue #85](https://github.com/microsoft/AI-in-One-Dashboard/issues/85)
