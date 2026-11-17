@@ -1,5 +1,7 @@
 # AI-in-One v2.0.1-preview
 
+> **Looking for the production dashboard?** Start with **[AI-in-One downloads and setup](https://aka.ms/AI-in-One)**. This is the preview branch; use preview packages only when you intend to evaluate prerelease changes.
+
 **Preview for the notebook-backed Fabric OneLake edition only.**
 
 This update addresses [issue #85](https://github.com/microsoft/AI-in-One-Dashboard/issues/85): valid prompts with genuinely missing conversation IDs remain counted, while session-dependent metrics stay blank where conversation attribution is incomplete. Missing or invalid prompt message IDs and invalid nonblank keys remain validation errors.
